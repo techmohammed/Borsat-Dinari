@@ -65,12 +65,3 @@
 - [GitHub](https://github.com/techmohammed/Borsat-Dinari)
 
 ---
-
-## طريقة البناء
-
-1. ثبت **Android Studio**: https://developer.android.com/studio
-2. Open → اختر مجلد `CurrencyApp`
-3. انتظر Gradle Sync يخلص (إذا طلعت مشكلة "Incompatible Gradle JVM version"، غيّر الـ JDK المستخدم لـ 17 من Project Structure → SDK Location)
-4. لتصدير نسخة موقّعة: **Build → Generate Signed Bundle / APK**، واستخدم ملف `keystore.properties` (راجع `keystore.properties.template`) حتى يصير التوقيع تلقائي بدون إعادة إدخال بياناته كل مرة
-
-> **ملاحظة:** مسار مجلد المشروع لازم يكون بحروف إنكليزية بالكامل (بدون أي حرف عربي بأي مستوى من المسار)، وإلا يفشل Gradle Sync برسالة "project path contains non-ASCII characters".
