@@ -15,6 +15,7 @@ class AboutActivity : AppCompatActivity() {
         private const val INSTAGRAM_URL = "https://www.instagram.com/borsatdinari"
         private const val WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VbDz68h7YSd54EV6rw0R"
         private const val TIKTOK_URL = "https://tiktok.com/@borsatdinari"
+        private const val GITHUB_URL = "https://github.com/techmohammed/Borsat-Dinari"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,6 +34,7 @@ class AboutActivity : AppCompatActivity() {
         binding.btnFollowInstagram.setOnClickListener { openLink(INSTAGRAM_URL) }
         binding.btnFollowWhatsapp.setOnClickListener { openLink(WHATSAPP_CHANNEL_URL) }
         binding.btnFollowTiktok.setOnClickListener { openLink(TIKTOK_URL) }
+        binding.btnFollowGithub.setOnClickListener { openLink(GITHUB_URL) }
     }
 
     private fun openLink(url: String) {
