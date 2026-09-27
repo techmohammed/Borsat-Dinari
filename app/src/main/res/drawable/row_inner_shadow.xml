@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- بالوضع النهاري: بدون أي ظل — شفاف بالكامل. النسخة الحقيقية
+     (الظل الداخلي) موجودة بمجلد drawable-night فقط، وتنفعّل تلقائياً
+     بس بالوضع الليلي. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/transparent" />
+</shape>

@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">بورصة ديناري</string>
+    <string name="widget_description">يعرض سعر بورصتك المفضلة على الشاشة الرئيسية، مع زر تحديث يدوي وتحديث تلقائي كل نص ساعة</string>
+
+    <!-- تسميات اختصارات الشاشة الرئيسية (ضغطة مطولة على أيقونة التطبيق). -->
+    <string name="shortcut_duhok_short">دهوك</string>
+    <string name="shortcut_duhok_long">بورصة دهوك</string>
+    <string name="shortcut_baghdad_short">بغداد</string>
+    <string name="shortcut_baghdad_long">بورصة بغداد</string>
+    <string name="shortcut_erbil_short">أربيل</string>
+    <string name="shortcut_erbil_long">بورصة أربيل</string>
+</resources>

@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layoutDirection="ltr"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/cardWhite"
+        android:elevation="2dp"
+        app:titleTextColor="@color/textPrimary" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="28dp">
+
+            <!-- الأيقونة -->
+            <ImageView
+                android:layout_width="128dp"
+                android:layout_height="128dp"
+                android:layout_gravity="center_horizontal"
+                android:contentDescription="أيقونة التطبيق"
+                android:src="@mipmap/ic_launcher" />
+
+            <!-- اسم التطبيق -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/cairo_bold"
+                android:text="بورصة ديناري"
+                android:textColor="@color/textPrimary"
+                android:textSize="30sp" />
+
+            <!-- الوصف -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:fontFamily="@font/cairo_regular"
+                android:gravity="center"
+                android:lineSpacingExtra="6dp"
+                android:text="تطبيق يوفر لك أسعار الدولار مقابل الدينار العراقي في أغلب محافظات العراق واقليم كوردستان، وكذلك أسعار العملات العالمية مقارنةً بالدينار العراقي، محدثة كل 15 دقيقة."
+                android:textColor="@color/textSecondary"
+                android:textSize="15sp" />
+
+            <!-- خط فاصل -->
+            <View
+                android:layout_width="60dp"
+                android:layout_height="2dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
+                android:background="#1F000000" />
+
+            <!-- مميزات التطبيق -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:fontFamily="@font/cairo_bold"
+                android:text="مميزات التطبيق"
+                android:textColor="@color/textPrimary"
+                android:textSize="18sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:text="✓  التطبيق مجاني مدى الحياة" />
+
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:layout_marginTop="10dp"
+                    android:text="✓  التطبيق خالٍ من الإعلانات مدى الحياة" />
+
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:layout_marginTop="10dp"
+                    android:text="✓  التطبيق غير ربحي مدى الحياة" />
+
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:layout_marginTop="10dp"
+                    android:text="✓  التطبيق لا يحتاج إلى أي أذونات" />
+
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:layout_marginTop="10dp"
+                    android:text="✓  التطبيق خالٍ من التنبيهات المزعجة" />
+
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:layout_marginTop="10dp"
+                    android:text="✓  التطبيق خفيف جداً وسريع" />
+
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:layout_marginTop="10dp"
+                    android:text="✓  التطبيق لا يجمع بياناتك الخاصة" />
+
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:layout_marginTop="10dp"
+                    android:text="✓  التطبيق يحتفظ بسجل الأسعار لآخر 60 يوم" />
+
+            </LinearLayout>
+
+            <!-- حقوق الاستخدام -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:fontFamily="@font/cairo_bold"
+                android:text="حقوق الاستخدام"
+                android:textColor="@color/textPrimary"
+                android:textSize="18sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:text="•  لا توجد حقوق نشر أو قيود على التوزيع" />
+
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:layout_marginTop="10dp"
+                    android:text="•  يمكنك استخدام التطبيق بأي شكل من الأشكال" />
+
+            </LinearLayout>
+
+            <!-- توضيح هام -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:fontFamily="@font/cairo_bold"
+                android:text="توضيح هام"
+                android:textColor="@color/textPrimary"
+                android:textSize="18sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/cairo_regular"
+                    android:gravity="center"
+                    android:lineSpacingExtra="6dp"
+                    android:text="أسعار العملات هي لغرض الاطلاع والمعرفة فقط، وأن التطبيق لا يتحمل مسؤولية القرار المالي للمستخدم أثناء التداول أو الصرف"
+                    android:textColor="@color/textSecondary"
+                    android:textSize="14sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:background="#1F000000" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="@font/cairo_regular"
+                    android:gravity="center"
+                    android:lineSpacingExtra="6dp"
+                    android:text="يوجد تطبيق مصغر (ويدجت) يمكنك إضافته من الشاشة الرئيسية في هاتفك لتظهر لك أسعار البورصة المفضلة لك، مع تحديث تلقائي كل نص ساعة وزر تحديث فوري"
+                    android:textColor="@color/textSecondary"
+                    android:textSize="14sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="14dp"
+                    android:background="#1F000000" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <View
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:background="@color/trendDown" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="10dp"
+                        android:fontFamily="@font/cairo_regular"
+                        android:text="هبوط السعر"
+                        android:textColor="@color/textSecondary"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <View
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:background="@color/trendUp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="10dp"
+                        android:fontFamily="@font/cairo_regular"
+                        android:text="صعود السعر"
+                        android:textColor="@color/textSecondary"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <View
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:background="@color/trendFlat" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="10dp"
+                        android:fontFamily="@font/cairo_regular"
+                        android:text="السعر مستقر أو لا يتوفر تحديث حالياً"
+                        android:textColor="@color/textSecondary"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- معلومات التطبيق -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:fontFamily="@font/cairo_bold"
+                android:text="معلومات التطبيق"
+                android:textColor="@color/textPrimary"
+                android:textSize="18sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/AboutInfoLine"
+                    android:text="نسخة التطبيق: 1.0.7" />
+
+                <TextView
+                    style="@style/AboutInfoLine"
+                    android:layout_marginTop="10dp"
+                    android:text="تصميم المهندس: محمد مختار فائق" />
+
+                <TextView
+                    style="@style/AboutInfoLine"
+                    android:layout_marginTop="10dp"
+                    android:text="سنة الإصدار: 2026" />
+
+                <TextView
+                    style="@style/AboutInfoLine"
+                    android:layout_marginTop="10dp"
+                    android:text="آخر تحديث: ايلول - 2026" />
+
+            </LinearLayout>
+
+            <!-- الاقتباس -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/cairo_regular"
+                    android:gravity="center"
+                    android:lineSpacingExtra="8dp"
+                    android:text="&quot;في عالم يملؤه الضجيج، اصنع أثرك بصمت..\nفالمطر الذي ينبت الزرع لا يحدث رعداً&quot;"
+                    android:textColor="@color/textSecondary"
+                    android:textSize="14sp"
+                    android:textStyle="italic" />
+
+            </LinearLayout>
+
+            <!-- تابعنا -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:fontFamily="@font/cairo_bold"
+                android:text="تابعنا"
+                android:textColor="@color/textPrimary"
+                android:textSize="18sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="14dp">
+
+                <ImageButton
+                    android:id="@+id/btnFollowTelegram"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="قناة التليغرام"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_telegram" />
+
+                <ImageButton
+                    android:id="@+id/btnFollowX"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="حساب X"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_x" />
+
+                <ImageButton
+                    android:id="@+id/btnFollowFacebook"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="صفحة فيسبوك"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_facebook" />
+
+                <ImageButton
+                    android:id="@+id/btnFollowInstagram"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="حساب انستغرام"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_instagram" />
+
+                <ImageButton
+                    android:id="@+id/btnFollowWhatsapp"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="قناة واتساب"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_whatsapp" />
+
+                <ImageButton
+                    android:id="@+id/btnFollowTiktok"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="حساب تيك توك"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_tiktok" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

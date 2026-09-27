@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- تُستخدم بس للتأكد من توفر اتصال إنترنت قبل ما نمسح بيانات محلية
+         بصفحة الهيستوري (نتأكد قبل الحذف حتى ما نضيع بيانات موجودة لو
+         ماكو نت). إذن "عادي" (normal) — ينضاف تلقائياً بدون أي طلب
+         أذونات يشوفه المستخدم، ما يخالف مبدأ "بلا أذونات" العملي. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:name=".DinariApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CurrencyApp">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+
+        <activity android:name=".AboutActivity" android:exported="false" />
+        <activity android:name=".HistoryActivity" android:exported="false" />
+
+        <!-- ودجت الشاشة الرئيسية: يعرض بورصة المفضلة، مع زر تحديث يدوي
+             وتحديث تلقائي ساعي (WidgetRefreshScheduler + AlarmManager). -->
+        <receiver
+            android:name=".FavoriteWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.mohammed.currencyapp.ACTION_WIDGET_REFRESH" />
+                <action android:name="com.mohammed.currencyapp.ACTION_WIDGET_HOURLY_REFRESH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/favorite_price_widget_info" />
+        </receiver>
+
+    </application>
+
+</manifest>

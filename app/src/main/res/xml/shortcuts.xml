@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    اختصارات الشاشة الرئيسية (ضغطة مطولة على أيقونة التطبيق بدون فتحه).
+    كل اختصار يفتح شاشة هيستوري تلك المدينة مباشرة (أسرع مسار ممكن،
+    وأقرب شي متوفر تقنياً لـ"عرض بدون فتح التطبيق" — نظام أندرويد للاختصارات
+    الثابتة (App Shortcuts) ما يسمح بعرض بيانات حية أو تخصيص ارتفاع العنصر
+    داخل قائمة الاختصارات نفسها؛ هذا يتحكم فيه المُشغّل (Launcher) وليس تطبيقنا،
+    فأقصى شي نقدر نسويه هو تسمية + أيقونة واضحة لكل اختصار).
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="shortcut_duhok"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_city"
+        android:shortcutShortLabel="@string/shortcut_duhok_short"
+        android:shortcutLongLabel="@string/shortcut_duhok_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.mokhtar.com"
+            android:targetClass="com.mohammed.currencyapp.MainActivity">
+            <extra android:name="shortcut_city_key" android:value="duhok" />
+            <extra android:name="shortcut_city_name" android:value="دهوك" />
+            <extra android:name="shortcut_city_flag" android:value="kurdistan" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_baghdad"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_city"
+        android:shortcutShortLabel="@string/shortcut_baghdad_short"
+        android:shortcutLongLabel="@string/shortcut_baghdad_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.mokhtar.com"
+            android:targetClass="com.mohammed.currencyapp.MainActivity">
+            <extra android:name="shortcut_city_key" android:value="baghdad" />
+            <extra android:name="shortcut_city_name" android:value="بغداد" />
+            <extra android:name="shortcut_city_flag" android:value="iq" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_erbil"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_city"
+        android:shortcutShortLabel="@string/shortcut_erbil_short"
+        android:shortcutLongLabel="@string/shortcut_erbil_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.mokhtar.com"
+            android:targetClass="com.mohammed.currencyapp.MainActivity">
+            <extra android:name="shortcut_city_key" android:value="erbil" />
+            <extra android:name="shortcut_city_name" android:value="أربيل" />
+            <extra android:name="shortcut_city_flag" android:value="kurdistan" />
+        </intent>
+    </shortcut>
+
+</shortcuts>

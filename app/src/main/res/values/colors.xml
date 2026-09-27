@@ -1,0 +1,16 @@
+<resources>
+    <color name="background">#F5F5F5</color>
+    <color name="cardWhite">#FFFFFF</color>
+    <color name="textPrimary">#212121</color>
+    <color name="textSecondary">#757575</color>
+    <color name="trendUp">#66BB6A</color>
+    <color name="trendDown">#EF5350</color>
+    <color name="trendFlat">#9E9E9E</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
+
+    <!-- لون ثابت (ما يتغير بالوضع الليلي عمداً) لاسم البورصة/العملة وواحدتها
+         بقائمة الأسعار — صف كل عملة خلفيته دايماً صورة علم فاتحة اللون
+         بتصميمها (ivFlagBg)، مو سطح يتحول غامق بالوضع الليلي، فلازم النص
+         يبقى غامق دايماً وإلا يختفي فوق الخلفية الفاتحة بالوضع الليلي. -->
+    <color name="rowTextOnFlag">#212121</color>
+</resources>

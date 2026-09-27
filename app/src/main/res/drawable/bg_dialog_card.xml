@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- خلفية بطاقة رسالة التنبيه المخصصة (حذف/تحديث سجلات الهيستوري) —
+     زوايا مدورة واضحة زي نافذة iOS المرفقة كمرجع، بدل نافذة AlertDialog
+     الافتراضية اللي كانت أزرارها تختفي (نص أبيض على خلفية بيضاء لأن
+     colorPrimary بالتطبيق أبيض عمداً). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/cardWhite" />
+    <corners android:radius="20dp" />
+</shape>

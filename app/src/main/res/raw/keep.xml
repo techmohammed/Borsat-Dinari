@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/row_bg_eu,@drawable/row_bg_gb,@drawable/row_bg_iq,@drawable/row_bg_ir,@drawable/row_bg_kurdistan,@drawable/row_bg_tr,@drawable/row_bg_us" />

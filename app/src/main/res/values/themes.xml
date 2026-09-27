@@ -1,0 +1,86 @@
+<resources>
+    <style name="Theme.CurrencyApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/cardWhite</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@color/cardWhite</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="AboutFeatureLine">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/cairo_regular</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <style name="AboutInfoLine">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/cairo_semibold</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <!-- ثيم خاص بتقويم اختيار الفترة بصفحة السجل فقط. اللون العام للتطبيق
+         (colorPrimary) أبيض عمداً (خلفية شريط الأدوات)، وتقويم Material
+         يستخدم colorPrimary تلقائياً كلون تحديد التاريخ المختار — فلو تركناه
+         أبيض، دائرة التحديد ورقم اليوم المختار يصيرون أبيض على أبيض
+         (يختفي الرقم). هذا الثيم يعطي التقويم لون حقيقي واضح بدون ما يأثر
+         على باقي شكل التطبيق.
+         android:layoutDirection ثابت LTR عمداً حتى شكل التقويم (مكان أزرار
+         اختيار/إلغاء، سهم التنقل بين الشهور، ترتيب أيام الأسبوع) ما ينعكس
+         لو المستخدم غيّر لغة الهاتف لغير العربي — نفس الفكرة المستخدمة
+         بلايوتات الهيستوري (activity_history.xml, item_history_row.xml). -->
+    <style name="ThemeOverlay.App.DatePicker" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">
+        <item name="colorPrimary">#00897B</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSurface">@color/cardWhite</item>
+        <item name="colorOnSurface">@color/textPrimary</item>
+        <item name="colorControlHighlight">#3300897B</item>
+        <item name="materialCalendarHeaderTitle">@style/App.DatePicker.HeaderTitle</item>
+        <item name="shapeAppearanceMediumComponent">@style/App.DatePicker.ShapeAppearance</item>
+        <item name="shapeAppearanceLargeComponent">@style/App.DatePicker.ShapeAppearance</item>
+        <item name="android:layoutDirection">ltr</item>
+        <item name="buttonBarPositiveButtonStyle">@style/App.DatePicker.PositiveButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/App.DatePicker.NegativeButton</item>
+    </style>
+
+    <!-- زوايا مدورة للتقويم كامل (نافذة الاختيار + الشبكة) بنفس نصف قطر
+         رسائل التنبيه المخصصة (dialog_confirm.xml → bg_dialog_card.xml،
+         20dp) حتى يكون شكلهم متناسق. -->
+    <style name="App.DatePicker.ShapeAppearance" parent="ShapeAppearance.MaterialComponents.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">20dp</item>
+    </style>
+
+    <!-- عنوان "اختيار الفترة" أعلى التقويم — نفس خط وستايل عنوان التطبيق
+         "بورصة ديناري" (cairo_bold, bold) بس بحجم أصغر شوية (22sp بدل
+         25sp) لأنه عنوان نافذة منبثقة مو عنوان الصفحة الرئيسية. نلغي
+         android:textAppearance صراحة (null) حتى ما تتضارب مع حجم/خط
+         الـtextAppearance الافتراضي المرتبط بستايل العنوان الأصلي. -->
+    <style name="App.DatePicker.HeaderTitle" parent="Widget.MaterialComponents.MaterialCalendar.HeaderTitle">
+        <item name="android:textAppearance">@null</item>
+        <item name="android:fontFamily">@font/cairo_bold</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <!-- زرين "اختيار"/"إلغاء" أسفل التقويم — كانوا يطلعون بالحجم/الخط
+         الافتراضي الصغير لمكتبة Material، فصرنا نفرض نفس خط وحجم
+         أزرار رسائل التنبيه المخصصة (dialog_confirm.xml: cairo_bold/
+         cairo_semibold، 15sp) حتى يكون شكلهم متناسق وواضح مثلها. -->
+    <style name="App.DatePicker.PositiveButton" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:fontFamily">@font/cairo_bold</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">#00897B</item>
+    </style>
+
+    <style name="App.DatePicker.NegativeButton" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:fontFamily">@font/cairo_semibold</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/textSecondary</item>
+    </style>
+</resources>

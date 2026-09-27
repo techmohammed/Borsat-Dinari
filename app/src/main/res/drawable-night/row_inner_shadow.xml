@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ظل داخلي (Inner shadow) حول حافة صف البورصة، يظهر بالوضع الليلي فقط
+    (نفس اسم الملف موجود بمجلد drawable العادي كنسخة شفافة بالكامل للوضع
+    النهاري — أندرويد يختار النسخة المناسبة تلقائياً حسب الوضع الحالي).
+
+    مبني من 4 شرائح تدرّج لونية (فوق/تحت/يمين/يسار)، كل وحدة تبدأ غامقة
+    عند حافة الصف الحقيقية وتخف تدريجياً كل ما اتجهنا للداخل — هذا يعطي
+    إحساس "ظل من الداخل" بدل حد/إطار صلب، وبما إنه محصور بشريحة رفيعة
+    قرب الحافة فقط، ما يمتد أو يظهر شي منه خارج حدود الصف نفسه.
+
+    ملاحظة: android:width/height بعنصر layer-list لازم تكون قيمة أبعاد فعلية
+    (زي 8dp)، مو "match_parent" — تركها بدون تحديد يخلي الشريحة تمتد
+    تلقائياً على كامل الطول بالاتجاه الثاني (العرض الكامل للشرائح
+    الأفقية، والارتفاع الكامل للشرائح الجانبية).
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- الحافة العلوية -->
+    <item android:height="8dp" android:gravity="top">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#3D000000"
+                android:endColor="#00000000" />
+        </shape>
+    </item>
+
+    <!-- الحافة السفلية -->
+    <item android:height="8dp" android:gravity="bottom">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="90"
+                android:startColor="#3D000000"
+                android:endColor="#00000000" />
+        </shape>
+    </item>
+
+    <!-- الحافة اليسرى -->
+    <item android:width="8dp" android:gravity="left">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="0"
+                android:startColor="#3D000000"
+                android:endColor="#00000000" />
+        </shape>
+    </item>
+
+    <!-- الحافة اليمنى -->
+    <item android:width="8dp" android:gravity="right">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="180"
+                android:startColor="#3D000000"
+                android:endColor="#00000000" />
+        </shape>
+    </item>
+
+</layer-list>

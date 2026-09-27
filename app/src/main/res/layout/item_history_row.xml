@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layoutDirection="ltr"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/cardWhite"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="18dp"
+    android:paddingVertical="8dp">
+
+    <TextView
+        android:id="@+id/tvHistoryTime"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:fontFamily="@font/cairo_regular"
+        android:gravity="start"
+        android:textColor="@color/textSecondary"
+        android:textSize="13sp"
+        tools:text="السبت 12 أيلول - 03:45 م" />
+
+    <TextView
+        android:id="@+id/tvHistoryPrice"
+        android:layout_width="wrap_content"
+        android:layout_height="28dp"
+        android:background="@drawable/bg_badge"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:minWidth="110dp"
+        android:paddingHorizontal="10dp"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="155,650 د.ع" />
+
+</LinearLayout>

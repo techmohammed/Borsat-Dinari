@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    أيقونة انستغرام مبسطة — إطار كاميرا + عدسة دائرية، الخطوط بس (stroke)
+    مو تعبئة كاملة، حتى يبين شكل الكاميرا الحقيقي مو مربع أبيض مصمت.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp"
+    android:height="22dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#E1306C"
+        android:pathData="M2,12A10,10 0,1 1,22,12A10,10 0,1 1,2,12Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.4"
+        android:pathData="M10,6 L14,6 A4,4 0 0 1 18,10 L18,14 A4,4 0 0 1 14,18 L10,18 A4,4 0 0 1 6,14 L6,10 A4,4 0 0 1 10,6 Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.4"
+        android:pathData="M8.8,12A3.2,3.2 0 1 1 15.2,12A3.2,3.2 0 1 1 8.8,12Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16.2,6.9m-0.9,0a0.9,0.9 0,1 1,1.8 0a0.9,0.9 0,1 1,-1.8 0" />
+</vector>

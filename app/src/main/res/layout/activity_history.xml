@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layoutDirection="ltr"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/cardWhite"
+        android:elevation="2dp"
+        app:contentInsetStart="0dp"
+        app:contentInsetStartWithNavigation="0dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="left|center_vertical"
+            android:layout_marginLeft="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="رجوع"
+                android:padding="8dp"
+                android:src="@drawable/ic_back_arrow" />
+
+            <ImageButton
+                android:id="@+id/btnSyncChannel"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="جلب آخر شهرين من القناة"
+                android:padding="8dp"
+                android:src="@drawable/ic_channel_sync" />
+
+            <ImageButton
+                android:id="@+id/btnPickRange"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="اختيار فترة"
+                android:padding="8dp"
+                android:src="@drawable/ic_calendar_31" />
+
+            <ImageButton
+                android:id="@+id/btnDeleteRange"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="مسح بيانات الفترة المحددة"
+                android:padding="8dp"
+                android:src="@drawable/ic_delete" />
+
+        </LinearLayout>
+
+        <!-- مجموعة التنقل بين الأيام (زر يوم سابق، رقم اليوم، زر يوم
+             تالي) — بين زر الحذف واسم البورصة. نستخدم نفس أيقونة سهم
+             الرجوع (ic_back_arrow) للزرين، ونعكسها أفقياً (scaleX=-1)
+             لزر اليوم التالي حتى تصير سهم لليمين بدون إضافة drawable
+             ثانية مطابقة. ترتيبها بالكود ثابت LTR (يوم سابق يسار، يوم
+             تالي يمين) بغض النظر عن لغة الجهاز، بنفس منطق باقي الصفحة. -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btnPrevDay"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="اليوم السابق"
+                android:padding="8dp"
+                android:src="@drawable/ic_back_arrow" />
+
+            <TextView
+                android:id="@+id/tvDayNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp"
+                android:fontFamily="@font/cairo_bold"
+                android:gravity="center"
+                android:minWidth="26dp"
+                android:textColor="@color/textPrimary"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                tools:text="22" />
+
+            <ImageButton
+                android:id="@+id/btnNextDay"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="اليوم التالي"
+                android:padding="8dp"
+                android:scaleX="-1"
+                android:src="@drawable/ic_back_arrow" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvItemName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right|center_vertical"
+            android:layout_marginRight="16dp"
+            android:fontFamily="@font/cairo_bold"
+            android:textColor="@color/textPrimary"
+            android:textSize="25sp"
+            android:textStyle="bold"
+            tools:text="بغداد" />
+
+    </androidx.appcompat.widget.Toolbar>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1F000000" />
+
+    <FrameLayout
+        android:id="@+id/chartContainer"
+        android:layout_width="match_parent"
+        android:layout_height="240dp"
+        android:background="@color/cardWhite"
+        android:padding="4dp">
+
+        <com.mohammed.currencyapp.HistoryChartView
+            android:id="@+id/historyChart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:background="@color/background" />
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:fontFamily="@font/cairo_regular"
+        android:gravity="center"
+        android:text="لا توجد بيانات"
+        android:textColor="@color/textSecondary"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerHistory"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="12dp" />
+
+</LinearLayout>

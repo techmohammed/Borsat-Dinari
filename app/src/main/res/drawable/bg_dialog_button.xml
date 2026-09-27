@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- خلفية زر التأكيد برسالة التنبيه — لون واحد ثابت هنا بس، ونغيره وقت
+     التشغيل بـsetTint حسب نوع الإجراء (أحمر للحذف مثل أيقونة سلة
+     المهملات #C0392B، فيروزي للتحديث/التنزيل مثل باقي أزرار التولبار
+     #00897B) — نفس أسلوب bg_badge.xml المستخدم أصلاً لشارات السعر. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/textSecondary" />
+    <corners android:radius="12dp" />
+</shape>

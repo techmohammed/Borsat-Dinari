@@ -1,0 +1,13 @@
+<resources>
+    <!--
+        ألوان النمط الليلي — تُستخدم تلقائياً بس لما الوضع الليلي مفعّل
+        (عبر ThemePreferences.toggle، مو بالضرورة نفس وضع نظام الجهاز، لأن
+        زر التبديل بالتطبيق يفرض النمط يدوياً). الألوان غير المعرّفة هنا
+        (زي trendUp/trendDown/trendFlat) تبقى تاخذ قيمتها الأصلية من
+        values/colors.xml لأنها أصلاً بتباين جيد فوق خلفية غامقة.
+    -->
+    <color name="background">#121212</color>
+    <color name="cardWhite">#1E1E1E</color>
+    <color name="textPrimary">#EDEDED</color>
+    <color name="textSecondary">#9E9E9E</color>
+</resources>

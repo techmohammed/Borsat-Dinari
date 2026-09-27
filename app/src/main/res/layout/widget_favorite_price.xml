@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/widgetRoot"
+    android:layoutDirection="ltr"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent">
+
+    <!-- بطاقة داخلية بارتفاع ثابت وأقصر من ارتفاع الودجت الكامل، وتتوسط
+         عمودياً. المساحة الفاضية فوق وتحتها تبقى شفافة (خلفية الشاشة تبين
+         من ورا)، فتحس بصرياً إن الارتفاع الظاهر نص ارتفاع الودجت تقريباً. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_gravity="center_vertical">
+
+        <!-- خلفية العلم تملأ البطاقة الداخلية، نفس أسلوب صف القائمة الرئيسية. -->
+        <ImageView
+            android:id="@+id/widgetFlagBg"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:scaleType="fitXY"
+            tools:src="@drawable/row_bg_iq" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="38dp"
+            android:paddingRight="10dp">
+
+            <TextView
+                android:id="@+id/widgetPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="26dp"
+                android:layout_centerVertical="true"
+                android:layout_alignParentLeft="true"
+                android:background="@drawable/bg_badge"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:minWidth="96dp"
+                android:paddingHorizontal="7dp"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="155,650 د.ع" />
+
+            <TextView
+                android:id="@+id/widgetUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@id/widgetPrice"
+                android:layout_marginLeft="6dp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/rowTextOnFlag"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="100$" />
+
+            <TextView
+                android:id="@+id/widgetName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toRightOf="@id/widgetUnit"
+                android:layout_marginLeft="8dp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/rowTextOnFlag"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="بغداد" />
+
+        </RelativeLayout>
+
+        <!-- زر التحديث: مربع الشكل، نفس ارتفاع مستطيل السعر بجانبه (26dp). -->
+        <ImageButton
+            android:id="@+id/widgetRefreshButton"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="left|center_vertical"
+            android:layout_marginLeft="8dp"
+            android:background="@drawable/bg_widget_refresh_button"
+            android:contentDescription="تحديث السعر"
+            android:padding="4dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_widget_refresh" />
+
+    </FrameLayout>
+
+</FrameLayout>
