@@ -1,8 +1,11 @@
 package com.mohammed.currencyapp
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Paint
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.mohammed.currencyapp.databinding.ActivityAboutBinding
 
@@ -16,6 +19,7 @@ class AboutActivity : AppCompatActivity() {
         private const val WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VbDz68h7YSd54EV6rw0R"
         private const val TIKTOK_URL = "https://tiktok.com/@borsatdinari"
         private const val GITHUB_URL = "https://github.com/techmohammed/Borsat-Dinari"
+        private const val EMAIL_URI = "mailto:BorsatDinari@gmail.com"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,10 +39,48 @@ class AboutActivity : AppCompatActivity() {
         binding.btnFollowWhatsapp.setOnClickListener { openLink(WHATSAPP_CHANNEL_URL) }
         binding.btnFollowTiktok.setOnClickListener { openLink(TIKTOK_URL) }
         binding.btnFollowGithub.setOnClickListener { openLink(GITHUB_URL) }
+        binding.btnFollowEmail.setOnClickListener {
+            openLink(EMAIL_URI, Intent.ACTION_SENDTO)
+        }
+
+        checkForUpdate(binding)
     }
 
-    private fun openLink(url: String) {
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    /** يدور بالقناة على أحدث رقم نسخة منشور (التطبيق نفسه ينشر كـAPK
+     * بنص "تطبيق بورصة ديناري 1.0.7") ويقارنه برقم نسخة التطبيق الحالية،
+     * مو بتاريخ التعديل. أحمر بجانب رقم النسخة: "يوجد تحديث جديد" (رابط
+     * لمنشور القناة) لو الرقم أحدث، أو "لديك اخر اصدار" لو نفس الرقم.
+     * لو ماكو نت أو فشل الفحص ما يطلع أي شي. */
+    private fun checkForUpdate(binding: ActivityAboutBinding) {
+        @Suppress("DEPRECATION")
+        val current = try {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        } catch (_: Exception) {
+            null
+        } ?: return
+
+        TelegramScraperRepository.fetchLatestAppRelease { release ->
+            if (release == null || isFinishing || isDestroyed) return@fetchLatestAppRelease
+            val status = binding.tvUpdateStatus
+            if (TelegramScraperRepository.compareVersions(release.version, current) > 0) {
+                status.text = "يوجد تحديث جديد"
+                status.paintFlags = status.paintFlags or Paint.UNDERLINE_TEXT_FLAG
+                status.setOnClickListener { openLink(release.postUrl) }
+            } else {
+                status.text = "لديك اخر اصدار"
+                status.paintFlags = status.paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
+                status.isClickable = false
+            }
+            status.visibility = View.VISIBLE
+        }
+    }
+
+    private fun openLink(url: String, action: String = Intent.ACTION_VIEW) {
+        try {
+            startActivity(Intent(action, Uri.parse(url)))
+        } catch (_: ActivityNotFoundException) {
+            // ماكو تطبيق يفتح هذا الرابط (مثلاً ماكو تطبيق بريد) — نتجاهل بدل الكراش.
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

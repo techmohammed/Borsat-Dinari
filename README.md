@@ -42,7 +42,7 @@
 
 ## معلومات التطبيق
 
-- **نسخة التطبيق:** 1.0.7
+- **نسخة التطبيق:** 1.0.8
 - **تصميم المهندس:** محمد مختار فائق
 - **سنة الإصدار:** 2026
 - **آخر تحديث:** ايلول - 2026
@@ -63,14 +63,6 @@
 - [WhatsApp](https://whatsapp.com/channel/0029VbDz68h7YSd54EV6rw0R)
 - [TikTok](https://tiktok.com/@borsatdinari)
 - [GitHub](https://github.com/techmohammed/Borsat-Dinari)
+- [Email](mailto:BorsatDinari@gmail.com)
 
 ---
-
-## طريقة البناء
-
-1. ثبت **Android Studio**: https://developer.android.com/studio
-2. Open → اختر مجلد `CurrencyApp`
-3. انتظر Gradle Sync يخلص (إذا طلعت مشكلة "Incompatible Gradle JVM version"، غيّر الـ JDK المستخدم لـ 17 من Project Structure → SDK Location)
-4. لتصدير نسخة موقّعة: **Build → Generate Signed Bundle / APK**، واستخدم ملف `keystore.properties` (راجع `keystore.properties.template`) حتى يصير التوقيع تلقائي بدون إعادة إدخال بياناته كل مرة
-
-> **ملاحظة:** مسار مجلد المشروع لازم يكون بحروف إنكليزية بالكامل (بدون أي حرف عربي بأي مستوى من المسار)، وإلا يفشل Gradle Sync برسالة "project path contains non-ASCII characters".

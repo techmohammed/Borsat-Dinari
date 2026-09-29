@@ -300,9 +300,34 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
-                    style="@style/AboutInfoLine"
-                    android:text="نسخة التطبيق: 1.0.7" />
+                <!-- سطر النسخة + رسالة التحديث بجانبه (حمراء): "يوجد تحديث جديد"
+                     (تنضغط وتفتح منشور القناة) أو "لديك اخر اصدار". تبقى مخفية
+                     لو ماكو نت أو فشل الفحص. -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical|right"
+                    android:layoutDirection="rtl"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/AboutInfoLine"
+                        android:layout_width="wrap_content"
+                        android:text="نسخة التطبيق: 1.0.8" />
+
+                    <TextView
+                        android:id="@+id/tvUpdateStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:fontFamily="@font/cairo_semibold"
+                        android:textColor="#D32F2F"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+
+                </LinearLayout>
 
                 <TextView
                     style="@style/AboutInfoLine"
@@ -433,6 +458,16 @@
                     android:contentDescription="مستودع GitHub"
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_github" />
+
+                <ImageButton
+                    android:id="@+id/btnFollowEmail"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="البريد الإلكتروني"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_email" />
 
             </LinearLayout>
 

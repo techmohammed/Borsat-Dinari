@@ -218,8 +218,15 @@ object TelegramScraperRepository {
         )
     }
 
-    private fun fetchChannelHtml(username: String, beforeId: Long? = null): String {
-        val suffix = if (beforeId != null) "?before=$beforeId" else ""
+    private fun fetchChannelHtml(
+        username: String,
+        beforeId: Long? = null,
+        query: String? = null
+    ): String {
+        val params = mutableListOf<String>()
+        if (query != null) params += "q=" + java.net.URLEncoder.encode(query, "UTF-8")
+        if (beforeId != null) params += "before=$beforeId"
+        val suffix = if (params.isEmpty()) "" else "?" + params.joinToString("&")
         val url = URL("https://t.me/s/$username$suffix")
         val conn = url.openConnection() as HttpURLConnection
         conn.connectTimeout = 8000
@@ -228,6 +235,64 @@ object TelegramScraperRepository {
         val html = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
         conn.disconnect()
         return html
+    }
+
+    /** آخر إصدار للتطبيق منشور بالقناة: رقم النسخة + رابط المنشور نفسه. */
+    data class AppRelease(val version: String, val postUrl: String)
+
+    /**
+     * يدور بالقناة على منشور الـAPK (نصه "تطبيق بورصة ديناري 1.0.7") ويرجع
+     * أعلى رقم نسخة لقاه مع رابط منشوره — المقارنة برقم النسخة نفسه مو
+     * بتاريخ النشر أو التعديل. نستخدم بحث تليگرام الداخلي (?q=) لأن
+     * الأسعار تنزل كمنشورات جديدة كل فترة فمنشور الـAPK يطلع بسرعة من
+     * الصفحة الأولى. إذا البحث ما رجع شي نفحص آخر صفحة كاحتياط. أي فشل
+     * (نت/تغيير صيغة) يرجع null بصمت.
+     */
+    fun fetchLatestAppRelease(onResult: (AppRelease?) -> Unit) {
+        executor.execute {
+            val release = try {
+                val fromSearch = parseAppRelease(
+                    fetchChannelHtml(BORSAT_DINARI_CHANNEL, query = "تطبيق بورصة ديناري")
+                )
+                fromSearch ?: parseAppRelease(fetchChannelHtml(BORSAT_DINARI_CHANNEL))
+            } catch (_: Exception) {
+                null
+            }
+            mainHandler.post { onResult(release) }
+        }
+    }
+
+    private fun parseAppRelease(html: String): AppRelease? {
+        val idRegex = Regex("""data-post="[^/"]+/(\d+)"""")
+        // الرقم صيغته x.y.z (ثلاث خانات) حتى ما نلخبط مع حجم الملف "4 MB".
+        // كابشن المنشورات اختلفت بين الإصدارات ("تطبيق بورصة ديناري 1.0.7"،
+        // و"تطبيق بورصة ديناري للاندرويد النسخة الجديدة 1.0.6")، فنقبل
+        // كلمات بين العبارة والرقم (بدون أرقام بالوسط)، وبالترتيبين لأن
+        // اتجاه النص RTL. اسم الملف المكتوب بشرطات سفلية (تطبيق_بورصة_...)
+        // ما يطابق لأن العبارة بالكابشن بمسافات.
+        val afterPhrase = Regex("""تطبيق\s+بورصة\s+ديناري[^0-9]{0,80}?(\d+\.\d+\.\d+)""")
+        val beforePhrase = Regex("""(\d+\.\d+\.\d+)[^0-9]{0,80}?تطبيق\s+بورصة\s+ديناري""")
+        var best: Pair<String, Long>? = null
+        for (chunk in splitMessages(html)) {
+            val id = idRegex.find(chunk)?.groupValues?.get(1)?.toLongOrNull() ?: continue
+            val text = normalizeArabicText(chunk).replace(Regex("\\s+"), " ")
+            val version = afterPhrase.find(text)?.groupValues?.get(1)
+                ?: beforePhrase.find(text)?.groupValues?.get(1)
+                ?: continue
+            if (best == null || compareVersions(version, best.first) > 0) best = version to id
+        }
+        return best?.let { AppRelease(it.first, "https://t.me/$BORSAT_DINARI_CHANNEL/${it.second}") }
+    }
+
+    /** مقارنة رقمية خانة بخانة (1.0.10 أكبر من 1.0.9). يرجع موجب لو a أحدث. */
+    fun compareVersions(a: String, b: String): Int {
+        val pa = a.split(".").map { it.toIntOrNull() ?: 0 }
+        val pb = b.split(".").map { it.toIntOrNull() ?: 0 }
+        for (i in 0 until maxOf(pa.size, pb.size)) {
+            val diff = pa.getOrElse(i) { 0 } - pb.getOrElse(i) { 0 }
+            if (diff != 0) return diff
+        }
+        return 0
     }
 
     private data class ChannelMessage(val id: Long, val timestampMillis: Long, val raw: String)
