@@ -1,0 +1,53 @@
+Borsat Dinari
+
+An application that provides exchange rates for the US Dollar against the Iraqi Dinar across most governorates of Iraq and the Kurdistan Region, as well as global currency rates relative to the Iraqi Dinar, updated every 15 minutes.
+
+App Features:
+
+Free for life
+
+Ad-free for life
+
+Non-profit for life
+
+Requires no permissions
+
+Free from annoying notifications
+
+Very lightweight and fast
+
+Does not collect your personal data
+
+Keeps a price history record for the last 60 days
+
+Terms of Use:
+There are no copyrights or distribution restrictions; you are free to use the app in any manner.
+
+Important Disclaimer:
+Currency rates are for informational and educational purposes only. The application assumes no responsibility for user financial decisions during trading or exchange.
+
+A widget is available that you can add from your phone's home screen to display your preferred exchange rates, featuring an automatic update every 30 minutes alongside an instant refresh button.
+
+Color Guide:
+
+Red: Price drop
+
+Green: Price rise
+
+Gray: Price stable or no update available currently
+
+Designed by Eng. Mohammed Mokhtar Faiq - 2026
+
+Follow Us:
+
+Telegram: t.me/BorsatDinari
+
+X: x.com/Borsatdinari
+
+Facebook: facebook.com/share/1Bv8F5CUZE
+
+Instagram: instagram.com/borsatdinari
+
+TikTok: tiktok.com/@borsatdinari
+
+GitHub: github.com/techmohammed/Borsat-Dinari
