@@ -123,6 +123,11 @@
                     android:layout_marginTop="10dp"
                     android:text="✓  التطبيق يحتفظ بسجل الأسعار لآخر 60 يوم" />
 
+                <TextView
+                    style="@style/AboutFeatureLine"
+                    android:layout_marginTop="10dp"
+                    android:text="✓  التطبيق مفتوح المصدر" />
+
             </LinearLayout>
 
             <!-- حقوق الاستخدام -->
@@ -385,89 +390,126 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_card"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:padding="14dp">
 
-                <ImageButton
-                    android:id="@+id/btnFollowTelegram"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="قناة التليغرام"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_telegram" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                <ImageButton
-                    android:id="@+id/btnFollowX"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="حساب X"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_x" />
+                    <ImageButton
+                        android:id="@+id/btnFollowTelegram"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="قناة التليغرام"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_telegram" />
 
-                <ImageButton
-                    android:id="@+id/btnFollowFacebook"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="صفحة فيسبوك"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_facebook" />
+                    <ImageButton
+                        android:id="@+id/btnFollowX"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="حساب X"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_x" />
 
-                <ImageButton
-                    android:id="@+id/btnFollowInstagram"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="حساب انستغرام"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_instagram" />
+                    <ImageButton
+                        android:id="@+id/btnFollowFacebook"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="صفحة فيسبوك"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_facebook" />
 
-                <ImageButton
-                    android:id="@+id/btnFollowWhatsapp"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="قناة واتساب"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_whatsapp" />
+                    <ImageButton
+                        android:id="@+id/btnFollowInstagram"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="حساب انستغرام"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_instagram" />
 
-                <ImageButton
-                    android:id="@+id/btnFollowTiktok"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="حساب تيك توك"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_tiktok" />
+                    <ImageButton
+                        android:id="@+id/btnFollowWhatsapp"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="قناة واتساب"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_whatsapp" />
 
-                <ImageButton
-                    android:id="@+id/btnFollowGithub"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="مستودع GitHub"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_github" />
+                </LinearLayout>
 
-                <ImageButton
-                    android:id="@+id/btnFollowEmail"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="البريد الإلكتروني"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_email" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/btnFollowTiktok"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="حساب تيك توك"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_tiktok" />
+
+                    <ImageButton
+                        android:id="@+id/btnFollowGithub"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="مستودع GitHub"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_github" />
+
+                    <ImageButton
+                        android:id="@+id/btnFollowEmail"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="البريد الإلكتروني"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_email" />
+
+                    <!-- بدون رابط حالياً؛ ما يوصلها أي click listener بالكود لين يتوفر الرابط. -->
+                    <ImageButton
+                        android:id="@+id/btnFollowFdroid"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="F-Droid"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_fdroid" />
+
+                    <ImageButton
+                        android:id="@+id/btnFollowThreads"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="حساب Threads"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_threads" />
+
+                </LinearLayout>
 
             </LinearLayout>
 

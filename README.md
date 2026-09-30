@@ -20,6 +20,7 @@
 - ✓ التطبيق خفيف جداً وسريع
 - ✓ التطبيق لا يجمع بياناتك الخاصة
 - ✓ التطبيق يحتفظ بسجل الأسعار لآخر 60 يوم
+- ✓ التطبيق مفتوح المصدر
 
 ## حقوق الاستخدام
 
@@ -64,5 +65,7 @@
 - [TikTok](https://tiktok.com/@borsatdinari)
 - [GitHub](https://github.com/techmohammed/Borsat-Dinari)
 - [Email](mailto:BorsatDinari@gmail.com)
+- F-Droid (قريباً)
+- [Threads](https://www.threads.com/@borsatdinari)
 
 ---

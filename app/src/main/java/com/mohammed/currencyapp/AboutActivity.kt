@@ -20,6 +20,7 @@ class AboutActivity : AppCompatActivity() {
         private const val TIKTOK_URL = "https://tiktok.com/@borsatdinari"
         private const val GITHUB_URL = "https://github.com/techmohammed/Borsat-Dinari"
         private const val EMAIL_URI = "mailto:BorsatDinari@gmail.com"
+        private const val THREADS_URL = "https://www.threads.com/@borsatdinari"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +43,8 @@ class AboutActivity : AppCompatActivity() {
         binding.btnFollowEmail.setOnClickListener {
             openLink(EMAIL_URI, Intent.ACTION_SENDTO)
         }
+        // F-Droid: بدون رابط حالياً (لسا التطبيق مو منشور هناك)، فبدون click listener عمداً.
+        binding.btnFollowThreads.setOnClickListener { openLink(THREADS_URL) }
 
         checkForUpdate(binding)
     }

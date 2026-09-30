@@ -226,12 +226,25 @@ object TelegramScraperRepository {
         val params = mutableListOf<String>()
         if (query != null) params += "q=" + java.net.URLEncoder.encode(query, "UTF-8")
         if (beforeId != null) params += "before=$beforeId"
+        // كسر التخزين المؤقت بس للصفحة الحالية/الحية (آخر الأسعار، وبحث
+        // فحص التحديث) — هذا المحتوى يتغير باستمرار ولازم يوصلنا طازة.
+        // صفحات الهيستوري القديمة (beforeId != null) ما نلمسها: محتواها
+        // ثابت ما يتغير أبداً، فكسر الكاش هناك يبطّئ الباكفيل من غير أي
+        // فايدة (يجبر تليگرام يعيد نفس الصفحة من الأصل كل مرة بدل ما
+        // ياخذها من كاش سريع جاهز).
+        val isLivePage = beforeId == null
+        if (isLivePage) params += "_=" + System.currentTimeMillis()
         val suffix = if (params.isEmpty()) "" else "?" + params.joinToString("&")
         val url = URL("https://t.me/s/$username$suffix")
         val conn = url.openConnection() as HttpURLConnection
         conn.connectTimeout = 8000
         conn.readTimeout = 8000
         conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android)")
+        if (isLivePage) {
+            conn.useCaches = false
+            conn.setRequestProperty("Cache-Control", "no-cache, no-store")
+            conn.setRequestProperty("Pragma", "no-cache")
+        }
         val html = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
         conn.disconnect()
         return html
