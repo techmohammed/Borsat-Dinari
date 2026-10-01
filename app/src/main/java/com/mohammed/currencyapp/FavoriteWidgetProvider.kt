@@ -6,135 +6,264 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.widget.RemoteViews
+import java.util.Calendar
+import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * ودجت الشاشة الرئيسية: صف وحيد يعرض بورصة المفضلة (اسم + سعر + علم)، مع
- * زر تحديث يدوي أعلى يمين العلم يحدّث هذه البورصة وحدها (مو كل القائمة)،
- * وتحديث تلقائي إضافي كل نص ساعة عبر WidgetRefreshScheduler.
+ * ودجت الشاشة الرئيسية 4×2: يعرض أول 3 مفضلات — الأولى ببطاقة كبيرة (علم + اسم +
+ * سعر + مقدار التغيير)، والثانية والثالثة ببطاقتين صغيرتين تحتها. لون كل بطاقة
+ * حسب اتجاه السعر (أخضر/أحمر/رصاصي فاتح). أعلى الودجت: اسم البورصة، وقت آخر
+ * تحديث، وزر تحديث يدوي يحدّث المفضلات الظاهرة (مو كل القائمة)، وتحديث تلقائي
+ * كل نص ساعة عبر WidgetRefreshScheduler (منبه واحد خفيف بدون إيقاظ الجهاز).
  *
  * لا يوجد أي عملية دائمة بالخلفية: أندرويد يشغّل هذا الـ Provider فقط لحظة
  * إضافة الودجت، أو الضغط على زر التحديث، أو عند المنبه الساعي — وبكل مرة
- * يرسم القيمة المحفوظة بالكاش فوراً (بدون انتظار شبكة)، ثم يسوي طلب شبكة
- * واحد مستهدف لبورصة وحدة بالخلفية ويحدّث الودجت بنتيجته.
+ * يرسم القيم المحفوظة بالكاش فوراً (بدون انتظار شبكة)، ثم يسوي طلب شبكة
+ * مستهدف لكل مفضلة بالخلفية ويحدّث الودجت بنتيجتها.
  */
 class FavoriteWidgetProvider : AppWidgetProvider() {
 
     companion object {
         const val ACTION_REFRESH = "com.mohammed.currencyapp.ACTION_WIDGET_REFRESH"
 
-        private fun buildRemoteViews(context: Context, item: PriceItem?, favoriteKey: String): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.widget_favorite_price)
-            val meta = WidgetPriceProvider.metaFor(favoriteKey)
+        private class CardIds(
+            val card: Int, val flag: Int, val name: Int, val unit: Int,
+            val price: Int, val deltaRow: Int, val arrow: Int, val delta: Int
+        )
 
-            views.setTextViewText(R.id.widgetName, item?.name ?: meta?.name ?: "—")
-            views.setTextViewText(R.id.widgetPrice, item?.price ?: "—")
-            views.setTextViewText(R.id.widgetUnit, item?.unit ?: "")
+        // الودجت الكبير 4×2: ثلاث بطاقات (أول 3 مفضلات).
+        private val CARDS = listOf(
+            CardIds(R.id.widgetCard1, R.id.widgetFlag1, R.id.widgetName1, R.id.widgetUnit1,
+                R.id.widgetPrice1, R.id.widgetDeltaRow1, R.id.widgetDeltaArrow1, R.id.widgetDelta1),
+            CardIds(R.id.widgetCard2, R.id.widgetFlag2, R.id.widgetName2, R.id.widgetUnit2,
+                R.id.widgetPrice2, R.id.widgetDeltaRow2, R.id.widgetDeltaArrow2, R.id.widgetDelta2),
+            CardIds(R.id.widgetCard3, R.id.widgetFlag3, R.id.widgetName3, R.id.widgetUnit3,
+                R.id.widgetPrice3, R.id.widgetDeltaRow3, R.id.widgetDeltaArrow3, R.id.widgetDelta3)
+        )
 
-            val badgeRes = when (item?.trend) {
-                Trend.UP -> R.drawable.bg_badge_up
-                Trend.DOWN -> R.drawable.bg_badge_down
-                else -> R.drawable.bg_badge
-            }
-            views.setInt(R.id.widgetPrice, "setBackgroundResource", badgeRes)
+        // الودجت الصغير 4×1: بطاقة وحدة (أول مفضلة).
+        private val SMALL_CARD = CardIds(
+            R.id.smallCard, R.id.smallFlag, R.id.smallName, R.id.smallUnit,
+            R.id.smallPrice, R.id.smallDeltaRow, R.id.smallDeltaArrow, R.id.smallDelta
+        )
+
+        private fun displayPrice(raw: String?): String = raw?.removeSuffix(" د.ع") ?: "—"
+
+        /** وقت بنظام 12 ساعة مع ص/م، مثال: 10:45 م */
+        private fun formatTime12(millis: Long): String {
+            val cal = Calendar.getInstance().apply { timeInMillis = millis }
+            var hour = cal.get(Calendar.HOUR)
+            if (hour == 0) hour = 12
+            val suffix = if (cal.get(Calendar.AM_PM) == Calendar.AM) "ص" else "م"
+            return String.format(Locale.US, "%d:%02d %s", hour, cal.get(Calendar.MINUTE), suffix)
+        }
+
+        private fun fillCard(
+            context: Context, views: RemoteViews, ids: CardIds, key: String, item: PriceItem?
+        ) {
+            val meta = WidgetPriceProvider.metaFor(key)
+            views.setViewVisibility(ids.card, View.VISIBLE)
+            views.setTextViewText(ids.name, item?.name ?: meta?.name ?: "—")
+            views.setTextViewText(ids.unit, item?.unit ?: "")
+            views.setTextViewText(ids.price, displayPrice(item?.price))
+
+            views.setInt(
+                ids.card, "setBackgroundResource",
+                when (item?.trend) {
+                    Trend.UP -> R.drawable.bg_widget_card_up
+                    Trend.DOWN -> R.drawable.bg_widget_card_down
+                    else -> R.drawable.bg_widget_card_flat
+                }
+            )
 
             val flagKey = item?.flagDrawable ?: meta?.flag
             val flagRes = flagKey?.let {
-                context.resources.getIdentifier("row_bg_$it", "drawable", context.packageName)
+                context.resources.getIdentifier("flag_$it", "drawable", context.packageName)
             } ?: 0
-            if (flagRes != 0) {
-                views.setImageViewResource(R.id.widgetFlagBg, flagRes)
-            }
+            if (flagRes != 0) views.setImageViewResource(ids.flag, flagRes)
 
-            // فتح التطبيق عند الضغط على أي مكان بالودجت غير زر التحديث.
-            val openAppPending = PendingIntent.getActivity(
-                context, 0, Intent(context, MainActivity::class.java),
+            // مقدار التغيير + مثلث (نفس منطق الصفحة الرئيسية). المستقر/بدون تغيير = مخفي.
+            val amount = if (item != null && item.trend != Trend.FLAT) {
+                PriceDelta.absText(context, item.cityKey ?: item.name)
+            } else null
+            if (amount == null) {
+                views.setViewVisibility(ids.deltaRow, View.INVISIBLE)
+            } else {
+                views.setViewVisibility(ids.deltaRow, View.VISIBLE)
+                if (item?.trend == Trend.UP) {
+                    views.setImageViewResource(ids.arrow, R.drawable.ic_tri_up)
+                    views.setTextViewText(ids.delta, "+$amount")
+                    views.setTextColor(ids.delta, Color.parseColor("#1E9E46"))
+                } else {
+                    views.setImageViewResource(ids.arrow, R.drawable.ic_tri_down)
+                    views.setTextViewText(ids.delta, "-$amount")
+                    views.setTextColor(ids.delta, Color.parseColor("#E0312D"))
+                }
+            }
+        }
+
+        private fun placeholderCard(views: RemoteViews, ids: CardIds) {
+            views.setViewVisibility(ids.card, View.VISIBLE)
+            views.setTextViewText(ids.name, "اختر مفضلة")
+            views.setTextViewText(ids.unit, "اضغط ☆ بالتطبيق")
+            views.setTextViewText(ids.price, "—")
+            views.setViewVisibility(ids.deltaRow, View.INVISIBLE)
+            views.setInt(ids.card, "setBackgroundResource", R.drawable.bg_widget_card_flat)
+        }
+
+        private fun openAppPending(context: Context): PendingIntent = PendingIntent.getActivity(
+            context, 0, Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        private fun refreshPending(context: Context, target: Class<*>, requestCode: Int): PendingIntent =
+            PendingIntent.getBroadcast(
+                context, requestCode,
+                Intent(context, target).apply { action = ACTION_REFRESH },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            views.setOnClickPendingIntent(R.id.widgetRoot, openAppPending)
 
-            // زر التحديث اليدوي: يحدّث بورصة المفضلة وحدها.
-            val refreshIntent = Intent(context, FavoriteWidgetProvider::class.java).apply {
-                action = ACTION_REFRESH
+        private fun buildLargeViews(
+            context: Context, keys: List<String>, items: List<PriceItem?>
+        ): RemoteViews {
+            val views = RemoteViews(context.packageName, R.layout.widget_favorite_price)
+
+            val last = LastUpdateStore.load(context)
+            views.setTextViewText(R.id.widgetUpdateTime, if (last != null) formatTime12(last) else "—")
+
+            if (keys.isEmpty()) {
+                placeholderCard(views, CARDS[0])
+                views.setViewVisibility(CARDS[1].card, View.GONE)
+                views.setViewVisibility(CARDS[2].card, View.GONE)
+            } else {
+                for ((i, ids) in CARDS.withIndex()) {
+                    if (i < keys.size) fillCard(context, views, ids, keys[i], items.getOrNull(i))
+                    else views.setViewVisibility(ids.card, View.GONE)
+                }
             }
-            val refreshPending = PendingIntent.getBroadcast(
-                context, 1, refreshIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widgetRefreshButton, refreshPending)
+            views.setViewVisibility(R.id.widgetSmallRow, if (keys.size >= 2) View.VISIBLE else View.GONE)
 
+            views.setOnClickPendingIntent(R.id.widgetRoot, openAppPending(context))
+            views.setOnClickPendingIntent(
+                R.id.widgetRefreshButton, refreshPending(context, FavoriteWidgetProvider::class.java, 1)
+            )
             return views
         }
 
-        private fun currentWidgetIds(context: Context): IntArray {
-            val manager = AppWidgetManager.getInstance(context)
-            return manager.getAppWidgetIds(ComponentName(context, FavoriteWidgetProvider::class.java))
+        private fun buildSmallViews(
+            context: Context, keys: List<String>, items: List<PriceItem?>
+        ): RemoteViews {
+            val views = RemoteViews(context.packageName, R.layout.widget_favorite_small)
+            if (keys.isEmpty()) placeholderCard(views, SMALL_CARD)
+            else fillCard(context, views, SMALL_CARD, keys[0], items.getOrNull(0))
+
+            views.setOnClickPendingIntent(R.id.widgetRoot, openAppPending(context))
+            views.setOnClickPendingIntent(
+                R.id.smallRefreshButton, refreshPending(context, FavoriteWidgetSmallProvider::class.java, 2)
+            )
+            return views
         }
 
-        /** يرسم كل الودجتات الحالية بآخر سعر محفوظ بالكاش فوراً (بدون شبكة). */
-        fun renderFromCache(context: Context) {
-            val ids = currentWidgetIds(context)
-            if (ids.isEmpty()) return
+        private fun idsOf(context: Context, provider: Class<*>): IntArray =
+            AppWidgetManager.getInstance(context).getAppWidgetIds(ComponentName(context, provider))
+
+        /** هل في أي ودجت (كبير أو صغير) موجود على الشاشة؟ */
+        fun hasAnyWidget(context: Context): Boolean =
+            idsOf(context, FavoriteWidgetProvider::class.java).isNotEmpty() ||
+                idsOf(context, FavoriteWidgetSmallProvider::class.java).isNotEmpty()
+
+        /** يرسم كل الودجتات (الكبيرة والصغيرة) بنفس البيانات. [firstPriceOverride]
+         * يستبدل نص سعر أول مفضلة فقط (لأنيميشن الأرقام المبعثرة). */
+        private fun pushAll(
+            context: Context, keys: List<String>, items: List<PriceItem?>, firstPriceOverride: String? = null
+        ) {
             val manager = AppWidgetManager.getInstance(context)
-            val favoriteKey = FavoriteCityStore.get(context)
-            val cached = WidgetPriceProvider.buildCachedItem(context, favoriteKey)
-            val views = buildRemoteViews(context, cached, favoriteKey)
-            for (id in ids) manager.updateAppWidget(id, views)
+
+            val largeIds = idsOf(context, FavoriteWidgetProvider::class.java)
+            if (largeIds.isNotEmpty()) {
+                val v = buildLargeViews(context, keys, items)
+                if (firstPriceOverride != null) v.setTextViewText(R.id.widgetPrice1, firstPriceOverride)
+                for (id in largeIds) manager.updateAppWidget(id, v)
+            }
+
+            val smallIds = idsOf(context, FavoriteWidgetSmallProvider::class.java)
+            if (smallIds.isNotEmpty()) {
+                val v = buildSmallViews(context, keys, items)
+                if (firstPriceOverride != null) v.setTextViewText(R.id.smallPrice, firstPriceOverride)
+                for (id in smallIds) manager.updateAppWidget(id, v)
+            }
+        }
+
+        /** يرسم كل الودجتات الحالية بآخر أسعار محفوظة بالكاش فوراً (بدون شبكة). */
+        fun renderFromCache(context: Context) {
+            if (!hasAnyWidget(context)) return
+            val keys = FavoriteCityStore.getAll(context)
+            val items = keys.map { WidgetPriceProvider.buildCachedItem(context, it) }
+            pushAll(context, keys, items)
         }
 
         /**
-         * يجيب سعر جديد فعلي لبورصة المفضلة وحدها، ويحدّث كل الودجتات بنتيجته.
-         * لو animate=true (زر التحديث اليدوي فقط)، يعرض تأثير "عداد تصاعدي
-         * مبعثر" (أرقام عشوائية تستقر تدريجياً على الرقم الصحيح) قبل ما
-         * يثبّت على السعر النهائي — نفس فكرة ملف الـ HTML المرفق، بس منفّذة
-         * بتحديثات RemoteViews متكررة بدل JavaScript (الودجت ما تشغّل جافاسكربت).
+         * يجيب أسعار جديدة فعلية للمفضلات (لحد 3)، ويحدّث كل الودجتات بنتيجتها.
+         * لو animate=true (زر التحديث اليدوي والتحديث الساعي)، سعر أول مفضلة يطلع
+         * بتأثير "عداد مبعثر" (أرقام عشوائية تستقر تدريجياً على الرقم الصحيح)
+         * بتحديثات RemoteViews متكررة بدل JavaScript.
          */
         fun refreshFavorite(context: Context, animate: Boolean = false, onDone: () -> Unit = {}) {
-            val ids = currentWidgetIds(context)
-            if (ids.isEmpty()) {
+            if (!hasAnyWidget(context)) {
                 onDone()
                 return
             }
-            val favoriteKey = FavoriteCityStore.get(context)
-            WidgetPriceProvider.fetchOne(context, favoriteKey) { item ->
-                if (animate) {
-                    animateReveal(context, ids, item, favoriteKey, onDone)
-                } else {
-                    val manager = AppWidgetManager.getInstance(context)
-                    val views = buildRemoteViews(context, item, favoriteKey)
-                    for (id in ids) manager.updateAppWidget(id, views)
-                    onDone()
+            val keys = FavoriteCityStore.getAll(context)
+            if (keys.isEmpty()) {
+                renderFromCache(context)
+                onDone()
+                return
+            }
+            val results = arrayOfNulls<PriceItem>(keys.size)
+            val remaining = AtomicInteger(keys.size)
+            keys.forEachIndexed { i, key ->
+                WidgetPriceProvider.fetchOne(context, key) { item ->
+                    results[i] = item ?: WidgetPriceProvider.buildCachedItem(context, key)
+                    if (item != null) {
+                        WidgetRefreshScheduler.markRefreshed(context)
+                        LastUpdateStore.save(context, System.currentTimeMillis())
+                    }
+                    if (remaining.decrementAndGet() == 0) {
+                        val items = results.toList()
+                        if (animate) animateReveal(context, keys, items, onDone)
+                        else {
+                            pushAll(context, keys, items)
+                            onDone()
+                        }
+                    }
                 }
             }
         }
 
         /**
-         * يعيد رسم الودجت عدة مرات متتالية (كل ~45ms، لمدة ~1.4 ثانية)، وبكل
-         * مرة يستبدل خانات الأرقام فقط بسعر النص النهائي بأرقام عشوائية
-         * تقترب تدريجياً من الرقم الحقيقي حتى تستقر عليه بآخر إطار — بالضبط
-         * نفس منطق عداد ملف الـ HTML (قيمة "حقيقية" متصاعدة تُقارن رقماً
-         * برقم مع الهدف، وبعد تجاوز 60% من المدة أي خانة تتطابق تثبت وتبقى).
-         * الفواصل والحروف (مثل "," و"د.ع" أو "يورو") تبقى ثابتة بمكانها،
-         * فقط الأرقام [0-9] بالنص هي اللي تتحرك.
+         * يعيد رسم الودجت عدة مرات متتالية (كل ~45ms، لمدة ~1.4 ثانية)، وبكل مرة
+         * يستبدل أرقام سعر أول مفضلة بأرقام عشوائية تقترب تدريجياً من الرقم
+         * الحقيقي حتى تستقر عليه بآخر إطار. الفواصل والحروف تبقى ثابتة.
          */
         private fun animateReveal(
             context: Context,
-            ids: IntArray,
-            item: PriceItem?,
-            favoriteKey: String,
+            keys: List<String>,
+            items: List<PriceItem?>,
             onDone: () -> Unit
         ) {
-            val manager = AppWidgetManager.getInstance(context)
-            val finalPrice = item?.price
+            val finalPrice = items.firstOrNull()?.price?.removeSuffix(" د.ع")
             val plan = finalPrice?.let { DigitRevealAnimator.plan(it) }
 
             // لا يوجد سعر جديد فعلي (فشل الاتصال مثلاً) أو نص بدون أرقام —
             // نعرض النتيجة مباشرة بدون أنيميشن.
             if (finalPrice == null || plan == null) {
-                val views = buildRemoteViews(context, item, favoriteKey)
-                for (id in ids) manager.updateAppWidget(id, views)
+                pushAll(context, keys, items)
                 onDone()
                 return
             }
@@ -147,10 +276,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
 
             fun renderFrame() {
                 step++
-                val views = buildRemoteViews(context, item, favoriteKey)
-                views.setTextViewText(R.id.widgetPrice, DigitRevealAnimator.frameText(finalPrice, plan, step, totalSteps))
-                for (id in ids) manager.updateAppWidget(id, views)
-
+                pushAll(context, keys, items, DigitRevealAnimator.frameText(finalPrice, plan, step, totalSteps))
                 if (step < totalSteps) {
                     handler.postDelayed(::renderFrame, frameRate)
                 } else {
@@ -162,6 +288,9 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        // أندرويد يستدعي onUpdate بعد إعادة تشغيل الهاتف وبعد تحديث التطبيق، والمنبهات
+        // تنمسح بالحالتين — فنعيد الجدولة هنا (آمنة للتكرار، ما تسوي منبه ثاني).
+        WidgetRefreshScheduler.schedule(context)
         renderFromCache(context)
         val pendingResult = goAsync()
         refreshFavorite(context) { pendingResult.finish() }
@@ -177,6 +306,8 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
                 refreshFavorite(context, animate = true) { pendingResult.finish() }
             }
             WidgetRefreshScheduler.ACTION_HOURLY_REFRESH -> {
+                // تحديث تلقائي: نتخطاه لو ماكو نت أو تحدّث قبل دقايق (توفير بطارية وشبكة).
+                if (!WidgetRefreshScheduler.shouldAutoRefresh(context)) return
                 val pendingResult = goAsync()
                 refreshFavorite(context, animate = true) { pendingResult.finish() }
             }
@@ -190,6 +321,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
 
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
-        WidgetRefreshScheduler.cancel(context)
+        // نوقف المنبه فقط لو ما بقى أي ودجت (كبير أو صغير) على الشاشة.
+        if (!hasAnyWidget(context)) WidgetRefreshScheduler.cancel(context)
     }
 }

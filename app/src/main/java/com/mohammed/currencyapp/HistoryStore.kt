@@ -23,6 +23,11 @@ data class HistoryEntry(val id: Long, val price: String, val trend: Trend, val t
 private class HistoryDbHelper(context: Context) :
     SQLiteOpenHelper(context.applicationContext, DB_NAME, null, DB_VERSION) {
 
+    init {
+        // WAL: القراءة (فتح الصفحة) ما تتعطل أثناء كتابة جلب القناة بالخلفية.
+        setWriteAheadLoggingEnabled(true)
+    }
+
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """CREATE TABLE $TABLE (
@@ -49,12 +54,23 @@ private class HistoryDbHelper(context: Context) :
  */
 object HistoryStore {
 
+    // اتصال واحد مشترك للتطبيق كله (بدل فتح وإغلاق قاعدة البيانات بكل عملية)،
+    // لأن جلب القناة يكتب من خيط الخلفية بينما الشاشات تقرأ من الخيط الرئيسي.
+    @Volatile private var helper: HistoryDbHelper? = null
+
+    private fun db(context: Context): SQLiteDatabase {
+        val h = helper ?: synchronized(this) {
+            helper ?: HistoryDbHelper(context.applicationContext).also { helper = it }
+        }
+        return h.writableDatabase
+    }
+
     fun record(context: Context, key: String, price: String, trend: Trend) {
         record(context, key, price, trend, System.currentTimeMillis())
     }
 
     private fun record(context: Context, key: String, price: String, trend: Trend, timestampMillis: Long) {
-        val db = HistoryDbHelper(context).writableDatabase
+        val db = db(context)
         val values = ContentValues().apply {
             put(COL_KEY, key)
             put(COL_PRICE, price)
@@ -64,7 +80,6 @@ object HistoryStore {
         db.insert(TABLE, null, values)
         val now = System.currentTimeMillis()
         db.delete(TABLE, "$COL_TIME < ?", arrayOf((now - HISTORY_RETENTION_MS).toString()))
-        db.close()
     }
 
     // نتجاهل أي نقطة جديدة توصل ضمن هالمدى (بالميلي ثانية) من نقطة موجودة
@@ -100,7 +115,7 @@ object HistoryStore {
         val sorted = candidates.sortedBy { it.first }
         val fromMillis = sorted.first().first
         val toMillis = sorted.last().first
-        val db = HistoryDbHelper(context).writableDatabase
+        val db = db(context)
 
         var lastDigits: String? = null
         db.query(
@@ -142,13 +157,107 @@ object HistoryStore {
         }
         val now = System.currentTimeMillis()
         db.delete(TABLE, "$COL_TIME < ?", arrayOf((now - HISTORY_RETENTION_MS).toString()))
-        db.close()
         return inserted
+    }
+
+    /**
+     * يدمج دفعة منشورات متصلة من القناة (HistorySync) بالسجل المحلي بعملية وحدة
+     * (transaction) — كتابة مئات النقاط بعملية وحدة أسرع بكثير من كتابة كل
+     * نقطة لحالها (كل كتابة منفصلة تنتظر القرص).
+     *
+     * [pointsByKey]: لكل مدينة/عملة نقاطها (توقيت، نص السعر) بترتيب زمني.
+     * [tMax]: توقيت أحدث منشور بالدفعة. لو [replaceToEnd] = true (الدفعة
+     * الأحدث) نمسح كل نقاط المفتاح من أول نقطة بالدفعة وللآخر (فيها النقاط
+     * اللي سجلها التطبيق لحظياً، تتبدل بنقاط القناة الأدق)، وإلا نمسح فقط
+     * ضمن مدى الدفعة. نخزن بس النقاط اللي السعر فيها تغيّر فعلاً. وللدفعات
+     * الأقدم نصلّح أول نقطة بعد الدفعة (اتجاهها، أو نحذفها لو نفس السعر).
+     * المفتاح اللي ما جانت له نقاط بالدفعة ما نلمسه.
+     */
+    fun mergeChunk(
+        context: Context,
+        pointsByKey: Map<String, List<Pair<Long, String>>>,
+        tMax: Long,
+        replaceToEnd: Boolean
+    ) {
+        val db = db(context)
+        db.beginTransaction()
+        try {
+            for ((key, points) in pointsByKey) {
+                if (points.isEmpty()) continue
+                val start = points.first().first
+
+                var lastDigits: String? = null
+                db.query(
+                    TABLE, arrayOf(COL_PRICE),
+                    "$COL_KEY = ? AND $COL_TIME < ?", arrayOf(key, start.toString()),
+                    null, null, "$COL_TIME DESC", "1"
+                ).use { if (it.moveToFirst()) lastDigits = digitsOf(it.getString(0)) }
+
+                if (replaceToEnd) {
+                    db.delete(TABLE, "$COL_KEY = ? AND $COL_TIME >= ?", arrayOf(key, start.toString()))
+                } else {
+                    db.delete(
+                        TABLE, "$COL_KEY = ? AND $COL_TIME BETWEEN ? AND ?",
+                        arrayOf(key, start.toString(), tMax.toString())
+                    )
+                }
+
+                val values = ContentValues()
+                for ((ts, priceText) in points) {
+                    val digits = digitsOf(priceText) ?: continue
+                    if (digits == lastDigits) continue
+                    values.clear()
+                    values.put(COL_KEY, key)
+                    values.put(COL_PRICE, priceText)
+                    values.put(COL_TREND, trendOf(lastDigits, digits).name)
+                    values.put(COL_TIME, ts)
+                    db.insert(TABLE, null, values)
+                    lastDigits = digits
+                }
+
+                val endDigits = lastDigits
+                if (!replaceToEnd && endDigits != null) {
+                    var nextId = -1L
+                    var nextDigits: String? = null
+                    db.query(
+                        TABLE, arrayOf(COL_ID, COL_PRICE),
+                        "$COL_KEY = ? AND $COL_TIME > ?", arrayOf(key, tMax.toString()),
+                        null, null, "$COL_TIME ASC", "1"
+                    ).use {
+                        if (it.moveToFirst()) { nextId = it.getLong(0); nextDigits = digitsOf(it.getString(1)) }
+                    }
+                    val nd = nextDigits
+                    if (nextId >= 0 && nd != null) {
+                        if (nd == endDigits) {
+                            db.delete(TABLE, "$COL_ID = ?", arrayOf(nextId.toString()))
+                        } else {
+                            val fix = ContentValues().apply { put(COL_TREND, trendOf(endDigits, nd).name) }
+                            db.update(TABLE, fix, "$COL_ID = ?", arrayOf(nextId.toString()))
+                        }
+                    }
+                }
+            }
+            db.delete(TABLE, "$COL_TIME < ?", arrayOf((System.currentTimeMillis() - HISTORY_RETENTION_MS).toString()))
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    private fun trendOf(oldDigits: String?, newDigits: String): Trend {
+        val oldVal = oldDigits?.toLongOrNull()
+        val newVal = newDigits.toLongOrNull()
+        return when {
+            oldVal == null || newVal == null -> Trend.FLAT
+            newVal > oldVal -> Trend.UP
+            newVal < oldVal -> Trend.DOWN
+            else -> Trend.FLAT
+        }
     }
 
     /** يرجع سجلات مدينة/عملة معينة بين تاريخين (شامل الطرفين)، الأحدث أولاً. */
     fun query(context: Context, key: String, fromMillis: Long, toMillis: Long): List<HistoryEntry> {
-        val db = HistoryDbHelper(context).readableDatabase
+        val db = db(context)
         val cursor = db.query(
             TABLE,
             arrayOf(COL_ID, COL_PRICE, COL_TREND, COL_TIME),
@@ -167,27 +276,24 @@ object HistoryStore {
                 result.add(HistoryEntry(id, price, trend, time))
             }
         }
-        db.close()
         return result
     }
 
     /** يحذف سجل هيستوري وحد بمعرفه (يُستخدم من زر سلة المهملات بكل صف — حذف
      * فوري بلا رسالة تأكيد، حسب طلب المستخدم). */
     fun delete(context: Context, id: Long) {
-        val db = HistoryDbHelper(context).writableDatabase
+        val db = db(context)
         db.delete(TABLE, "$COL_ID = ?", arrayOf(id.toString()))
-        db.close()
     }
 
     /** يحذف كل سجلات بورصة/عملة معينة ضمن فترة محددة (من التقويم بصفحة
      * الهيستوري) — زر الحذف بالترويسة يمسح الفترة المعروضة حالياً كاملة
      * بضغطة وحدة، بلا رسالة تأكيد، حسب طلب المستخدم. */
     fun deleteRange(context: Context, key: String, fromMillis: Long, toMillis: Long) {
-        val db = HistoryDbHelper(context).writableDatabase
+        val db = db(context)
         db.delete(
             TABLE, "$COL_KEY = ? AND $COL_TIME BETWEEN ? AND ?",
             arrayOf(key, fromMillis.toString(), toMillis.toString())
         )
-        db.close()
     }
 }

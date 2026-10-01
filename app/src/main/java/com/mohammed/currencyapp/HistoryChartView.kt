@@ -2,9 +2,10 @@ package com.mohammed.currencyapp
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.DashPathEffect
+import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Shader
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -12,83 +13,120 @@ import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.ColorUtils
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.pow
 
 /**
- * مخطط بياني بسيط (خط متعرج) لتطور سعر بورصة/عملة عبر الوقت — مرسوم يدوياً
- * على Canvas مباشرة (بدون أي مكتبة رسوم بيانية خارجية، حتى ما نحتاج نضيف
- * تبعية جديدة بالمشروع). المحور الأفقي = الوقت، المحور العمودي = السعر.
- * كل قطعة من الخط بين نقطتين متتاليتين تلوّن أخضر لو السعر صاعد، أحمر لو
- * نازل، رصاصي لو ثابت — بنفس ألوان الاتجاه المستخدمة بباقي التطبيق
- * (trendUp / trendDown / trendFlat).
+ * مخطط خطي لتطور سعر بورصة/عملة عبر الوقت، مرسوم يدوياً على Canvas (بدون
+ * مكتبة رسوم خارجية). الشكل: شبكة خفيفة، تسميات سعر "مدوّرة" يسار، تسميات
+ * وقت أسفل (ساعات لو الفترة يوم، وتواريخ يوم/شهر لو أكثر)، خط ونقاط بلون
+ * اتجاه الفترة كلها (أخضر لو السعر بآخر الفترة أعلى من أولها، أحمر لو أوطى،
+ * رصاصي لو نفسه) وتحته تعبئة متدرجة بنفس اللون.
+ *
+ * المحور الأفقي زمني حقيقي (مو متباعد بالتساوي بين النقاط): الموقع يتحدد
+ * بوقت كل نقطة ضمن الفترة المعروضة، حتى تبين الفراغات الزمنية الفعلية.
  */
 class HistoryChartView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
 
-    // (توقيت، سعر) — دايماً بترتيب تصاعدي بالوقت (الأقدم أولاً يساراً، زي المخطط المرجعي).
+    // (توقيت، سعر) بترتيب تصاعدي بالوقت.
     private var points: List<Pair<Long, Double>> = emptyList()
+    private var axisFrom = 0L
+    private var axisTo = 1L
+    // true لو الفترة أكثر من يوم: نعرض معدل كل يوم كنقطة وحدة (موضوعة على بداية اليوم).
+    private var dailyMode = false
 
-    private val timeFormat = SimpleDateFormat("hh:mm a", Locale.US)
+    private val dayMs = 24L * 60 * 60 * 1000
+    private val hourMs = 60L * 60 * 1000
+    private val dateFormat = SimpleDateFormat("d/M", Locale.US)
+    private val hourFormat = SimpleDateFormat("HH:mm", Locale.US)
 
-    private val colorUp = ContextCompat.getColor(context, R.color.trendUp)
-    private val colorDown = ContextCompat.getColor(context, R.color.trendDown)
+    private val colorUp = ContextCompat.getColor(context, R.color.deltaUp)
+    private val colorDown = ContextCompat.getColor(context, R.color.deltaDown)
     private val colorFlat = ContextCompat.getColor(context, R.color.trendFlat)
-    private val colorAxisText = ContextCompat.getColor(context, R.color.textSecondary)
+    private val colorAxisText = ContextCompat.getColor(context, R.color.chartAxisText)
+    private val colorGrid = ContextCompat.getColor(context, R.color.chartGrid)
+    private val colorRing = ContextCompat.getColor(context, R.color.cardWhite)
     private val labelTypeface = ResourcesCompat.getFont(context, R.font.cairo_regular)
 
     private fun dp(value: Float): Float = value * resources.displayMetrics.density
 
+    private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = colorGrid
+        strokeWidth = dp(1f)
+    }
+    private val axisTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = colorAxisText
+        textSize = dp(11.5f)
+        typeface = labelTypeface
+    }
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = dp(2.5f)
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
     }
+    // بدون anti-alias عمداً: تعبئة كل قطعة (أخضر/أحمر) مضلع منفصل، وبدون AA ما تبين
+    // خطوط رفيعة بين القطع المتجاورة (حافة الخط العلوية يغطيها الخط نفسه).
+    private val fillPaint = Paint().apply { style = Paint.Style.FILL }
     private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#33000000")
-        strokeWidth = dp(1f)
-        pathEffect = DashPathEffect(floatArrayOf(dp(4f), dp(4f)), 0f)
+    private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = colorRing
     }
-    private val axisTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = colorAxisText
-        textSize = dp(11f)
-        typeface = labelTypeface
-    }
-    private val avgLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = dp(1.3f)
-        color = Color.parseColor("#9575CD")
-        pathEffect = DashPathEffect(floatArrayOf(dp(8f), dp(5f)), 0f)
-    }
-    private val avgLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#9575CD")
-        textSize = dp(10.5f)
-        typeface = labelTypeface
-    }
-    // النص عبارة جملتين، فلازم TextPaint مع StaticLayout حتى يلتف
-    // (wrap) تلقائياً بعرض المخطط المتاح بدل سطر وحد يطلع خارج الشاشة —
-    // المحاذاة (توسيط) تُطبَّق عبر Layout.Alignment.ALIGN_CENTER مو
-    // Paint.textAlign، حتى ما يتعارضون مع بعض بحساب StaticLayout للعرض.
     private val emptyTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         color = colorAxisText
         textSize = dp(13f)
         typeface = labelTypeface
     }
 
+    private fun startOfDay(millis: Long): Long =
+        Calendar.getInstance().apply {
+            timeInMillis = millis
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
     /**
-     * يستقبل سجلات الهيستوري (بأي ترتيب)، يرتبها تصاعدياً بالوقت، ويحلل
-     * القيمة الرقمية من نص كل سعر. يدعم كل صيغ الأسعار المختلفة بالتطبيق
-     * ("156,650 د.ع"، "115.10 دولار"، "يورو 115.10"، "4,859"...) لأنه بس
-     * يلتقط أول رقم موجود بالنص، بغض النظر عن مكان النص المحيط به.
+     * يستقبل سجلات الهيستوري (بأي ترتيب) والفترة المعروضة [fromMillis]..[toMillis].
+     * القيمة الرقمية تُلتقط من أول رقم بنص السعر ("156,650 د.ع"، "115.10"...).
+     *
+     * لو الفترة أكثر من يوم: نجمع أسعار كل يوم بمعدل واحد ونرسم نقطة وحدة لكل يوم
+     * (على بداية اليوم، تحت تسمية تاريخه) بدل عشرات النقاط المتزاحمة. لو الفترة
+     * يوم واحد نرسم كل النقاط بوقتها الفعلي.
      */
-    fun setEntries(entries: List<HistoryEntry>) {
-        points = entries
+    fun setEntries(entries: List<HistoryEntry>, fromMillis: Long, toMillis: Long) {
+        val raw = entries
             .sortedBy { it.timestampMillis }
             .mapNotNull { entry -> parsePriceValue(entry.price)?.let { entry.timestampMillis to it } }
+        val now = System.currentTimeMillis()
+        val fromDay = startOfDay(fromMillis)
+        val toDay = startOfDay(max(min(toMillis, now), fromMillis))
+        dailyMode = toDay > fromDay
+
+        if (dailyMode) {
+            val byDay = LinkedHashMap<Long, MutableList<Double>>()
+            for ((t, v) in raw) byDay.getOrPut(startOfDay(t)) { mutableListOf() }.add(v)
+            points = byDay.map { (day, values) -> day to values.average() }.sortedBy { it.first }
+            axisFrom = fromDay
+            axisTo = toDay
+        } else {
+            points = raw
+            axisFrom = fromMillis
+            axisTo = max(min(toMillis, now), raw.lastOrNull()?.first ?: toMillis)
+        }
+        if (axisTo <= axisFrom) axisTo = axisFrom + 1
         invalidate()
     }
 
@@ -97,11 +135,8 @@ class HistoryChartView @JvmOverloads constructor(
         return match.value.replace(",", "").toDoubleOrNull()
     }
 
-    /** رسالة الحالة الفاضية (أقل من نقطتين): توضح للمستخدم ليش المخطط
-     * فاضي وشلون يحله (توسيع الفترة بالتقويم ثم التنزيل)، بدل رسالة قصيرة
-     * غامضة. تُرسم بـStaticLayout حتى تلتف تلقائياً على عرض المخطط. */
     private fun drawEmptyMessage(canvas: Canvas, w: Float, h: Float) {
-        val message = "لا توجد بيانات كافية لرسم المخطط التوضيحي يرجى الضغط على زر التقويم وتحديد فترة اطول ثم الضغط على زر التنزيل"
+        val message = "لا توجد بيانات كافية لرسم المخطط، جرّب فترة أطول أو اختر فترة من التقويم"
         val horizontalPadding = dp(24f)
         val layoutWidth = (w - horizontalPadding * 2).toInt().coerceAtLeast(dp(120f).toInt())
 
@@ -110,11 +145,86 @@ class HistoryChartView @JvmOverloads constructor(
             message, emptyTextPaint, layoutWidth,
             Layout.Alignment.ALIGN_CENTER, 1.2f, 0f, false
         )
-
         canvas.save()
         canvas.translate((w - layoutWidth) / 2f, h / 2f - staticLayout.height / 2f)
         staticLayout.draw(canvas)
         canvas.restore()
+    }
+
+    /** يحدد حدود المحور العمودي وخطوته بأرقام "مدوّرة" (1، 2، 2.5، 5 × 10^n). */
+    private fun niceScale(minV: Double, maxV: Double): Triple<Double, Double, Double> {
+        val rawSpan = maxV - minV
+        val span = if (rawSpan < 1e-9) max(abs(maxV) * 0.01, 1.0) else rawSpan
+        val rawStep = span / 4.0
+        val mag = 10.0.pow(floor(log10(rawStep)))
+        val norm = rawStep / mag
+        val step = mag * when {
+            norm <= 1.0 -> 1.0
+            norm <= 2.0 -> 2.0
+            norm <= 2.5 -> 2.5
+            norm <= 5.0 -> 5.0
+            else -> 10.0
+        }
+        val axisMin = floor((minV - span * 0.05) / step) * step
+        val axisMax = ceil((maxV + span * 0.05) / step) * step
+        return Triple(axisMin, axisMax, step)
+    }
+
+    private fun formatTick(v: Double, step: Double): String = when {
+        step >= 1.0 -> String.format(Locale.US, "%,d", Math.round(v))
+        step >= 0.1 -> String.format(Locale.US, "%.1f", v)
+        else -> String.format(Locale.US, "%.2f", v)
+    }
+
+    /** نقاط تسميات المحور الأفقي: ساعات لو الفترة يوم واحد، وإلا تواريخ بأيام مرتبة. */
+    private fun buildXTicks(): List<Pair<Long, String>> {
+        val span = axisTo - axisFrom
+        val out = ArrayList<Pair<Long, String>>()
+        if (!dailyMode) {
+            val stepH = when {
+                span <= 6 * hourMs -> 1
+                span <= 12 * hourMs -> 2
+                span <= 20 * hourMs -> 3
+                else -> 4
+            }
+            val cal = Calendar.getInstance().apply {
+                timeInMillis = axisFrom
+                set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }
+            // أول تسمية على أقرب ساعة من مضاعفات stepH تساوي أو تلي بداية المحور.
+            while (cal.timeInMillis < axisFrom || cal.get(Calendar.HOUR_OF_DAY) % stepH != 0) {
+                cal.add(Calendar.HOUR_OF_DAY, 1)
+            }
+            var guard = 0
+            while (cal.timeInMillis <= axisTo && guard++ < 30) {
+                out.add(cal.timeInMillis to hourFormat.format(cal.timeInMillis))
+                cal.add(Calendar.HOUR_OF_DAY, stepH)
+            }
+            if (out.isEmpty()) {
+                out.add(axisFrom to hourFormat.format(axisFrom))
+                out.add(axisTo to hourFormat.format(axisTo))
+            }
+        } else {
+            val days = Math.round(span / dayMs.toDouble()).toInt() + 1
+            val k = when {
+                days <= 7 -> 1
+                days <= 14 -> 2
+                days <= 35 -> 5
+                days <= 70 -> 10
+                else -> 15
+            }
+            val cal = Calendar.getInstance().apply {
+                timeInMillis = axisFrom
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }
+            var guard = 0
+            while (cal.timeInMillis <= axisTo && guard++ < 40) {
+                out.add(cal.timeInMillis to dateFormat.format(cal.timeInMillis))
+                cal.add(Calendar.DAY_OF_YEAR, k)
+            }
+        }
+        return out
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -128,101 +238,91 @@ class HistoryChartView @JvmOverloads constructor(
         }
 
         val prices = points.map { it.second }
-        val minPrice = prices.min()
-        val maxPrice = prices.max()
-        val range = (maxPrice - minPrice).let { if (it < 1.0) 1.0 else it }
-        // هامش 12% فوق وتحت حتى ما تلتصق النقاط بحواف المخطط.
-        val paddedMin = minPrice - range * 0.12
-        val paddedMax = maxPrice + range * 0.12
-        val paddedRange = (paddedMax - paddedMin).let { if (it <= 0.0) 1.0 else it }
-        // أسعار العملات (يورو/پاوند) صغيرة وبفاصلة عشرية، عكس أسعار المدن
-        // بالدينار (أرقام كبيرة صحيحة) — نفرّق شكل تسمية المحور العمودي تبعاً لهذا.
-        val useDecimalLabels = maxPrice < 1000.0
+        val (axisMin, axisMax, step) = niceScale(prices.min(), prices.max())
+        val axisRange = (axisMax - axisMin).let { if (it <= 0.0) 1.0 else it }
 
-        val leftPad = dp(64f)
-        val rightPad = dp(12f)
-        val topPad = dp(12f)
-        val bottomPad = dp(46f)
-
-        val chartLeft = leftPad
-        val chartRight = w - rightPad
-        val chartTop = topPad
-        val chartBottom = h - bottomPad
+        val chartLeft = dp(58f)
+        val chartRight = w - dp(22f)
+        val chartTop = dp(14f)
+        val chartBottom = h - dp(34f)
         val chartWidth = (chartRight - chartLeft).coerceAtLeast(1f)
         val chartHeight = (chartBottom - chartTop).coerceAtLeast(1f)
 
-        fun xFor(index: Int): Float =
-            chartLeft + if (points.size == 1) chartWidth / 2f
-            else chartWidth * index / (points.size - 1).toFloat()
+        fun xFor(t: Long): Float =
+            chartLeft + (chartWidth * ((t - axisFrom).toDouble() / (axisTo - axisFrom).toDouble())).toFloat()
 
         fun yFor(price: Double): Float =
-            (chartBottom - ((price - paddedMin) / paddedRange * chartHeight)).toFloat()
+            (chartBottom - ((price - axisMin) / axisRange * chartHeight)).toFloat()
 
-        // خطوط شبكة أفقية متقطعة + تسميات السعر.
-        val gridLines = 5
+        // شبكة أفقية + تسميات السعر (يسار).
         axisTextPaint.textAlign = Paint.Align.LEFT
-        for (i in 0..gridLines) {
-            val ratio = i / gridLines.toFloat()
-            val y = chartTop + chartHeight * ratio
+        val n = Math.round(axisRange / step).toInt().coerceIn(1, 12)
+        for (i in 0..n) {
+            val v = axisMin + i * step
+            val y = yFor(v)
             canvas.drawLine(chartLeft, y, chartRight, y, gridPaint)
-            val priceAtLine = paddedMax - paddedRange * ratio
-            val label = if (useDecimalLabels) String.format(Locale.US, "%.2f", priceAtLine) else String.format(Locale.US, "%,d", priceAtLine.toLong())
-            canvas.drawText(label, dp(4f), y + dp(4f), axisTextPaint)
+            canvas.drawText(formatTick(v, step), dp(6f), y + dp(4f), axisTextPaint)
         }
 
-        // خط رفيع متقطع لمتوسط السعر خلال الفترة المعروضة كاملة — يساعد
-        // المستخدم يشوف هل السعر الحالي أعلى أو أوطى من المعتاد بالفترة.
-        val avgPrice = prices.average()
-        val avgY = yFor(avgPrice)
-        canvas.drawLine(chartLeft, avgY, chartRight, avgY, avgLinePaint)
-        val avgLabel = "المتوسط " + if (useDecimalLabels) String.format(Locale.US, "%.2f", avgPrice) else String.format(Locale.US, "%,d", avgPrice.toLong())
-        avgLabelPaint.textAlign = Paint.Align.RIGHT
-        canvas.drawText(avgLabel, chartRight, avgY - dp(4f), avgLabelPaint)
+        // شبكة عمودية + تسميات الوقت (أسفل).
+        axisTextPaint.textAlign = Paint.Align.CENTER
+        for ((t, label) in buildXTicks()) {
+            val x = xFor(t)
+            canvas.drawLine(x, chartTop, x, chartBottom, gridPaint)
+            canvas.drawText(label, x, chartBottom + dp(22f), axisTextPaint)
+        }
 
-        // خط السعر المتعرج، مقسّم لقطع ملوّنة حسب الصعود/النزول بين كل نقطتين متتاليتين.
-        for (i in 0 until points.size - 1) {
-            val p1 = points[i].second
-            val p2 = points[i + 1].second
-            linePaint.color = when {
-                p2 > p1 -> colorUp
-                p2 < p1 -> colorDown
+        // لون كل قطعة حسب اتجاه السعر بين نقطتين متتاليتين (يوم لليوم اللي بعده بالفترات
+        // الطويلة): أخضر صعود، أحمر نزول، رصاصي ثابت. التعبئة تحت القطعة بنفس لونها.
+        val n2 = points.size - 1
+        val segColors = IntArray(n2) { i ->
+            val a = points[i].second
+            val b = points[i + 1].second
+            when {
+                b > a -> colorUp
+                b < a -> colorDown
                 else -> colorFlat
             }
-            canvas.drawLine(xFor(i), yFor(p1), xFor(i + 1), yFor(p2), linePaint)
+        }
+        val xs = FloatArray(points.size) { xFor(points[it].first) }
+        val ys = FloatArray(points.size) { yFor(points[it].second) }
+
+        // تدرج لكل لون: يبدأ من أعلى نقطة بالخط وينتهي شفاف عند أسفل المخطط.
+        val topY = ys.min()
+        val shaders = HashMap<Int, LinearGradient>()
+        fun shaderFor(color: Int): LinearGradient = shaders.getOrPut(color) {
+            LinearGradient(
+                0f, topY, 0f, chartBottom,
+                ColorUtils.setAlphaComponent(color, 95),
+                ColorUtils.setAlphaComponent(color, 6),
+                Shader.TileMode.CLAMP
+            )
         }
 
-        // نقطة دائرية بكل قيمة — لونها نفس لون القطعة الواصلة إليها (رمادي لأول نقطة، ما إلها سابقة).
-        for (i in points.indices) {
-            dotPaint.color = if (i == 0) {
-                colorFlat
-            } else {
-                val prev = points[i - 1].second
-                val cur = points[i].second
-                when {
-                    cur > prev -> colorUp
-                    cur < prev -> colorDown
-                    else -> colorFlat
-                }
-            }
-            canvas.drawCircle(xFor(i), yFor(points[i].second), dp(4f), dotPaint)
+        val seg = Path()
+        for (i in 0 until n2) {
+            seg.rewind()
+            seg.moveTo(xs[i], ys[i])
+            seg.lineTo(xs[i + 1], ys[i + 1])
+            seg.lineTo(xs[i + 1], chartBottom)
+            seg.lineTo(xs[i], chartBottom)
+            seg.close()
+            fillPaint.shader = shaderFor(segColors[i])
+            canvas.drawPath(seg, fillPaint)
         }
 
-        // تسميات الوقت أسفل المحور، مائلة قليلاً حتى تتسع لعدد أكبر بدون تداخل.
-        // لو النقاط كثيرة، نعرض تسمية كل نقطة N فقط حتى لا تتزاحم.
-        val approxLabelWidth = dp(70f)
-        val maxLabels = (chartWidth / approxLabelWidth).toInt().coerceAtLeast(2)
-        val step = (points.size / maxLabels).coerceAtLeast(1)
+        for (i in 0 until n2) {
+            linePaint.color = segColors[i]
+            canvas.drawLine(xs[i], ys[i], xs[i + 1], ys[i + 1], linePaint)
+        }
 
-        axisTextPaint.textAlign = Paint.Align.RIGHT
-        for (i in points.indices) {
-            if (i % step != 0 && i != points.size - 1) continue
-            val label = timeFormat.format(points[i].first)
-            val x = xFor(i)
-            val y = chartBottom + dp(16f)
-            canvas.save()
-            canvas.rotate(-30f, x, y)
-            canvas.drawText(label, x, y, axisTextPaint)
-            canvas.restore()
+        // نقاط الأسعار (لو أكثر من 31 نقطة نرسم آخر نقطة فقط حتى ما يزدحم المخطط).
+        val dotIndices = if (points.size <= 31) points.indices else (points.size - 1)..(points.size - 1)
+        val dotR = if (points.size > 14) 3.2f else 3.8f
+        for (i in dotIndices) {
+            dotPaint.color = if (i == 0) segColors[0] else segColors[i - 1]
+            canvas.drawCircle(xs[i], ys[i], dp(dotR + 1.7f), ringPaint)
+            canvas.drawCircle(xs[i], ys[i], dp(dotR), dotPaint)
         }
     }
 }

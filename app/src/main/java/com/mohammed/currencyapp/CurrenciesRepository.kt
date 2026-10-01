@@ -342,7 +342,16 @@ object CurrenciesRepository {
 
 class FxCache(context: Context) {
     private val prefs = context.getSharedPreferences("fx_cache", Context.MODE_PRIVATE)
-    fun save(code: String, value: Double) { prefs.edit().putFloat(code, value.toFloat()).apply() }
+    fun save(code: String, value: Double) {
+        val old = if (prefs.contains(code)) prefs.getFloat(code, 0f) else null
+        val newF = value.toFloat()
+        val editor = prefs.edit().putFloat(code, newF)
+        if (old != null && old != newF) editor.putFloat("${code}_delta", newF - old)
+        editor.apply()
+    }
+    /** آخر فرق سعر مسجّل (موجب = صعود، سالب = نزول) أو null لو ما تغيّر بعد. */
+    fun loadDelta(code: String): Double? =
+        if (prefs.contains("${code}_delta")) prefs.getFloat("${code}_delta", 0f).toDouble() else null
     fun load(code: String): Double? {
         return if (prefs.contains(code)) prefs.getFloat(code, 0f).toDouble() else null
     }
@@ -364,7 +373,15 @@ class FxCache(context: Context) {
 
 class FxTextCache(context: Context) {
     private val prefs = context.getSharedPreferences("fx_text_cache", Context.MODE_PRIVATE)
-    fun save(code: String, value: Long) { prefs.edit().putLong(code, value).apply() }
+    fun save(code: String, value: Long) {
+        val old = if (prefs.contains(code)) prefs.getLong(code, 0L) else null
+        val editor = prefs.edit().putLong(code, value)
+        if (old != null && old != value) editor.putLong("${code}_delta", value - old)
+        editor.apply()
+    }
+    /** آخر فرق سعر مسجّل (موجب = صعود، سالب = نزول) أو null لو ما تغيّر بعد. */
+    fun loadDelta(code: String): Long? =
+        if (prefs.contains("${code}_delta")) prefs.getLong("${code}_delta", 0L) else null
     fun load(code: String): Long? {
         return if (prefs.contains(code)) prefs.getLong(code, 0L) else null
     }

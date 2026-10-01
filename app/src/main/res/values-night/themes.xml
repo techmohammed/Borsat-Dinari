@@ -2,7 +2,7 @@
     <style name="Theme.CurrencyApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/cardWhite</item>
         <item name="android:windowBackground">@color/background</item>
-        <item name="android:statusBarColor">@color/cardWhite</item>
+        <item name="android:statusBarColor">@color/brandBlue</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

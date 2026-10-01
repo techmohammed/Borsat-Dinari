@@ -10,4 +10,16 @@
     <color name="cardWhite">#1E1E1E</color>
     <color name="textPrimary">#EDEDED</color>
     <color name="textSecondary">#9E9E9E</color>
+
+    <color name="rowUpBg">#1B3A28</color>
+    <color name="rowDownBg">#46201F</color>
+    <color name="rowFlatBg">#2C2F33</color>
+    <color name="rowPriceText">#FFFFFF</color>
+    <color name="deltaUp">#4CD471</color>
+    <color name="deltaDown">#FF6B63</color>
+    <color name="pillBg">#22304A</color>
+    <color name="accentBlue">#7FA8F0</color>
+    <color name="pickerHighlight">#337FA8F0</color>
+    <color name="chartAxisText">#9FB0CC</color>
+    <color name="chartGrid">#26FFFFFF</color>
 </resources>

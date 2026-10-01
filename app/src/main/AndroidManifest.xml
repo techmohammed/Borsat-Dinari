@@ -32,10 +32,11 @@
         <activity android:name=".AboutActivity" android:exported="false" />
         <activity android:name=".HistoryActivity" android:exported="false" />
 
-        <!-- ودجت الشاشة الرئيسية: يعرض بورصة المفضلة، مع زر تحديث يدوي
+        <!-- ودجت الشاشة الرئيسية 4×2: يعرض أول 3 مفضلات، مع زر تحديث يدوي
              وتحديث تلقائي ساعي (WidgetRefreshScheduler + AlarmManager). -->
         <receiver
             android:name=".FavoriteWidgetProvider"
+            android:label="بورصة ديناري"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -45,6 +46,20 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/favorite_price_widget_info" />
+        </receiver>
+
+        <!-- ودجت إضافي 4×1: أول مفضلة فقط. -->
+        <receiver
+            android:name=".FavoriteWidgetSmallProvider"
+            android:label="بورصة ديناري - مفضلة واحدة"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.mohammed.currencyapp.ACTION_WIDGET_REFRESH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/favorite_price_widget_small_info" />
         </receiver>
 
     </application>

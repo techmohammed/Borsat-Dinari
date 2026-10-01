@@ -11,13 +11,16 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/cardWhite"
-        android:elevation="2dp"
-        app:titleTextColor="@color/textPrimary" />
+        android:background="@color/brandBlue"
+        android:elevation="0dp"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        app:titleTextColor="@color/white" />
 
     <ScrollView
+        android:id="@+id/scrollAbout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -53,7 +56,7 @@
                 android:fontFamily="@font/cairo_regular"
                 android:gravity="center"
                 android:lineSpacingExtra="6dp"
-                android:text="تطبيق يوفر لك أسعار الدولار مقابل الدينار العراقي في أغلب محافظات العراق واقليم كوردستان، وكذلك أسعار العملات العالمية مقارنةً بالدينار العراقي، محدثة كل 15 دقيقة."
+                android:text="تطبيق يوفر لك أسعار الدولار والعملات العالمية مقارنة بالدينار العراقي في أغلب محافظات العراق واقليم كوردستان ، يتم تحديث الأسعار تلقائياً كل 15 دقيقة أثناء استخدام التطبيق ، مع إمكانية التحديث اليدوي في أي وقت ."
                 android:textColor="@color/textSecondary"
                 android:textSize="15sp" />
 
@@ -101,7 +104,7 @@
                 <TextView
                     style="@style/AboutFeatureLine"
                     android:layout_marginTop="10dp"
-                    android:text="✓  التطبيق لا يحتاج إلى أي أذونات" />
+                    android:text="✓  التطبيق لا يطلب اذونات حساسة" />
 
                 <TextView
                     style="@style/AboutFeatureLine"
@@ -202,7 +205,7 @@
                     android:fontFamily="@font/cairo_regular"
                     android:gravity="center"
                     android:lineSpacingExtra="6dp"
-                    android:text="يوجد تطبيق مصغر (ويدجت) يمكنك إضافته من الشاشة الرئيسية في هاتفك لتظهر لك أسعار البورصة المفضلة لك، مع تحديث تلقائي كل نص ساعة وزر تحديث فوري"
+                    android:text="يوجد تطبيق مصغر (ويدجت) يمكنك إضافته من الشاشة الرئيسية في هاتفك لتظهر لك أسعار بورصاتك المفضلة (حتى 3)، مع تحديث تلقائي كل نص ساعة وزر تحديث فوري"
                     android:textColor="@color/textSecondary"
                     android:textSize="14sp" />
 
@@ -222,7 +225,7 @@
                     <View
                         android:layout_width="14dp"
                         android:layout_height="14dp"
-                        android:background="@color/trendDown" />
+                        android:background="@color/deltaDown" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -246,7 +249,7 @@
                     <View
                         android:layout_width="14dp"
                         android:layout_height="14dp"
-                        android:background="@color/trendUp" />
+                        android:background="@color/deltaUp" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -318,7 +321,7 @@
                     <TextView
                         style="@style/AboutInfoLine"
                         android:layout_width="wrap_content"
-                        android:text="نسخة التطبيق: 1.0.8" />
+                        android:text="نسخة التطبيق: 1.0.9" />
 
                     <TextView
                         android:id="@+id/tvUpdateStatus"
@@ -347,7 +350,7 @@
                 <TextView
                     style="@style/AboutInfoLine"
                     android:layout_marginTop="10dp"
-                    android:text="آخر تحديث: ايلول - 2026" />
+                    android:text="آخر تحديث: تشرين الاول - 2026" />
 
             </LinearLayout>
 

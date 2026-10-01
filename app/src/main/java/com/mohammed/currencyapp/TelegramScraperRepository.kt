@@ -369,63 +369,39 @@ object TelegramScraperRepository {
         }
     )
 
+    /** منشور واحد من القناة بعد استخراج سعر كل مدينة وعملة منه (key → نص السعر
+     * بنفس صيغة العرض). تستخدمه HistorySync لبناء سجل الأسعار. */
+    internal data class HistoryMessage(
+        val id: Long,
+        val timestampMillis: Long,
+        val prices: Map<String, String>
+    )
+
     /**
-     * يلف للخلف بصفحات قناة بورصة ديناري (20 منشور تقريباً بكل صفحة) لين
-     * يوصل لـ[sinceMillis] أو حد أقصى من الصفحات (حماية من حلقة بلا
-     * نهاية)، ويرجع نقاط سعر (توقيت، قيمة) ضمن الفترة [sinceMillis]..
-     * [untilMillis] بس، لمدينة أو عملة عالمية وحدة — تُستخدم من صفحة
-     * الهيستوري لتعبئة أي فجوة بالسجل المحلي للفترة المحددة حالياً
-     * بالتقويم، دون تكرار ما هو موجود أصلاً (التكرار يُفلتر بـ
-     * HistoryStore.backfill). يدعم مفتاح أي مدينة من [cityPatterns] أو أي
-     * عملة عالمية (الرسمي/يورو/پاوند/ليرة/تومان) — سابقاً كان مقيداً
-     * بالمدن فقط فما كان يجيب شي لهذي العملات (كان يرجع دايماً قائمة
-     * فاضية بصمت). ملاحظة: اللف للخلف يبدأ دوماً من آخر منشور بالقناة
-     * (مهما كان [untilMillis])، لأن صفحات تليگرام تُقرأ من الأحدث للأقدم
-     * فقط؛ [untilMillis] يُستخدم فلترة على النتيجة النهائية بس، وهذا مقبول
-     * لأن أقصى عمق سجل بالتطبيق أصلاً 60 يوم (RETENTION_DAYS بالهيستوري).
+     * يجيب صفحة وحدة من القناة (أحدث ~20 منشور قبل [beforeId]، أو آخر صفحة لو
+     * null) ويستخرج من كل منشور أسعار كل المدن والعملات مرة وحدة. يشتغل على الخيط
+     * اللي ينادي عليه (HistorySync ينادي عليه من عدة خيوط بالتوازي) ويرمي
+     * استثناء لو فشل الاتصال.
      */
-    fun fetchHistoricalPrices(
-        cityKey: String,
-        sinceMillis: Long,
-        untilMillis: Long = Long.MAX_VALUE,
-        onProgress: (pagesFetched: Int, oldestReachedMillis: Long) -> Unit,
-        isCancelled: () -> Boolean,
-        onResult: (List<Pair<Long, String>>) -> Unit
-    ) {
-        executor.execute {
-            val cp = cityPatterns.find { it.key == cityKey }
-            val currencyDef = if (cp == null) currencyHistoryDefs.find { it.key == cityKey } else null
-            val extractor: ((String) -> String?)? = when {
-                cp != null -> { chunk -> extractFlexiblePrice(chunk, cp.keywords)?.let { formatIqd(it) } }
-                currencyDef != null -> currencyDef.extract
-                else -> null
-            }
-            val collected = mutableListOf<ChannelMessage>()
-            var beforeId: Long? = null
-            var lastOldestId: Long? = null
-            var pages = 0
-            while (extractor != null && !isCancelled() && pages < 400) {
-                val html = try { fetchChannelHtml(BORSAT_DINARI_CHANNEL, beforeId) } catch (_: Exception) { "" }
-                val page = parseChannelMessages(html)
-                if (page.isEmpty()) break
-                collected += page
-                val oldest = page.minByOrNull { it.id } ?: break
-                if (oldest.id == lastOldestId) break
-                lastOldestId = oldest.id
-                pages++
-                mainHandler.post { onProgress(pages, oldest.timestampMillis) }
-                if (oldest.timestampMillis <= sinceMillis) break
-                beforeId = oldest.id
-            }
-            val points = if (extractor != null) {
-                collected.asSequence()
-                    .filter { it.timestampMillis in sinceMillis..untilMillis }
-                    .sortedBy { it.timestampMillis }
-                    .mapNotNull { m -> extractor(m.raw)?.let { m.timestampMillis to it } }
-                    .toList()
-            } else emptyList()
-            mainHandler.post { onResult(points) }
+    internal fun fetchHistoryPage(beforeId: Long?): List<HistoryMessage> {
+        val html = fetchChannelHtml(BORSAT_DINARI_CHANNEL, beforeId)
+        return parseChannelMessages(html).map { m ->
+            HistoryMessage(m.id, m.timestampMillis, extractAllPrices(m.raw))
         }
+    }
+
+    /** يستخرج أسعار كل المدن والعملات من نص منشور واحد. التطبيع (إزالة HTML
+     * وتوحيد الأرقام) يتم مرة وحدة للمنشور، مو لكل مدينة. */
+    private fun extractAllPrices(raw: String): Map<String, String> {
+        val out = HashMap<String, String>()
+        val normalized = normalizeArabicText(raw)
+        for (cp in cityPatterns) {
+            extractFlexiblePriceNormalized(normalized, cp.keywords)?.let { out[cp.key] = formatIqd(it) }
+        }
+        for (def in currencyHistoryDefs) {
+            def.extract(normalized)?.let { out[def.key] = it }
+        }
+        return out
     }
 
     /**
@@ -466,15 +442,23 @@ object TelegramScraperRepository {
      */
     private fun extractFlexiblePrice(text: String, keywords: List<String>): String? {
         if (text.isBlank()) return null
-        val normalized = normalizeArabicText(text)
+        return extractFlexiblePriceNormalized(normalizeArabicText(text), keywords)
+    }
 
+    // الگريغز تنبني مرة وحدة لكل كلمة مفتاحية (بدل ما تنبني من جديد لكل منشور
+    // ولكل مدينة — كانت أكبر سبب لبطء جلب السجل القديم).
+    private val flexRegexCache = java.util.concurrent.ConcurrentHashMap<String, Pair<Regex, Regex>>()
+
+    private fun flexRegexes(keyword: String): Pair<Regex, Regex> = flexRegexCache.getOrPut(keyword) {
+        val escaped = Regex.escape(keyword)
+        Regex("""$escaped[^\n]{0,35}?([0-9]{2,3},[0-9]{3})""", RegexOption.IGNORE_CASE) to
+            Regex("""([0-9]{2,3},[0-9]{3})[^\n]{0,35}?$escaped""", RegexOption.IGNORE_CASE)
+    }
+
+    private fun extractFlexiblePriceNormalized(normalized: String, keywords: List<String>): String? {
         for (keyword in keywords) {
-            val escaped = Regex.escape(keyword)
+            val (cityFirst, numberFirst) = flexRegexes(keyword)
 
-            val cityFirst = Regex(
-                """$escaped[^\n]{0,35}?([0-9]{2,3},[0-9]{3})""",
-                RegexOption.IGNORE_CASE
-            )
             val m1 = cityFirst.findAll(normalized).lastOrNull()
             if (m1 != null) {
                 val candidate = m1.groupValues[1].replace(",", "")
@@ -482,10 +466,6 @@ object TelegramScraperRepository {
             }
 
             // بورصة ديناري تكتب الرقم قبل اسم المدينة: "155,650 د.ع | بغداد".
-            val numberFirst = Regex(
-                """([0-9]{2,3},[0-9]{3})[^\n]{0,35}?$escaped""",
-                RegexOption.IGNORE_CASE
-            )
             val m2 = numberFirst.findAll(normalized).lastOrNull()
             if (m2 != null) {
                 val candidate = m2.groupValues[1].replace(",", "")
@@ -537,20 +517,23 @@ object TelegramScraperRepository {
         return normalizeDigits(match.groupValues[1])?.toLongOrNull()
     }
 
+    private val replyPreviewRegex = Regex("""tgme_widget_message_reply[\s\S]*?(?=js-message_text)""")
+    private val brRegex = Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE)
+    private val blockEndRegex = Regex("""</p>|</div>|</span>|</a>""", RegexOption.IGNORE_CASE)
+    private val tagRegex = Regex("<[^>]+>")
+    private val bidiRegex = Regex("[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]")
+
     private fun stripHtml(text: String): String {
         // نشيل صندوق "الرد على رسالة قديمة" (Reply Preview) قبل أي شي، حتى ما
         // نقرا غلط أرقام قديمة من رسالة ماضية. صندوق الرد يبدأ بعلامة
         // "tgme_widget_message_reply" وينتهي عملياً عند بداية نص الرسالة
         // الفعلية الجديدة، المعلّمة دايماً بـ"js-message_text" (مو الرد
         // المقتبس)، فنشيل كل شي بينهم بغض النظر عن تداخل الوسوم بالداخل.
-        val withoutReplyPreview = text.replace(
-            Regex("""tgme_widget_message_reply[\s\S]*?(?=js-message_text)"""),
-            ""
-        )
+        val withoutReplyPreview = text.replace(replyPreviewRegex, "")
         return withoutReplyPreview
-            .replace(Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE), "\n")
-            .replace(Regex("""</p>|</div>|</span>|</a>""", RegexOption.IGNORE_CASE), "\n")
-            .replace(Regex("<[^>]+>"), " ")
+            .replace(brRegex, "\n")
+            .replace(blockEndRegex, "\n")
+            .replace(tagRegex, " ")
             .replace("&nbsp;", " ")
             .replace("&quot;", "\"")
             .replace("&amp;", "&")
@@ -559,7 +542,7 @@ object TelegramScraperRepository {
     /** إزالة وسوم HTML، محارف التحكم بالاتجاه، وتوحيد الأرقام العربية/الفارسية إلى لاتينية. */
     private fun normalizeArabicText(text: String): String {
         return stripHtml(text)
-            .replace(Regex("[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]"), "")
+            .replace(bidiRegex, "")
             .replace('٠', '0').replace('١', '1').replace('٢', '2').replace('٣', '3')
             .replace('٤', '4').replace('٥', '5').replace('٦', '6').replace('٧', '7')
             .replace('٨', '8').replace('٩', '9')
@@ -592,8 +575,18 @@ class ScraperCache(private val context: Context) {
     private val prefs = context.getSharedPreferences("scraper_cache", Context.MODE_PRIVATE)
 
     fun save(cityKey: String, digitsOnly: String) {
-        prefs.edit().putString(cityKey, digitsOnly).apply()
+        // نحسب ونحفظ مقدار التغيير (الجديد - القديم) لحظة ما السعر يتغير فعلياً،
+        // حتى يعرضه التطبيق أسفل السعر (PriceDelta). إذا نفس السعر نترك آخر فرق محفوظ.
+        val old = prefs.getString(cityKey, null)?.toLongOrNull()
+        val new = digitsOnly.toLongOrNull()
+        val editor = prefs.edit().putString(cityKey, digitsOnly)
+        if (old != null && new != null && old != new) editor.putLong("${cityKey}_delta", new - old)
+        editor.apply()
     }
+
+    /** آخر فرق سعر مسجّل (موجب = صعود، سالب = نزول) أو null لو ما تغيّر بعد. */
+    fun loadDelta(cityKey: String): Long? =
+        if (prefs.contains("${cityKey}_delta")) prefs.getLong("${cityKey}_delta", 0L) else null
 
     fun load(cityKey: String): String? = prefs.getString(cityKey, null)
 

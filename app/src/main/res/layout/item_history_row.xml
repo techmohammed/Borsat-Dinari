@@ -3,36 +3,55 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layoutDirection="ltr"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@color/cardWhite"
+    android:layout_height="54dp"
+    android:layout_marginHorizontal="14dp"
+    android:layout_marginVertical="3dp"
+    android:background="@drawable/bg_history_row"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingHorizontal="18dp"
-    android:paddingVertical="8dp">
+    android:paddingHorizontal="14dp">
 
-    <TextView
-        android:id="@+id/tvHistoryTime"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:fontFamily="@font/cairo_regular"
-        android:gravity="start"
-        android:textColor="@color/textSecondary"
-        android:textSize="13sp"
-        tools:text="السبت 12 أيلول - 03:45 م" />
+    <ImageView
+        android:id="@+id/ivHistoryTrend"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:contentDescription="@null"
+        tools:src="@drawable/ic_hist_up" />
 
     <TextView
         android:id="@+id/tvHistoryPrice"
-        android:layout_width="wrap_content"
-        android:layout_height="28dp"
-        android:background="@drawable/bg_badge"
-        android:gravity="center"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="14dp"
+        android:layout_weight="1"
+        android:fontFamily="@font/cairo_bold"
+        android:gravity="left|center_vertical"
         android:includeFontPadding="false"
-        android:minWidth="110dp"
-        android:paddingHorizontal="10dp"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"
+        android:maxLines="1"
+        android:textColor="@color/textPrimary"
+        android:textSize="19sp"
         android:textStyle="bold"
-        tools:text="155,650 د.ع" />
+        tools:text="155,800" />
+
+    <TextView
+        android:id="@+id/tvHistoryDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/cairo_regular"
+        android:includeFontPadding="false"
+        android:textColor="@color/textSecondary"
+        android:textSize="15sp"
+        tools:text="17/9" />
+
+    <TextView
+        android:id="@+id/tvHistoryTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="14dp"
+        android:fontFamily="@font/cairo_regular"
+        android:includeFontPadding="false"
+        android:textColor="@color/textSecondary"
+        android:textSize="15sp"
+        tools:text="16:45" />
 
 </LinearLayout>

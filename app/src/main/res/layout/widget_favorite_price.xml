@@ -1,97 +1,385 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ودجت المفضلة 4×2: ترويسة (اسم البورصة يمين بخط التطبيق، آخر تحديث وزر التحديث
+     يسار)، بطاقة كبيرة لأول مفضلة (علم + اسم يمين، سعر + تغيير يسار)، وتحتها بطاقتين
+     صغيرتين بنفس الترتيب للمفضلة الثانية والثالثة. لون كل بطاقة حسب اتجاه السعر.
+     RemoteViews: نستخدم عناصر مدعومة فقط. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widgetRoot"
     android:layoutDirection="ltr"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/transparent">
+    android:background="@drawable/bg_widget_panel">
 
-    <!-- بطاقة داخلية بارتفاع ثابت وأقصر من ارتفاع الودجت الكامل، وتتوسط
-         عمودياً. المساحة الفاضية فوق وتحتها تبقى شفافة (خلفية الشاشة تبين
-         من ورا)، فتحس بصرياً إن الارتفاع الظاهر نص ارتفاع الودجت تقريباً. -->
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="42dp"
-        android:layout_gravity="center_vertical">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="6dp">
 
-        <!-- خلفية العلم تملأ البطاقة الداخلية، نفس أسلوب صف القائمة الرئيسية. -->
-        <ImageView
-            android:id="@+id/widgetFlagBg"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:contentDescription="@null"
-            android:scaleType="fitXY"
-            tools:src="@drawable/row_bg_iq" />
-
+        <!-- الترويسة -->
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingLeft="38dp"
-            android:paddingRight="10dp">
+            android:layout_height="30dp">
 
             <TextView
-                android:id="@+id/widgetPrice"
+                android:id="@+id/widgetTitle"
                 android:layout_width="wrap_content"
-                android:layout_height="26dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
-                android:layout_alignParentLeft="true"
-                android:background="@drawable/bg_badge"
-                android:gravity="center"
+                android:layout_marginRight="6dp"
+                android:fontFamily="@font/cairo_bold"
                 android:includeFontPadding="false"
-                android:maxLines="1"
-                android:minWidth="96dp"
-                android:paddingHorizontal="7dp"
+                android:text="بورصة ديناري"
                 android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="155,650 د.ع" />
+                android:textSize="19sp"
+                android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/widgetUnit"
+            <ImageButton
+                android:id="@+id/widgetRefreshButton"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:background="@android:color/transparent"
+                android:contentDescription="تحديث الأسعار"
+                android:padding="4dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_widget_refresh" />
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:layout_toRightOf="@id/widgetPrice"
-                android:layout_marginLeft="6dp"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="@color/rowTextOnFlag"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="100$" />
+                android:layout_marginLeft="2dp"
+                android:layout_toRightOf="@id/widgetRefreshButton"
+                android:gravity="left"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/widgetName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:layout_toRightOf="@id/widgetUnit"
-                android:layout_marginLeft="8dp"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="@color/rowTextOnFlag"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="بغداد" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:text="آخر تحديث"
+                    android:textColor="#B8CCE8"
+                    android:textSize="9sp" />
 
+                <TextView
+                    android:id="@+id/widgetUpdateTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </RelativeLayout>
 
-        <!-- زر التحديث: مربع الشكل، نفس ارتفاع مستطيل السعر بجانبه (26dp). -->
-        <ImageButton
-            android:id="@+id/widgetRefreshButton"
-            android:layout_width="26dp"
-            android:layout_height="26dp"
-            android:layout_gravity="left|center_vertical"
-            android:layout_marginLeft="8dp"
-            android:background="@drawable/bg_widget_refresh_button"
-            android:contentDescription="تحديث السعر"
-            android:padding="4dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_widget_refresh" />
+        <!-- البطاقة الكبيرة: أول مفضلة (علم + اسم يمين، سعر يسار) -->
+        <RelativeLayout
+            android:id="@+id/widgetCard1"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="2dp"
+            android:layout_weight="1.15"
+            android:background="@drawable/bg_widget_card_flat"
+            android:padding="8dp">
 
-    </FrameLayout>
+            <ImageView
+                android:id="@+id/widgetFlag1"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/bg_flag_ring"
+                android:contentDescription="@null"
+                android:padding="1dp"
+                android:scaleType="centerCrop" />
 
+            <LinearLayout
+                android:id="@+id/widgetPriceBox1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/widgetPrice1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#000000"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/widgetDeltaRow1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/widgetDeltaArrow1"
+                        android:layout_width="11dp"
+                        android:layout_height="11dp"
+                        android:contentDescription="@null" />
+
+                    <TextView
+                        android:id="@+id/widgetDelta1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="4dp"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="6dp"
+                android:layout_marginRight="8dp"
+                android:layout_toLeftOf="@id/widgetFlag1"
+                android:layout_toRightOf="@id/widgetPriceBox1"
+                android:gravity="right"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/widgetName1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#212121"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widgetUnit1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#546E7A"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <!-- البطاقتين الصغيرتين: المفضلة الثانية والثالثة -->
+        <LinearLayout
+            android:id="@+id/widgetSmallRow"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="4dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <RelativeLayout
+                android:id="@+id/widgetCard2"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginLeft="0dp"
+                android:layout_marginRight="2dp"
+                android:background="@drawable/bg_widget_card_flat"
+                android:padding="6dp">
+
+                <ImageView
+                    android:id="@+id/widgetFlag2"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/bg_flag_ring"
+                    android:contentDescription="@null"
+                    android:padding="1dp"
+                    android:scaleType="centerCrop" />
+
+                <LinearLayout
+                    android:id="@+id/widgetPriceBox2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/widgetPrice2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#000000"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:id="@+id/widgetDeltaRow2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/widgetDeltaArrow2"
+                            android:layout_width="9dp"
+                            android:layout_height="9dp"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/widgetDelta2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="3dp"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="4dp"
+                    android:layout_marginRight="5dp"
+                    android:layout_toLeftOf="@id/widgetFlag2"
+                    android:layout_toRightOf="@id/widgetPriceBox2"
+                    android:gravity="right"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/widgetName2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#212121"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widgetUnit2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#546E7A"
+                        android:textSize="9sp" />
+                </LinearLayout>
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/widgetCard3"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginLeft="2dp"
+                android:layout_marginRight="0dp"
+                android:background="@drawable/bg_widget_card_flat"
+                android:padding="6dp">
+
+                <ImageView
+                    android:id="@+id/widgetFlag3"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/bg_flag_ring"
+                    android:contentDescription="@null"
+                    android:padding="1dp"
+                    android:scaleType="centerCrop" />
+
+                <LinearLayout
+                    android:id="@+id/widgetPriceBox3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/widgetPrice3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#000000"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:id="@+id/widgetDeltaRow3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/widgetDeltaArrow3"
+                            android:layout_width="9dp"
+                            android:layout_height="9dp"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/widgetDelta3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="3dp"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="4dp"
+                    android:layout_marginRight="5dp"
+                    android:layout_toLeftOf="@id/widgetFlag3"
+                    android:layout_toRightOf="@id/widgetPriceBox3"
+                    android:gravity="right"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/widgetName3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#212121"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widgetUnit3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#546E7A"
+                        android:textSize="9sp" />
+                </LinearLayout>
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
 </FrameLayout>

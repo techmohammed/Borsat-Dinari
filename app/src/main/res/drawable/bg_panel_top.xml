@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- اللوحة اللي تحت الهيدر الأزرق: زوايا علوية مدورة -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/background" />
+    <corners
+        android:topLeftRadius="26dp"
+        android:topRightRadius="26dp" />
+</shape>

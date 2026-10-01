@@ -27,6 +27,7 @@ class AboutActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val binding = ActivityAboutBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applySystemBarsInsets(binding.toolbar, binding.scrollAbout)
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         // إزالة عنوان التطبيق الصغير من شريط الصفحة، والإبقاء على اسم بورصة ديناري الكبير داخل المحتوى.

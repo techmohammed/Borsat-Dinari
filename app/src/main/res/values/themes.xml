@@ -2,8 +2,8 @@
     <style name="Theme.CurrencyApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/cardWhite</item>
         <item name="android:windowBackground">@color/background</item>
-        <item name="android:statusBarColor">@color/cardWhite</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/brandBlue</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="AboutFeatureLine">
@@ -33,11 +33,11 @@
          لو المستخدم غيّر لغة الهاتف لغير العربي — نفس الفكرة المستخدمة
          بلايوتات الهيستوري (activity_history.xml, item_history_row.xml). -->
     <style name="ThemeOverlay.App.DatePicker" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">
-        <item name="colorPrimary">#00897B</item>
+        <item name="colorPrimary">@color/brandBlue</item>
         <item name="colorOnPrimary">#FFFFFF</item>
         <item name="colorSurface">@color/cardWhite</item>
         <item name="colorOnSurface">@color/textPrimary</item>
-        <item name="colorControlHighlight">#3300897B</item>
+        <item name="colorControlHighlight">@color/pickerHighlight</item>
         <item name="materialCalendarHeaderTitle">@style/App.DatePicker.HeaderTitle</item>
         <item name="shapeAppearanceMediumComponent">@style/App.DatePicker.ShapeAppearance</item>
         <item name="shapeAppearanceLargeComponent">@style/App.DatePicker.ShapeAppearance</item>
@@ -55,15 +55,16 @@
     </style>
 
     <!-- عنوان "اختيار الفترة" أعلى التقويم — نفس خط وستايل عنوان التطبيق
-         "بورصة ديناري" (cairo_bold, bold) بس بحجم أصغر شوية (22sp بدل
-         25sp) لأنه عنوان نافذة منبثقة مو عنوان الصفحة الرئيسية. نلغي
+         "بورصة ديناري" (cairo_bold, bold). الحجم الفعلي يتفرض بالكود أيضاً
+         (HistoryActivity.openRangePicker) لأن Material أحياناً يتجاهل حجم الستايل. نلغي
          android:textAppearance صراحة (null) حتى ما تتضارب مع حجم/خط
          الـtextAppearance الافتراضي المرتبط بستايل العنوان الأصلي. -->
     <style name="App.DatePicker.HeaderTitle" parent="Widget.MaterialComponents.MaterialCalendar.HeaderTitle">
         <item name="android:textAppearance">@null</item>
         <item name="android:fontFamily">@font/cairo_bold</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textSize">22sp</item>
+        <item name="android:textSize">26sp</item>
+        <item name="autoSizeTextType">none</item>
         <item name="android:textColor">@android:color/white</item>
     </style>
 
@@ -75,7 +76,7 @@
         <item name="android:fontFamily">@font/cairo_bold</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textSize">15sp</item>
-        <item name="android:textColor">#00897B</item>
+        <item name="android:textColor">@color/accentBlue</item>
     </style>
 
     <style name="App.DatePicker.NegativeButton" parent="Widget.MaterialComponents.Button.TextButton">
@@ -83,4 +84,19 @@
         <item name="android:textSize">15sp</item>
         <item name="android:textColor">@color/textSecondary</item>
     </style>
+
+    <!-- زر فترة بصفحة سجل الأسعار (يوم / 7 أيام / 30 يوم / 60 يوم) -->
+    <style name="HistoryTab">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:fontFamily">@font/cairo_bold</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
 </resources>

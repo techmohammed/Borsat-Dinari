@@ -12,8 +12,8 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/cardWhite"
-        android:elevation="2dp">
+        android:background="@color/brandBlue"
+        android:elevation="0dp">
 
         <TextView
             android:id="@+id/tvAppTitle"
@@ -22,7 +22,7 @@
             android:layout_gravity="right|center_vertical"
             android:layout_marginRight="16dp"
             android:text="بورصة ديناري"
-            android:textColor="@color/textPrimary"
+            android:textColor="@color/white"
             android:textSize="25sp"
             android:fontFamily="@font/cairo_bold"
             android:textStyle="bold" />
@@ -31,63 +31,101 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="left|center_vertical"
+            android:layout_marginLeft="4dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
+            <!-- زر "حول التطبيق" بشكل قائمة (برگر) -->
             <ImageButton
                 android:id="@+id/btnAbout"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="حول التطبيق"
-                android:padding="8dp"
-                android:src="@android:drawable/ic_menu_info_details" />
+                android:padding="10dp"
+                android:src="@drawable/ic_menu_burger"
+                app:tint="@color/white" />
 
+            <!-- تبديل النمط الليلي/النهاري -->
             <ImageButton
                 android:id="@+id/btnThemeToggle"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="تبديل النمط الليلي/النهاري"
-                android:padding="9dp"
-                android:src="@drawable/ic_theme_moon" />
-
-            <ImageButton
-                android:id="@+id/btnRefreshNow"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="تحديث الآن"
-                android:padding="9dp"
-                android:src="@drawable/ic_refresh_history" />
-
-            <TextView
-                android:id="@+id/tvLastUpdate"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="2dp"
-                android:fontFamily="@font/cairo_regular"
-                android:gravity="center"
-                android:lineSpacingExtra="-2sp"
-                android:textColor="@color/textSecondary"
-                android:textSize="10sp"
-                tools:text="09:46 PM\n13/9/2026" />
+                android:padding="10dp"
+                android:src="@drawable/ic_theme_moon"
+                app:tint="@color/white" />
 
         </LinearLayout>
 
     </androidx.appcompat.widget.Toolbar>
 
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipeRefresh"
+    <!-- شريط أزرق يوصّل الهيدر باللوحة المدورة تحته -->
+    <View
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="18dp"
+        android:background="@color/brandBlue" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerView"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="-18dp"
+        android:background="@drawable/bg_panel_top"
+        android:orientation="vertical">
+
+        <!-- آخر تحديث (وضغطة عليه = تحديث الآن) -->
+        <LinearLayout
+            android:id="@+id/btnRefreshNow"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="6dp"
+            android:background="@drawable/bg_update_pill"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp">
+
+            <TextView
+                android:id="@+id/tvLastUpdate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/cairo_semibold"
+                android:includeFontPadding="false"
+                android:textColor="@color/textPrimary"
+                android:textDirection="rtl"
+                android:textSize="14sp"
+                tools:text="آخر تحديث: 16:45" />
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginLeft="8dp"
+                android:contentDescription="تحديث الآن"
+                android:src="@drawable/ic_refresh_history"
+                app:tint="@color/accentBlue" />
+
+        </LinearLayout>
+
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefresh"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingVertical="3dp" />
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingVertical="3dp" />
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    </LinearLayout>
 
 </LinearLayout>

@@ -13,4 +13,29 @@
          بتصميمها (ivFlagBg)، مو سطح يتحول غامق بالوضع الليلي، فلازم النص
          يبقى غامق دايماً وإلا يختفي فوق الخلفية الفاتحة بالوضع الليلي. -->
     <color name="rowTextOnFlag">#212121</color>
+
+    <!-- الأزرق الرئيسي للتطبيق: نفس أزرق خلفية أيقونة التطبيق (الإطار الأزرق
+         حول العملة الذهبية). ثابت بالنمطين النهاري والليلي. -->
+    <color name="brandBlue">#003078</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- خلفية صف السعر حسب اتجاه التغيير: أخضر فاتح = صعود، أحمر فاتح = نزول،
+         رصاصي فاتح = مستقر/بدون تحديث. -->
+    <color name="rowUpBg">#DDF4E4</color>
+    <color name="rowDownBg">#FCE1E0</color>
+    <color name="rowFlatBg">#ECEFF1</color>
+    <color name="rowPriceText">#000000</color>
+
+    <!-- لون مقدار التغيير (المثلث + الرقم) أسفل السعر -->
+    <color name="deltaUp">#1E9E46</color>
+    <color name="deltaDown">#E0312D</color>
+
+    <!-- شريط "آخر تحديث" -->
+    <color name="pillBg">#E4ECF8</color>
+    <color name="accentBlue">#003078</color>
+    <color name="pickerHighlight">#33003078</color>
+
+    <!-- مخطط صفحة سجل الأسعار -->
+    <color name="chartAxisText">#5B6B8C</color>
+    <color name="chartGrid">#1F5B6B8C</color>
 </resources>

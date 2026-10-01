@@ -20,8 +20,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: PriceListAdapter
-    private val lastUpdateTimeFormat = SimpleDateFormat("hh:mm a", Locale.US)
-    private val lastUpdateDateFormat = SimpleDateFormat("d/M/yyyy", Locale.US)
+    private val lastUpdateTimeFormat = SimpleDateFormat("HH:mm", Locale.US)
 
     private var latestExchanges: List<PriceItem> = emptyList()
     private var latestCurrencies: List<PriceItem> = emptyList()
@@ -41,14 +40,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applySystemBarsInsets(binding.toolbar, binding.recyclerView)
 
         adapter = PriceListAdapter(
             rows = emptyList(),
-            favoriteKey = FavoriteCityStore.get(this),
+            favoriteKeys = FavoriteCityStore.getAll(this),
             onStarClick = { cityKey ->
-                FavoriteCityStore.set(this, cityKey)
+                FavoriteCityStore.toggle(this, cityKey)
                 rebuildRows()
-                // نحدث الودجت فوراً بالمفضلة الجديدة: عرض من الكاش فوراً، وبعدين
+                // نحدث الودجت فوراً بالمفضلات الجديدة: عرض من الكاش فوراً، وبعدين
                 // طلب سعر حقيقي لها بالخلفية.
                 FavoriteWidgetProvider.renderFromCache(this)
                 FavoriteWidgetProvider.refreshFavorite(this)
@@ -136,10 +136,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateLastUpdateLabel(millis: Long?) {
+        // شريط "آخر تحديث: 16:45" أعلى القائمة (وقت 24 ساعة بدون تاريخ).
         binding.tvLastUpdate.text = if (millis != null) {
-            // الوقت بالسطر الأول، والتاريخ تحته بصيغة يوم/شهر/سنة بدون أصفار زائدة.
-            "${lastUpdateTimeFormat.format(millis)}\n${lastUpdateDateFormat.format(millis)}"
-        } else ""
+            "آخر تحديث: ${lastUpdateTimeFormat.format(millis)}"
+        } else "آخر تحديث: —"
     }
 
     private fun rebuildRows() {
@@ -147,11 +147,12 @@ class MainActivity : AppCompatActivity() {
         allItems.addAll(latestExchanges)
         allItems.addAll(latestCurrencies)
 
-        val favorite = FavoriteCityStore.get(this)
+        val favorites = FavoriteCityStore.getAll(this)
         val ordered = allItems.sortedBy { item ->
-            if ((item.cityKey ?: item.name) == favorite) 0 else 1
+            val i = favorites.indexOf(item.cityKey ?: item.name)
+            if (i < 0) Int.MAX_VALUE else i
         }
-        adapter.submitList(ordered.map { ListRow.Row(it) }, favorite)
+        adapter.submitList(ordered.map { ListRow.Row(it) }, favorites)
 
         // نسجل توقيت آخر تحديث فعلي للقائمة (يشمل التحديث اليدوي بالسحب أو
         // بزر الأيقونة، والتحديث التلقائي كل 15 دقيقة).

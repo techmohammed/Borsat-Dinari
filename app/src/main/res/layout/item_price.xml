@@ -1,117 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rowCard"
     android:layoutDirection="ltr"
     android:layout_width="match_parent"
-    android:layout_height="76dp"
-    android:layout_marginHorizontal="4dp"
-    android:layout_marginVertical="2dp"
-    android:clipChildren="false"
-    android:clipToPadding="false"
-    android:background="@android:color/transparent"
-    android:elevation="0dp">
+    android:layout_height="68dp"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="4dp"
+    android:background="@drawable/bg_row_card"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="8dp">
 
-    <!-- الخلفية تبقى خلف كل المحتوى؛ العلم في الجهة اليمنى فقط بصرياً. -->
-    <ImageView
-        android:id="@+id/ivFlagBg"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:contentDescription="@null"
-        android:scaleType="fitXY"
-        tools:src="@drawable/row_bg_iq" />
+    <!-- نجمة المفضلة -->
+    <ImageButton
+        android:id="@+id/btnStar"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="مفضلة"
+        android:padding="2dp"
+        android:src="@drawable/ic_star_outline"
+        tools:visibility="visible" />
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingLeft="3dp"
-        android:paddingRight="3dp">
-
-        <!-- مساحة محجوزة للعلم حتى لا تدخل الأسماء فوقه. لازم تكون داخل
-             نفس الـ RelativeLayout اللي يشير إليها tvName (قاعدة أساسية
-             بالـ RelativeLayout: العنصر المُشار إليه لازم يكون شقيق ضمن
-             نفس الحاوية، وإلا Lint يعتبره خطأ NotSibling ويفشل بناء release). -->
-        <View
-            android:id="@+id/flagZone"
-            android:layout_width="78dp"
-            android:layout_height="match_parent"
-            android:layout_alignParentRight="true"
-            android:visibility="invisible" />
-
-        <ImageButton
-            android:id="@+id/btnStar"
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            android:layout_alignParentLeft="true"
-            android:layout_centerVertical="true"
-            android:layout_marginLeft="6dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="مفضلة"
-            android:padding="1dp"
-            android:src="@drawable/ic_star_outline"
-            tools:visibility="visible" />
+    <!-- السعر (أسود) وتحته مقدار التغيير مع المثلث -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="4dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/tvPrice"
-            android:layout_width="wrap_content"
-            android:layout_height="30dp"
-            android:layout_centerVertical="true"
-            android:layout_marginLeft="0dp"
-            android:layout_toRightOf="@id/btnStar"
-            android:background="@drawable/bg_badge"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:minWidth="104dp"
-            android:paddingHorizontal="7dp"
-            android:textColor="#FFFFFF"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:fontFamily="@font/cairo_bold"
-            tools:text="155,450 د.ع" />
-
-        <TextView
-            android:id="@+id/tvUnit"
-            android:layout_width="66dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_marginLeft="0dp"
-            android:layout_toRightOf="@id/tvPrice"
-            android:gravity="center"
+            android:fontFamily="@font/cairo_bold"
+            android:gravity="left|center_vertical"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:textColor="@color/rowTextOnFlag"
-            android:textSize="16sp"
+            android:textColor="@color/rowPriceText"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:fontFamily="@font/cairo_bold"
-            tools:text="100$" />
+            app:autoSizeMaxTextSize="20sp"
+            app:autoSizeMinTextSize="12sp"
+            app:autoSizeStepGranularity="1sp"
+            app:autoSizeTextType="uniform"
+            tools:text="156,400 د.ع" />
+
+        <LinearLayout
+            android:id="@+id/deltaRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/ivDeltaArrow"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:contentDescription="@null"
+                tools:src="@drawable/ic_tri_up" />
+
+            <TextView
+                android:id="@+id/tvDelta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:fontFamily="@font/cairo_bold"
+                android:includeFontPadding="false"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="+500"
+                tools:textColor="@color/deltaUp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- اسم المدينة/العملة وتحته الوحدة (100$) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="8dp"
+        android:gravity="right"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/tvName"
-            android:layout_width="108dp"
-            android:layout_height="34dp"
-            android:layout_centerVertical="true"
-            android:layout_marginLeft="-23dp"
-            android:layout_toRightOf="@id/tvUnit"
-            android:layout_toLeftOf="@id/flagZone"
-            android:gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/cairo_bold"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:ellipsize="end"
-            android:textColor="@color/rowTextOnFlag"
-            android:textSize="16sp"
+            android:maxWidth="130dp"
+            android:textColor="@color/textPrimary"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:fontFamily="@font/cairo_bold"
             tools:text="بغداد" />
 
-    </RelativeLayout>
+        <TextView
+            android:id="@+id/tvUnit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:fontFamily="@font/cairo_regular"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/textSecondary"
+            android:textSize="12sp"
+            tools:text="100$" />
+    </LinearLayout>
 
-    <!-- ظل داخلي رفيع حول حافة الصف — يظهر بالوضع الليلي فقط تلقائياً
-         (انظر drawable-night/row_inner_shadow.xml)، وشفاف بالكامل بالوضع
-         النهاري. آخر عنصر بالـ FrameLayout حتى يرسم فوق كل المحتوى ويأطر
-         الصف بالكامل من الداخل. -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/row_inner_shadow" />
+    <!-- علم صغير بدائرة -->
+    <ImageView
+        android:id="@+id/ivFlag"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_flag_ring"
+        android:contentDescription="@null"
+        android:padding="1dp"
+        android:scaleType="centerCrop"
+        tools:src="@drawable/flag_iq" />
 
-</FrameLayout>
+</LinearLayout>

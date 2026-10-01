@@ -8,9 +8,15 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Parcel
 import android.os.Parcelable
+import android.util.TypedValue
+import android.view.GestureDetector
+import android.view.MotionEvent
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.toColorInt
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.core.widget.TextViewCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.datepicker.CalendarConstraints
@@ -21,6 +27,7 @@ import com.mohammed.currencyapp.databinding.ActivityHistoryBinding
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.math.abs
 
 /**
  * صفحة هيستوري خاصة ببورصة/عملة وحدة. تفتح افتراضياً على سجل اليوم
@@ -69,6 +76,7 @@ class HistoryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityHistoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applySystemBarsInsets(binding.toolbar, binding.recyclerHistory)
 
         itemKey = intent.getStringExtra(EXTRA_KEY) ?: run { finish(); return }
         itemName = intent.getStringExtra(EXTRA_NAME) ?: ""
@@ -80,82 +88,26 @@ class HistoryActivity : AppCompatActivity() {
         binding.recyclerHistory.layoutManager = LinearLayoutManager(this)
         binding.recyclerHistory.adapter = listAdapter
 
-        // نطاق اليوم الحالي افتراضياً (00:00 لين 23:59 بتوقيت الجهاز).
-        val now = System.currentTimeMillis()
-        goToDay(now, autoSync = true)
+        tabViews = listOf(binding.tabDay, binding.tab7, binding.tab30, binding.tab60)
+        tabViews.forEachIndexed { index, tab -> tab.setOnClickListener { showTab(index) } }
+        showTab(0) // اليوم الحالي افتراضياً
 
         binding.btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         binding.btnPickRange.setOnClickListener { openRangePicker() }
-        binding.btnSyncChannel.setOnClickListener { onSyncChannelClicked() }
-        binding.btnDeleteRange.setOnClickListener { onDeleteRangeClicked() }
-        binding.btnPrevDay.setOnClickListener {
-            goToDay(currentFrom - 24 * 60 * 60 * 1000, autoSync = true)
-        }
-        binding.btnNextDay.setOnClickListener {
-            goToDay(currentFrom + 24 * 60 * 60 * 1000, autoSync = true)
-        }
     }
 
-    private var syncCancelled = false
-    private var syncRunning = false
+    // أزرار الفترة: يوم / أسبوع / شهر / شهرين (الأيام تنتهي باليوم الحالي).
+    private lateinit var tabViews: List<android.widget.TextView>
+    private val tabDays = intArrayOf(1, 7, 30, 60)
 
-    /** رسالة تنبيه مخصصة (بديل AlertDialog الافتراضي، اللي كانت أزراره
-     * تختفي عملياً — لون التطبيق colorPrimary أبيض عمداً، فنص الأزرار
-     * كان يطلع أبيض على خلفية بيضاء). تصميمها ثابت (عنوان + أيقونة،
-     * فاصل، رسالة، فاصل، زرين) وتتلون حسب نوع الإجراء عبر [accentColor]
-     * و[iconRes]. */
-    private fun showConfirmDialog(
-        title: String,
-        message: String,
-        iconRes: Int,
-        accentColor: Int,
-        confirmText: String,
-        onConfirm: () -> Unit,
-    ) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_confirm, null)
-        val dialog = android.app.Dialog(this)
-        dialog.setContentView(dialogView)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+    // الفترة المختارة حالياً (0=يوم، 1=أسبوع، 2=شهر، 3=شهرين)، أو -1 لو فترة مخصصة من التقويم.
+    private var selectedTab = 0
 
-        dialogView.findViewById<android.widget.ImageView>(R.id.ivDialogIcon).setImageResource(iconRes)
-        dialogView.findViewById<android.widget.TextView>(R.id.tvDialogTitle).text = title
-        dialogView.findViewById<android.widget.TextView>(R.id.tvDialogMessage).text = message
-
-        val confirmView = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogConfirm)
-        confirmView.text = confirmText
-        confirmView.background.setTint(accentColor)
-        confirmView.setOnClickListener {
-            dialog.dismiss()
-            onConfirm()
-        }
-        dialogView.findViewById<android.widget.TextView>(R.id.tvDialogCancel).setOnClickListener {
-            dialog.dismiss()
-        }
-        dialog.show()
-    }
-
-    /** زر التنزيل: يلف للخلف بصفحات قناة بورصة ديناري لين يغطي الفترة
-     * المحددة حالياً بالتقويم (currentFrom..currentTo)، ويعبي أي فجوة
-     * ناقصة بالسجل المحلي لهذي البورصة بس ضمن نفس الفترة (بدون تكرار
-     * الموجود، وبدون أي منبه دوري بالخلفية — يشتغل بس لما المستخدم يضغط
-     * الزر ويأكد من رسالة التنبيه). ضغطة ثانية أثناء الجلب تلغيه (بدون
-     * رسالة تأكيد، لأنها إلغاء مو بدء عملية)، وأي نقطة توصل تنسجل أول
-     * بأول قبل الإلغاء. */
-    private fun onSyncChannelClicked() {
-        if (syncRunning) {
-            syncCancelled = true
-            return
-        }
-        val message = "هل انت متأكد بالقيام بتحديث السجلات للفترة المحددة من " +
-            "${formatDateOnly(currentFrom)} الى ${formatDateOnly(currentTo)}؟"
-        showConfirmDialog(
-            title = "تحديث",
-            message = message,
-            iconRes = R.drawable.ic_channel_sync,
-            accentColor = "#00897B".toColorInt(),
-            confirmText = "تحديث"
-        ) { startSync() }
-    }
+    // اتجاه السحب بين الفترات. الترتيب بالشاشة من اليمين: يوم ← أسبوع ← شهر ← شهرين،
+    // فالسحب لليمين (الإصبع يتحرك من اليسار لليمين) ينقل للفترة اللي على يسار الحالية
+    // (الأطول)، والسحب لليسار يرجع للأقصر — نفس سلوك الصفحات بالواجهات العربية.
+    // غيّر هذا الخيار لـ false لو تريد العكس.
+    private val swipeRightGoesLonger = true
 
     /** يتأكد اكو اتصال إنترنت فعلي قبل أي عملية تمسح بيانات محلية —
      * بدونها كان startSync يمسح سجل اليوم/الفترة المحددة أولاً (نفس
@@ -173,80 +125,102 @@ class HistoryActivity : AppCompatActivity() {
         }
     }
 
-    /** يبدأ مزامنة القناة للفترة المحددة حالياً. نمسح أولاً كل سجلات
-     * هذي البورصة بنفس الفترة (currentFrom..currentTo) قبل الجلب —
-     * بدونها، كل ضغطة على زر الجلب كانت تضيف نفس النقاط فوق الموجودة
-     * أصلاً (HistoryStore.backfill يدرج نقاط جديدة، ما يستبدل)، فيصير
-     * تكرار بالقائمة والمخطط كل ما تعيد تحميل نفس الفترة.
-     *
-     * قبل أي مسح، نتأكد اكو نت فعلاً — إذا ماكو، نوقف فوراً بدون ما
-     * نلمس البيانات المحفوظة إطلاقاً (ولا مسح ولا محاولة جلب)، فتضل
-     * القائمة والمخطط زي ما هم. هذا يشمل كل نقاط الدخول اللي تستدعي
-     * startSync(): زر التحديث اليدوي، زري التنقل بين الأيام، اختيار
-     * فترة من التقويم، والتحديث التلقائي عند فتح الصفحة أول مرة —
-     * كلهم يمرون من هنا. */
-    private fun startSync() {
-        if (!isNetworkAvailable()) return
-        syncRunning = true
-        syncCancelled = false
-        // نغيّر شفافية نفس الزر بدل ما نضيف View تحميل منفصل بالتولبار —
-        // إضافة/إخفاء عنصر ثاني بالتولبار كانت تسبب إعادة قياس تخلي عنوان
-        // البورصة (تدهوك) يختفي مؤقتاً لين يخلص التحميل.
-        binding.btnSyncChannel.isEnabled = true // نخليه فعّال حتى تكدر تلغي بالضغط عليه ثانية
-        binding.btnSyncChannel.alpha = 0.35f
-
-        val since = currentFrom
-        val until = currentTo
-        HistoryStore.deleteRange(this, itemKey, since, until)
-        TelegramScraperRepository.fetchHistoricalPrices(
-            cityKey = itemKey,
-            sinceMillis = since,
-            untilMillis = until,
-            onProgress = { _, _ -> },
-            isCancelled = { syncCancelled }
-        ) { points ->
-            syncRunning = false
-            binding.btnSyncChannel.alpha = 1f
-            if (points.isNotEmpty()) HistoryStore.backfill(this, itemKey, points)
+    private val syncListener = object : HistorySync.Listener {
+        override fun onDataChanged() {
             loadHistory(currentFrom, currentTo)
         }
+
+        override fun onFinished() {
+            binding.syncProgress.visibility = View.INVISIBLE
+            loadHistory(currentFrom, currentTo)
+        }
+    }
+
+    /** يطلب من HistorySync يغطي الفترة المعروضة. المزامنة تراكمية: بعد أول مرة
+     * السجل المحلي يكفي ويظهر فوراً، وما نجلب من القناة إلا المنشورات الجديدة أو
+     * الفترة الأقدم اللي ما غطيناها قبل. شريط التقدم الرفيع يظهر بس لو في جلب فعلي. */
+    private fun startSync() {
+        if (HistorySync.isUpToDate(this, currentFrom)) return
+        if (!isNetworkAvailable()) return
+        binding.syncProgress.visibility = View.VISIBLE
+        HistorySync.request(applicationContext, currentFrom, syncListener)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // لو المزامنة لسا شغالة (رجعنا للصفحة) نكمل نعرض تقدمها.
+        if (HistorySync.attach(syncListener)) binding.syncProgress.visibility = View.VISIBLE
     }
 
     override fun onStop() {
         super.onStop()
-        // نلغي أي جلب شغال إذا المستخدم غادر الصفحة، حتى ما يضل يشتغل
-        // بالخلفية بلا داعي وهو مو شايفها.
-        syncCancelled = true
-        binding.btnSyncChannel.alpha = 1f
+        HistorySync.detach()
+        binding.syncProgress.visibility = View.INVISIBLE
     }
 
-    /** زر الحذف بالترويسة: يمسح كل سجلات هذي البورصة ضمن الفترة المحددة
-     * حالياً بالتقويم (currentFrom..currentTo)، بعد رسالة تنبيه تأكيد
-     * توضح الفترة بالضبط، ثم يعيد تحميل نفس الفترة حتى تتحدث القائمة
-     * والمخطط سوا فوراً. */
-    private fun onDeleteRangeClicked() {
-        val message = "هل انت متأكد بالقيام بحذف السجلات للفترة المحددة من " +
-            "${formatDateOnly(currentFrom)} الى ${formatDateOnly(currentTo)}؟"
-        showConfirmDialog(
-            title = "حذف",
-            message = message,
-            iconRes = R.drawable.ic_delete,
-            accentColor = "#C0392B".toColorInt(),
-            confirmText = "حذف"
-        ) {
-            HistoryStore.deleteRange(this, itemKey, currentFrom, currentTo)
-            loadHistory(currentFrom, currentTo)
+    // ───────────── السحب يمين/يسار للتنقل بين الفترات ─────────────
+    private val swipeDetector by lazy {
+        GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(
+                e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float
+            ): Boolean {
+                if (e1 == null || selectedTab < 0) return false
+                val dx = e2.x - e1.x
+                val dy = e2.y - e1.y
+                val minDistance = resources.displayMetrics.density * 70f
+                if (abs(dx) < minDistance || abs(dx) < abs(dy) * 1.6f || abs(velocityX) < 500f) return false
+                val goLonger = (dx > 0) == swipeRightGoesLonger
+                val target = if (goLonger) selectedTab + 1 else selectedTab - 1
+                if (target in tabDays.indices) {
+                    showTab(target)
+                    return true
+                }
+                return false
+            }
+        })
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        swipeDetector.onTouchEvent(ev)
+        return super.dispatchTouchEvent(ev)
+    }
+
+    /** حركة انزلاق قصيرة للمخطط والقائمة عند تبديل الفترة. */
+    private fun slideContent(enterFromRight: Boolean) {
+        val distance = resources.displayMetrics.density * 56f * (if (enterFromRight) 1f else -1f)
+        for (v in listOf<View>(binding.chartContainer, binding.recyclerHistory)) {
+            v.animate().cancel()
+            v.translationX = distance
+            v.alpha = 0.25f
+            v.animate().translationX(0f).alpha(1f).setDuration(200L).start()
         }
     }
 
-    /** يفتح صفحة الهيستوري على يوم واحد كامل (00:00 لين 23:59) يحتوي
-     * [anyMillisInDay]، ويحدّث رقم اليوم بترويسة الصفحة. يُستخدم بزري
-     * السهم (اليوم السابق/التالي) وبالفتح الأولي على يوم اليوم — وباختيار
-     * [autoSync]=true (كل الحالات الحالية) يمسح سجلات هذا اليوم أولاً
-     * ثم يجيبها من جديد من القناة، نفس فكرة زر التحديث بالضبط. */
-    private fun goToDay(anyMillisInDay: Long, autoSync: Boolean) {
-        loadHistory(startOfDay(anyMillisInDay), endOfDay(anyMillisInDay))
-        if (autoSync) startSync()
+    /** يلوّن زر الفترة المختار (أزرق + نص أبيض)؛ index = -1 يعني فترة مخصصة من التقويم. */
+    private fun selectTab(index: Int) {
+        tabViews.forEachIndexed { i, tab ->
+            val selected = i == index
+            tab.setBackgroundResource(if (selected) R.drawable.bg_tab_selected else 0)
+            tab.setTextColor(
+                ContextCompat.getColor(this, if (selected) R.color.white else R.color.textPrimary)
+            )
+        }
+    }
+
+    /** يعرض آخر N يوم (يوم = اليوم الحالي فقط، أسبوع = اليوم وآخر 6 قبله، وهكذا). */
+    private fun showTab(index: Int) {
+        val previous = selectedTab
+        selectedTab = index
+        selectTab(index)
+        val now = System.currentTimeMillis()
+        val cal = Calendar.getInstance().apply {
+            timeInMillis = now
+            add(Calendar.DAY_OF_YEAR, -(tabDays[index] - 1))
+        }
+        loadHistory(startOfDay(cal.timeInMillis), endOfDay(now))
+        startSync()
+        // الفترة الأطول موقعها يسار الحالية فيدخل المحتوى من اليسار، والأقصر من اليمين.
+        if (previous != index && previous >= 0) slideContent(enterFromRight = index < previous)
     }
 
     private fun openRangePicker() {
@@ -282,41 +256,64 @@ class HistoryActivity : AppCompatActivity() {
         picker.addOnPositiveButtonClickListener { selection ->
             val from = startOfDay(selection.first ?: now)
             val to = endOfDay(selection.second ?: now)
+            selectedTab = -1
+            selectTab(-1) // فترة مخصصة: ما يتلوّن أي زر فترة
             loadHistory(from, to)
-            // نفس فكرة التحديث التلقائي عند فتح الصفحة: أي فترة يختارها
-            // المستخدم يدوياً من التقويم تنعامل نفس معاملة زر "تحديث" —
-            // تمسح الفترة المحددة أولاً ثم تجيب بياناتها من جديد من
-            // القناة (startSync يعتمد على currentFrom/currentTo اللي
-            // للتو ضبطناها بـloadHistory فوق).
+            // أي فترة يختارها المستخدم من التقويم نجلب بياناتها من القناة
+            // (startSync يعتمد على currentFrom/currentTo اللي للتو ضبطناها).
             startSync()
         }
 
+        // نكبّر عنوان "اختيار الفترة" بالهيدر بالكود (حجم الستايل وحده ما كان يظهر).
+        supportFragmentManager.registerFragmentLifecycleCallbacks(
+            object : FragmentManager.FragmentLifecycleCallbacks() {
+                // Material يطبّق "الحجم التلقائي" على عنوان الهيدر فيصغّره، ولذلك الحجم
+                // بالستايل ما يبين. نوقف الحجم التلقائي ونفرض الحجم بعد ما ينعرض
+                // الهيدر (وبعد أول رسم أيضاً حتى ما يرجعه Material).
+                private fun enlarge(root: View?) {
+                    val title = root?.findViewById<android.widget.TextView>(
+                        com.google.android.material.R.id.mtrl_picker_title_text
+                    ) ?: return
+                    TextViewCompat.setAutoSizeTextTypeWithDefaults(
+                        title, TextViewCompat.AUTO_SIZE_TEXT_TYPE_NONE
+                    )
+                    title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
+                    title.maxLines = 2
+                }
+
+                override fun onFragmentViewCreated(
+                    fm: FragmentManager, f: Fragment, v: View, savedInstanceState: Bundle?
+                ) {
+                    if (f !== picker) return
+                    enlarge(v)
+                }
+
+                override fun onFragmentStarted(fm: FragmentManager, f: Fragment) {
+                    if (f !== picker) return
+                    enlarge(f.view)
+                    f.view?.post { enlarge(f.view) }
+                }
+
+                override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) {
+                    if (f === picker) fm.unregisterFragmentLifecycleCallbacks(this)
+                }
+            },
+            false
+        )
         picker.show(supportFragmentManager, "date_range_picker")
     }
 
     private fun loadHistory(fromMillis: Long, toMillis: Long) {
         currentFrom = fromMillis
         currentTo = toMillis
-        binding.tvDayNumber.text = SimpleDateFormat("d", Locale.US).format(fromMillis)
-        // زر اليوم التالي يوقف لما نكون على يوم اليوم الحالي أصلاً — ما
-        // اكو بيانات ليوم "غد" لأنه لسا ما صار، فما فايدة نخلي المستخدم
-        // يضغط عليه بلا نتيجة.
-        val isAtToday = startOfDay(fromMillis) >= startOfDay(System.currentTimeMillis())
-        binding.btnNextDay.isEnabled = !isAtToday
-        binding.btnNextDay.alpha = if (isAtToday) 0.3f else 1f
         val entries = HistoryStore.query(this, itemKey, fromMillis, toMillis)
         listAdapter.submit(entries)
-        binding.historyChart.setEntries(entries)
+        binding.historyChart.setEntries(entries, fromMillis, toMillis)
         val isEmpty = entries.isEmpty()
-        binding.tvEmpty.visibility = if (isEmpty) android.view.View.VISIBLE else android.view.View.GONE
-        binding.recyclerHistory.visibility = if (isEmpty) android.view.View.GONE else android.view.View.VISIBLE
-        binding.chartContainer.visibility = if (isEmpty) android.view.View.GONE else android.view.View.VISIBLE
+        binding.tvEmpty.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        binding.recyclerHistory.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        binding.chartContainer.visibility = if (isEmpty) View.GONE else View.VISIBLE
     }
-
-    /** تاريخ باليوم/الشهر/السنة بس (بدون وقت)، تُستخدم برسائل تأكيد الحذف
-     * والتنزيل حتى توضح الفترة المحددة بالتقويم بشكل مختصر ومفهوم. */
-    private fun formatDateOnly(millis: Long): String =
-        SimpleDateFormat("dd/MM/yyyy", Locale.US).format(millis)
 
     private fun startOfDay(millis: Long): Long {
         val cal = Calendar.getInstance().apply {
@@ -380,7 +377,8 @@ class HistoryActivity : AppCompatActivity() {
 
     private class HistoryAdapter : RecyclerView.Adapter<HistoryAdapter.VH>() {
         private var entries: List<HistoryEntry> = emptyList()
-        private val timeFormat = SimpleDateFormat("dd/MM/yyyy - hh:mm a", Locale.US)
+        private val dateFormat = SimpleDateFormat("d/M", Locale.US)
+        private val timeFormat = SimpleDateFormat("HH:mm", Locale.US)
 
         fun submit(newEntries: List<HistoryEntry>) {
             entries = newEntries
@@ -395,21 +393,25 @@ class HistoryActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: VH, position: Int) {
             val entry = entries[position]
+            holder.date.text = dateFormat.format(entry.timestampMillis)
             holder.time.text = timeFormat.format(entry.timestampMillis)
-            holder.price.text = entry.price
-            val colorRes = when (entry.trend) {
-                Trend.UP -> R.color.trendUp
-                Trend.DOWN -> R.color.trendDown
-                Trend.FLAT -> R.color.trendFlat
-            }
-            holder.price.background.setTint(ContextCompat.getColor(holder.itemView.context, colorRes))
+            holder.price.text = entry.price.removeSuffix(" د.ع")
+            holder.trend.setImageResource(
+                when (entry.trend) {
+                    Trend.UP -> R.drawable.ic_hist_up
+                    Trend.DOWN -> R.drawable.ic_hist_down
+                    Trend.FLAT -> R.drawable.ic_hist_flat
+                }
+            )
         }
 
         override fun getItemCount(): Int = entries.size
 
         class VH(view: android.view.View) : RecyclerView.ViewHolder(view) {
-            val time: android.widget.TextView = view.findViewById(R.id.tvHistoryTime)
+            val trend: android.widget.ImageView = view.findViewById(R.id.ivHistoryTrend)
             val price: android.widget.TextView = view.findViewById(R.id.tvHistoryPrice)
+            val date: android.widget.TextView = view.findViewById(R.id.tvHistoryDate)
+            val time: android.widget.TextView = view.findViewById(R.id.tvHistoryTime)
         }
     }
 }

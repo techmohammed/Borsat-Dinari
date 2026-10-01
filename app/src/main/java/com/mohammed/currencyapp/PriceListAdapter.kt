@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 class PriceListAdapter(
     private var rows: List<ListRow>,
-    private var favoriteKey: String = "baghdad",
+    private var favoriteKeys: List<String> = listOf("baghdad"),
     private val onStarClick: (String) -> Unit = {},
     private val onRowClick: (PriceItem) -> Unit = {}
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -18,6 +18,7 @@ class PriceListAdapter(
     companion object {
         private const val TYPE_HEADER = 0
         private const val TYPE_ROW = 1
+        private const val TYPE_FAVORITE = 2
     }
 
     // مفاتيح الصفوف اللي سعرها فعلياً تغيّر بآخر submitList — تُستخدم لتشغيل
@@ -25,7 +26,7 @@ class PriceListAdapter(
     // (تحديث يدوي بالسحب للأسفل، أو تحديث تلقائي كل 15 دقيقة وهو مفتوح).
     private var changedKeys: Set<String> = emptySet()
 
-    fun submitList(newRows: List<ListRow>, newFavoriteKey: String) {
+    fun submitList(newRows: List<ListRow>, newFavoriteKeys: List<String>) {
         val oldPriceByKey = rows.filterIsInstance<ListRow.Row>()
             .associate { (it.item.cityKey ?: it.item.name) to it.item.price }
 
@@ -38,7 +39,7 @@ class PriceListAdapter(
             .toSet()
 
         rows = newRows
-        favoriteKey = newFavoriteKey
+        favoriteKeys = newFavoriteKeys
         notifyDataSetChanged()
 
         // نمسح علامة "تغيّر" بعد ما تخلص عملية إعادة الرسم الحالية، حتى لا
@@ -49,15 +50,23 @@ class PriceListAdapter(
 
     override fun getItemViewType(position: Int): Int = when (rows[position]) {
         is ListRow.Header -> TYPE_HEADER
-        is ListRow.Row -> TYPE_ROW
+        is ListRow.Row -> {
+            val item = (rows[position] as ListRow.Row).item
+            // أول مفضلة فقط لها تصميم أكبر وأبرز؛ الثانية والثالثة صفوف عادية
+            // (بس تجي فوق باقي الصفوف).
+            if ((item.cityKey ?: item.name) == favoriteKeys.firstOrNull()) TYPE_FAVORITE else TYPE_ROW
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        return if (viewType == TYPE_HEADER) {
-            HeaderViewHolder(inflater.inflate(R.layout.item_section_header, parent, false))
-        } else {
-            RowViewHolder(inflater.inflate(R.layout.item_price, parent, false), onStarClick, onRowClick)
+        return when (viewType) {
+            TYPE_HEADER ->
+                HeaderViewHolder(inflater.inflate(R.layout.item_section_header, parent, false))
+            TYPE_FAVORITE ->
+                RowViewHolder(inflater.inflate(R.layout.item_price_favorite, parent, false), onStarClick, onRowClick)
+            else ->
+                RowViewHolder(inflater.inflate(R.layout.item_price, parent, false), onStarClick, onRowClick)
         }
     }
 
@@ -66,7 +75,7 @@ class PriceListAdapter(
             is ListRow.Header -> (holder as HeaderViewHolder).bind(row.title)
             is ListRow.Row -> {
                 val key = row.item.cityKey ?: row.item.name
-                (holder as RowViewHolder).bind(row.item, favoriteKey, animatePrice = changedKeys.contains(key))
+                (holder as RowViewHolder).bind(row.item, favoriteKeys, animatePrice = changedKeys.contains(key))
             }
         }
     }
@@ -91,38 +100,68 @@ class PriceListAdapter(
         private val tvPrice: android.widget.TextView = view.findViewById(R.id.tvPrice)
         private val tvUnit: android.widget.TextView = view.findViewById(R.id.tvUnit)
         private val tvName: android.widget.TextView = view.findViewById(R.id.tvName)
-        private val ivFlagBg: android.widget.ImageView = view.findViewById(R.id.ivFlagBg)
+        private val ivFlag: android.widget.ImageView = view.findViewById(R.id.ivFlag)
+        private val deltaRow: View = view.findViewById(R.id.deltaRow)
+        private val ivDeltaArrow: android.widget.ImageView = view.findViewById(R.id.ivDeltaArrow)
+        private val tvDelta: android.widget.TextView = view.findViewById(R.id.tvDelta)
         private val btnStar: android.widget.ImageButton = view.findViewById(R.id.btnStar)
 
         private val animHandler = Handler(Looper.getMainLooper())
         private var animRunnable: Runnable? = null
 
-        fun bind(item: PriceItem, favoriteKey: String, animatePrice: Boolean) {
+        fun bind(item: PriceItem, favoriteKeys: List<String>, animatePrice: Boolean) {
             val context = itemView.context
             tvUnit.text = item.unit
             tvName.text = item.name
 
-            // صعود السعر = أخضر، نزول السعر = أحمر.
-            // FLAT رصاصي: تعني السعر مستقر (ما تغيّر)، أو عدم توفر تحديث
-            // فعلي من أي مصدر منذ فترة (انظر تعليق "3 ساعات" بمستودعات الأسعار).
-            val colorRes = when (item.trend) {
-                Trend.UP -> R.color.trendUp
-                Trend.DOWN -> R.color.trendDown
-                Trend.FLAT -> R.color.trendFlat
+            // خلفية الصف كاملة: أخضر فاتح = صعود، أحمر فاتح = نزول.
+            // FLAT رصاصي فاتح: السعر مستقر (ما تغيّر)، أو ما صار تحديث فعلي
+            // من أي مصدر منذ فترة (انظر تعليق "3 ساعات" بمستودعات الأسعار).
+            val bgColorRes = when (item.trend) {
+                Trend.UP -> R.color.rowUpBg
+                Trend.DOWN -> R.color.rowDownBg
+                Trend.FLAT -> R.color.rowFlatBg
             }
-            tvPrice.background.setTint(ContextCompat.getColor(context, colorRes))
+            (itemView.background.mutate() as android.graphics.drawable.GradientDrawable)
+                .setColor(ContextCompat.getColor(context, bgColorRes))
 
-            val bgResId = context.resources.getIdentifier(
-                "row_bg_${item.flagDrawable}", "drawable", context.packageName
+            // علم صغير بدائرة بجانب الاسم.
+            val flagResId = context.resources.getIdentifier(
+                "flag_${item.flagDrawable}", "drawable", context.packageName
             )
-            if (bgResId != 0) ivFlagBg.setImageResource(bgResId)
-            else ivFlagBg.setImageDrawable(null)
+            if (flagResId != 0) ivFlag.setImageResource(flagResId)
+            else ivFlag.setImageDrawable(null)
+
+            // مقدار التغيير أسفل السعر: مثلث أخضر + "+500" أو مثلث أحمر + "-300".
+            val key = item.cityKey ?: item.name
+            if (item.price == "—") {
+                deltaRow.visibility = View.INVISIBLE
+            } else if (item.trend == Trend.FLAT) {
+                // مستقر أو بدون تحديث: صف رصاصي بدون رقم تغيير.
+                deltaRow.visibility = View.INVISIBLE
+            } else {
+                val amount = PriceDelta.absText(context, key)
+                if (amount == null) {
+                    deltaRow.visibility = View.INVISIBLE
+                } else {
+                    deltaRow.visibility = View.VISIBLE
+                    ivDeltaArrow.visibility = View.VISIBLE
+                    if (item.trend == Trend.UP) {
+                        ivDeltaArrow.setImageResource(R.drawable.ic_tri_up)
+                        tvDelta.text = "+$amount"
+                        tvDelta.setTextColor(ContextCompat.getColor(context, R.color.deltaUp))
+                    } else {
+                        ivDeltaArrow.setImageResource(R.drawable.ic_tri_down)
+                        tvDelta.text = "-$amount"
+                        tvDelta.setTextColor(ContextCompat.getColor(context, R.color.deltaDown))
+                    }
+                }
+            }
 
             // كل الصفوف أصبحت قابلة للمفضلة، بما فيها اليورو والجنيه والليرة والتومان والدولار.
-            val key = item.cityKey ?: item.name
             btnStar.visibility = View.VISIBLE
             btnStar.setImageResource(
-                if (key == favoriteKey) R.drawable.ic_star_filled else R.drawable.ic_star_outline
+                if (key in favoriteKeys) R.drawable.ic_star_filled else R.drawable.ic_star_outline
             )
             btnStar.setOnClickListener { onStarClick(key) }
 
@@ -130,9 +169,12 @@ class PriceListAdapter(
             itemView.setOnClickListener { onRowClick(item) }
 
             cancelPriceAnimation()
-            val plan = if (animatePrice) DigitRevealAnimator.plan(item.price) else null
+            // السعر بالأسود وبدون "د.ع" (الوحدة تحت الاسم). نبقي item.price الأصلي
+            // للمقارنة وللودجت والهيستوري، ونعرض بس النسخة المختصرة هنا.
+            val displayPrice = item.price.removeSuffix(" د.ع")
+            val plan = if (animatePrice) DigitRevealAnimator.plan(displayPrice) else null
             if (plan == null) {
-                tvPrice.text = item.price
+                tvPrice.text = displayPrice
                 return
             }
 
@@ -145,7 +187,7 @@ class PriceListAdapter(
             val runnable = object : Runnable {
                 override fun run() {
                     step++
-                    tvPrice.text = DigitRevealAnimator.frameText(item.price, plan, step, totalSteps)
+                    tvPrice.text = DigitRevealAnimator.frameText(displayPrice, plan, step, totalSteps)
                     if (step < totalSteps) animHandler.postDelayed(this, frameRate)
                 }
             }
