@@ -33,23 +33,24 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
 
         private class CardIds(
             val card: Int, val flag: Int, val name: Int, val unit: Int,
-            val price: Int, val deltaRow: Int, val arrow: Int, val delta: Int
+            val price: Int, val deltaRow: Int, val arrow: Int, val delta: Int,
+            val nameSp: Float
         )
 
         // الودجت الكبير 4×2: ثلاث بطاقات (أول 3 مفضلات).
         private val CARDS = listOf(
             CardIds(R.id.widgetCard1, R.id.widgetFlag1, R.id.widgetName1, R.id.widgetUnit1,
-                R.id.widgetPrice1, R.id.widgetDeltaRow1, R.id.widgetDeltaArrow1, R.id.widgetDelta1),
+                R.id.widgetPrice1, R.id.widgetDeltaRow1, R.id.widgetDeltaArrow1, R.id.widgetDelta1, 19f),
             CardIds(R.id.widgetCard2, R.id.widgetFlag2, R.id.widgetName2, R.id.widgetUnit2,
-                R.id.widgetPrice2, R.id.widgetDeltaRow2, R.id.widgetDeltaArrow2, R.id.widgetDelta2),
+                R.id.widgetPrice2, R.id.widgetDeltaRow2, R.id.widgetDeltaArrow2, R.id.widgetDelta2, 14f),
             CardIds(R.id.widgetCard3, R.id.widgetFlag3, R.id.widgetName3, R.id.widgetUnit3,
-                R.id.widgetPrice3, R.id.widgetDeltaRow3, R.id.widgetDeltaArrow3, R.id.widgetDelta3)
+                R.id.widgetPrice3, R.id.widgetDeltaRow3, R.id.widgetDeltaArrow3, R.id.widgetDelta3, 14f)
         )
 
         // الودجت الصغير 4×1: بطاقة وحدة (أول مفضلة).
         private val SMALL_CARD = CardIds(
             R.id.smallCard, R.id.smallFlag, R.id.smallName, R.id.smallUnit,
-            R.id.smallPrice, R.id.smallDeltaRow, R.id.smallDeltaArrow, R.id.smallDelta
+            R.id.smallPrice, R.id.smallDeltaRow, R.id.smallDeltaArrow, R.id.smallDelta, 16f
         )
 
         private fun displayPrice(raw: String?): String = raw?.removeSuffix(" د.ع") ?: "—"
@@ -59,7 +60,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
         ) {
             val meta = WidgetPriceProvider.metaFor(key)
             views.setViewVisibility(ids.card, View.VISIBLE)
-            views.setTextViewText(ids.name, item?.name ?: meta?.name ?: "—")
+            setName(context, views, ids, item?.name ?: meta?.name ?: "—")
             views.setTextViewText(ids.unit, item?.unit ?: "")
             views.setTextViewText(ids.price, displayPrice(item?.price))
 
@@ -98,9 +99,16 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        private fun placeholderCard(views: RemoteViews, ids: CardIds) {
+        /** اسم المدينة كصورة بخط Cairo العريض (الودجت ما يدعم الخطوط المخصصة كنص). */
+        private fun setName(context: Context, views: RemoteViews, ids: CardIds, name: String) {
+            views.setImageViewBitmap(
+                ids.name, WidgetText.render(context, name, ids.nameSp, Color.parseColor("#212121"))
+            )
+        }
+
+        private fun placeholderCard(context: Context, views: RemoteViews, ids: CardIds) {
             views.setViewVisibility(ids.card, View.VISIBLE)
-            views.setTextViewText(ids.name, "اختر مفضلة")
+            setName(context, views, ids, "اختر مفضلة")
             views.setTextViewText(ids.unit, "اضغط ☆ بالتطبيق")
             views.setTextViewText(ids.price, "—")
             views.setViewVisibility(ids.deltaRow, View.INVISIBLE)
@@ -128,7 +136,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widgetUpdateTime, if (last != null) UpdateTimeFormat.timeAndDate(last) else "—")
 
             if (keys.isEmpty()) {
-                placeholderCard(views, CARDS[0])
+                placeholderCard(context, views, CARDS[0])
                 views.setViewVisibility(CARDS[1].card, View.GONE)
                 views.setViewVisibility(CARDS[2].card, View.GONE)
             } else {
@@ -140,9 +148,11 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             views.setViewVisibility(R.id.widgetSmallRow, if (keys.size >= 2) View.VISIBLE else View.GONE)
 
             views.setOnClickPendingIntent(R.id.widgetRoot, openAppPending(context))
-            views.setOnClickPendingIntent(
-                R.id.widgetRefreshButton, refreshPending(context, FavoriteWidgetProvider::class.java, 1)
-            )
+            // الضغط على الزر أو الوقت والتاريخ (كل منطقة التحديث) يسوي تحديث.
+            val refresh = refreshPending(context, FavoriteWidgetProvider::class.java, 1)
+            views.setOnClickPendingIntent(R.id.widgetUpdateArea, refresh)
+            views.setOnClickPendingIntent(R.id.widgetRefreshButton, refresh)
+            views.setOnClickPendingIntent(R.id.widgetUpdateTime, refresh)
             return views
         }
 
@@ -152,13 +162,14 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.widget_favorite_small)
             val last = LastUpdateStore.load(context)
             views.setTextViewText(R.id.smallUpdateTime, if (last != null) UpdateTimeFormat.timeAndDate(last) else "—")
-            if (keys.isEmpty()) placeholderCard(views, SMALL_CARD)
+            if (keys.isEmpty()) placeholderCard(context, views, SMALL_CARD)
             else fillCard(context, views, SMALL_CARD, keys[0], items.getOrNull(0))
 
             views.setOnClickPendingIntent(R.id.widgetRoot, openAppPending(context))
-            views.setOnClickPendingIntent(
-                R.id.smallRefreshButton, refreshPending(context, FavoriteWidgetSmallProvider::class.java, 2)
-            )
+            val refresh = refreshPending(context, FavoriteWidgetSmallProvider::class.java, 2)
+            views.setOnClickPendingIntent(R.id.smallUpdateArea, refresh)
+            views.setOnClickPendingIntent(R.id.smallRefreshButton, refresh)
+            views.setOnClickPendingIntent(R.id.smallUpdateTime, refresh)
             return views
         }
 

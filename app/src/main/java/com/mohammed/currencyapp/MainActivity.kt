@@ -2,8 +2,12 @@ package com.mohammed.currencyapp
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.MotionEvent
+import android.view.GestureDetector
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import kotlin.math.abs
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.mohammed.currencyapp.databinding.ActivityMainBinding
@@ -44,6 +48,7 @@ class MainActivity : AppCompatActivity() {
             favoriteKeys = FavoriteCityStore.getAll(this),
             onStarClick = { cityKey ->
                 FavoriteCityStore.toggle(this, cityKey)
+                FavoriteShortcuts.update(this)
                 rebuildRows()
                 // نحدث الودجت فوراً بالمفضلات الجديدة: عرض من الكاش فوراً، وبعدين
                 // طلب سعر حقيقي لها بالخلفية.
@@ -67,9 +72,7 @@ class MainActivity : AppCompatActivity() {
             loadCurrencies()
         }
 
-        binding.btnAbout.setOnClickListener {
-            startActivity(Intent(this, AboutActivity::class.java))
-        }
+        binding.btnAbout.setOnClickListener { openAbout() }
 
         // أيقونة القمر تعني "أنت بالنمط النهاري الآن، اضغط للتحويل لليلي"،
         // والعكس بالعكس — الأيقونة تمثل الوضع اللي رح تنتقل له لو ضغطت.
@@ -89,6 +92,9 @@ class MainActivity : AppCompatActivity() {
 
         updateLastUpdateLabel(LastUpdateStore.load(this))
 
+        // اختصارات أيقونة التطبيق (ضغطة مطولة): المفضلات الثلاث، كل وحدة بعلمها.
+        FavoriteShortcuts.update(this)
+
         // فتحنا من اختصار الشاشة الرئيسية (ضغطة مطولة على أيقونة التطبيق)؟
         // نفتح هيستوري المدينة المطلوبة مباشرة فوق الشاشة الرئيسية.
         intent?.getStringExtra(EXTRA_SHORTCUT_CITY_KEY)?.let { key ->
@@ -103,6 +109,40 @@ class MainActivity : AppCompatActivity() {
 
         loadExchanges()
         loadCurrencies()
+    }
+
+    /** يفتح "حول التطبيق" بانزلاق من اليسار (مثل سحب القائمة البرگر). */
+    private fun openAbout() {
+        startActivity(Intent(this, AboutActivity::class.java))
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(R.anim.drawer_open_enter, R.anim.drawer_open_exit)
+        }
+        // أندرويد 14+: الانزلاق يتحدد داخل AboutActivity (overrideActivityTransition).
+    }
+
+    // سحب من اليسار لليمين بأي مكان بالصفحة = يفتح "حول التطبيق".
+    private val drawerSwipeDetector by lazy {
+        GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(
+                e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                val dx = e2.x - e1.x
+                val dy = e2.y - e1.y
+                val minDistance = resources.displayMetrics.density * 80f
+                if (dx > minDistance && dx > abs(dy) * 1.8f && velocityX > 600f) {
+                    openAbout()
+                    return true
+                }
+                return false
+            }
+        })
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        drawerSwipeDetector.onTouchEvent(ev)
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onStart() {

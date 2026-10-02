@@ -4,10 +4,14 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Paint
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.mohammed.currencyapp.databinding.ActivityAboutBinding
+import kotlin.math.abs
 
 class AboutActivity : AppCompatActivity() {
 
@@ -25,6 +29,10 @@ class AboutActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, R.anim.drawer_open_enter, R.anim.drawer_open_exit)
+            overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, R.anim.drawer_close_enter, R.anim.drawer_close_exit)
+        }
         val binding = ActivityAboutBinding.inflate(layoutInflater)
         setContentView(binding.root)
         applySystemBarsInsets(binding.toolbar, binding.scrollAbout)
@@ -85,6 +93,38 @@ class AboutActivity : AppCompatActivity() {
         } catch (_: ActivityNotFoundException) {
             // ماكو تطبيق يفتح هذا الرابط (مثلاً ماكو تطبيق بريد) — نتجاهل بدل الكراش.
         }
+    }
+
+    override fun finish() {
+        super.finish()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(R.anim.drawer_close_enter, R.anim.drawer_close_exit)
+        }
+    }
+
+    // سحب من اليمين لليسار = يسكّر الصفحة (عكس فتحها).
+    private val closeSwipeDetector by lazy {
+        GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(
+                e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                val dx = e2.x - e1.x
+                val dy = e2.y - e1.y
+                val minDistance = resources.displayMetrics.density * 80f
+                if (-dx > minDistance && -dx > abs(dy) * 1.8f && -velocityX > 600f) {
+                    finish()
+                    return true
+                }
+                return false
+            }
+        })
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        closeSwipeDetector.onTouchEvent(ev)
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onSupportNavigateUp(): Boolean {

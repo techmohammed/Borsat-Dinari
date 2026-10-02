@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- بالنمط الليلي نخفف الصورة الباهتة أكثر حتى ما تبين كبقعة فاتحة على الخلفية الغامقة -->
+    <item name="quote_bg_alpha" format="float" type="dimen">0.1</item>
+</resources>

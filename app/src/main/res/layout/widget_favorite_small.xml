@@ -17,15 +17,15 @@
         android:paddingRight="5dp"
         android:paddingTop="3dp">
 
-        <!-- الترويسة -->
+        <!-- الترويسة (أكبر): اسم البورصة يمين، وزر التحديث + آخر تحديث يسار (كلهم يسوون تحديث) -->
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="20dp">
+            android:layout_height="32dp">
 
             <ImageView
                 android:id="@+id/smallTitle"
                 android:layout_width="wrap_content"
-                android:layout_height="16dp"
+                android:layout_height="22dp"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
                 android:layout_marginRight="5dp"
@@ -34,51 +34,56 @@
                 android:scaleType="fitCenter"
                 android:src="@drawable/widget_title" />
 
-            <ImageButton
-                android:id="@+id/smallRefreshButton"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_alignParentLeft="true"
-                android:layout_centerVertical="true"
-                android:background="@android:color/transparent"
-                android:contentDescription="تحديث الأسعار"
-                android:padding="3dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_widget_refresh" />
-
-            <TextView
-                android:id="@+id/smallUpdateTime"
+            <LinearLayout
+                android:id="@+id/smallUpdateArea"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:layout_marginLeft="2dp"
-                android:layout_marginRight="6dp"
+                android:layout_height="match_parent"
+                android:layout_alignParentLeft="true"
                 android:layout_toLeftOf="@id/smallTitle"
-                android:layout_toRightOf="@id/smallRefreshButton"
-                android:ellipsize="end"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="#B8CCE8"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/smallRefreshButton"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="تحديث الأسعار"
+                    android:padding="4dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_widget_refresh" />
+
+                <TextView
+                    android:id="@+id/smallUpdateTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="2dp"
+                    android:layout_marginRight="4dp"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </RelativeLayout>
 
         <RelativeLayout
             android:id="@+id/smallCard"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="1dp"
             android:layout_weight="1"
             android:background="@drawable/bg_widget_card_flat"
-            android:paddingBottom="3dp"
+            android:paddingBottom="2dp"
             android:paddingLeft="8dp"
             android:paddingRight="8dp"
-            android:paddingTop="3dp">
+            android:paddingTop="2dp">
 
             <ImageView
                 android:id="@+id/smallFlag"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
                 android:background="@drawable/bg_flag_ring"
@@ -101,7 +106,7 @@
                     android:includeFontPadding="false"
                     android:maxLines="1"
                     android:textColor="#000000"
-                    android:textSize="17sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <LinearLayout
@@ -140,16 +145,13 @@
                 android:gravity="right"
                 android:orientation="vertical">
 
-                <TextView
+                <ImageView
                     android:id="@+id/smallName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#212121"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@null"
+                    android:scaleType="fitEnd" />
 
                 <TextView
                     android:id="@+id/smallUnit"
