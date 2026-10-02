@@ -7,8 +7,6 @@ import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.mohammed.currencyapp.databinding.ActivityMainBinding
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,7 +18,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: PriceListAdapter
-    private val lastUpdateTimeFormat = SimpleDateFormat("HH:mm", Locale.US)
 
     private var latestExchanges: List<PriceItem> = emptyList()
     private var latestCurrencies: List<PriceItem> = emptyList()
@@ -138,7 +135,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateLastUpdateLabel(millis: Long?) {
         // شريط "آخر تحديث: 16:45" أعلى القائمة (وقت 24 ساعة بدون تاريخ).
         binding.tvLastUpdate.text = if (millis != null) {
-            "آخر تحديث: ${lastUpdateTimeFormat.format(millis)}"
+            "آخر تحديث: ${UpdateTimeFormat.timeAndDate(millis)}"
         } else "آخر تحديث: —"
     }
 

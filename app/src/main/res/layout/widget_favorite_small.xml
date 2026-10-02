@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ودجت المفضلة 4×1: أول مفضلة فقط (علم + اسم يمين، سعر + تغيير يسار) مع زر تحديث. -->
+<!-- ودجت المفضلة 4×1: ترويسة مصغّرة (اسم البورصة يمين، زر تحديث وآخر تحديث يسار)
+     وتحتها بطاقة أول مفضلة (علم + اسم يمين، سعر + تغيير يسار). مضغوط عمودياً. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widgetRoot"
     android:layoutDirection="ltr"
@@ -10,33 +11,74 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="5dp">
+        android:orientation="vertical"
+        android:paddingBottom="4dp"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
+        android:paddingTop="3dp">
 
-        <ImageButton
-            android:id="@+id/smallRefreshButton"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="تحديث الأسعار"
-            android:padding="5dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_widget_refresh" />
+        <!-- الترويسة -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="20dp">
+
+            <ImageView
+                android:id="@+id/smallTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="16dp"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="5dp"
+                android:adjustViewBounds="true"
+                android:contentDescription="بورصة ديناري"
+                android:scaleType="fitCenter"
+                android:src="@drawable/widget_title" />
+
+            <ImageButton
+                android:id="@+id/smallRefreshButton"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:background="@android:color/transparent"
+                android:contentDescription="تحديث الأسعار"
+                android:padding="3dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_widget_refresh" />
+
+            <TextView
+                android:id="@+id/smallUpdateTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="2dp"
+                android:layout_marginRight="6dp"
+                android:layout_toLeftOf="@id/smallTitle"
+                android:layout_toRightOf="@id/smallRefreshButton"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="#B8CCE8"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
 
         <RelativeLayout
             android:id="@+id/smallCard"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginLeft="2dp"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="2dp"
             android:layout_weight="1"
             android:background="@drawable/bg_widget_card_flat"
-            android:padding="7dp">
+            android:paddingBottom="3dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="3dp">
 
             <ImageView
                 android:id="@+id/smallFlag"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
                 android:background="@drawable/bg_flag_ring"
@@ -59,7 +101,7 @@
                     android:includeFontPadding="false"
                     android:maxLines="1"
                     android:textColor="#000000"
-                    android:textSize="19sp"
+                    android:textSize="17sp"
                     android:textStyle="bold" />
 
                 <LinearLayout
@@ -71,8 +113,8 @@
 
                     <ImageView
                         android:id="@+id/smallDeltaArrow"
-                        android:layout_width="10dp"
-                        android:layout_height="10dp"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
                         android:contentDescription="@null" />
 
                     <TextView
@@ -82,7 +124,7 @@
                         android:layout_marginLeft="3dp"
                         android:includeFontPadding="false"
                         android:maxLines="1"
-                        android:textSize="12sp"
+                        android:textSize="10sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -92,7 +134,7 @@
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_marginLeft="6dp"
-                android:layout_marginRight="7dp"
+                android:layout_marginRight="6dp"
                 android:layout_toLeftOf="@id/smallFlag"
                 android:layout_toRightOf="@id/smallPriceBox"
                 android:gravity="right"
@@ -106,7 +148,7 @@
                     android:includeFontPadding="false"
                     android:maxLines="1"
                     android:textColor="#212121"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -116,7 +158,7 @@
                     android:includeFontPadding="false"
                     android:maxLines="1"
                     android:textColor="#546E7A"
-                    android:textSize="10sp" />
+                    android:textSize="9sp" />
             </LinearLayout>
         </RelativeLayout>
 

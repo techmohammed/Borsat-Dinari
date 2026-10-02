@@ -11,7 +11,6 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.widget.RemoteViews
-import java.util.Calendar
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -54,15 +53,6 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
         )
 
         private fun displayPrice(raw: String?): String = raw?.removeSuffix(" د.ع") ?: "—"
-
-        /** وقت بنظام 12 ساعة مع ص/م، مثال: 10:45 م */
-        private fun formatTime12(millis: Long): String {
-            val cal = Calendar.getInstance().apply { timeInMillis = millis }
-            var hour = cal.get(Calendar.HOUR)
-            if (hour == 0) hour = 12
-            val suffix = if (cal.get(Calendar.AM_PM) == Calendar.AM) "ص" else "م"
-            return String.format(Locale.US, "%d:%02d %s", hour, cal.get(Calendar.MINUTE), suffix)
-        }
 
         private fun fillCard(
             context: Context, views: RemoteViews, ids: CardIds, key: String, item: PriceItem?
@@ -135,7 +125,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.widget_favorite_price)
 
             val last = LastUpdateStore.load(context)
-            views.setTextViewText(R.id.widgetUpdateTime, if (last != null) formatTime12(last) else "—")
+            views.setTextViewText(R.id.widgetUpdateTime, if (last != null) UpdateTimeFormat.timeAndDate(last) else "—")
 
             if (keys.isEmpty()) {
                 placeholderCard(views, CARDS[0])
@@ -160,6 +150,8 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             context: Context, keys: List<String>, items: List<PriceItem?>
         ): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_favorite_small)
+            val last = LastUpdateStore.load(context)
+            views.setTextViewText(R.id.smallUpdateTime, if (last != null) UpdateTimeFormat.timeAndDate(last) else "—")
             if (keys.isEmpty()) placeholderCard(views, SMALL_CARD)
             else fillCard(context, views, SMALL_CARD, keys[0], items.getOrNull(0))
 
