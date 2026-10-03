@@ -18,7 +18,7 @@ object CurrenciesRepository {
     // إذا مرت 3 ساعات وأكثر بدون سعر جديد فعلي، نلوّن العنصر رصاصي (نفس مبدأ
     // TelegramScraperRepository لأسعار المدن).
     private const val STALE_THRESHOLD_MS = 3 * 60 * 60 * 1000L
-    private val executor = Executors.newSingleThreadExecutor()
+    private val executor = Executors.newSingleThreadExecutor(BackgroundThreads.factory("fx-repo"))
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private data class CurrencyDef(
@@ -78,15 +78,15 @@ object CurrenciesRepository {
         executor.execute {
             val result: PriceItem? = when {
                 key == "USD_OFFICIAL" -> {
-                    val messages = TelegramScraperRepository.fetchTrustedBorsatDinariMessages()
+                    val messages = TelegramScraperRepository.fetchTrustedMessagesShared()
                     fetchOfficialUsd(context, messages)
                 }
                 key == "FX_EUR" || key == "FX_GBP" -> {
-                    val messages = TelegramScraperRepository.fetchTrustedBorsatDinariMessages()
+                    val messages = TelegramScraperRepository.fetchTrustedMessagesShared()
                     fetchEuroAndPound(context, messages).find { it.cityKey == key }
                 }
                 key == "TRY_INVESTING" -> {
-                    val messages = TelegramScraperRepository.fetchTrustedBorsatDinariMessages()
+                    val messages = TelegramScraperRepository.fetchTrustedMessagesShared()
                     fetchTryFromBorsatDinari(context, messages)
                 }
                 key == "IRR_TELEGRAM" -> {

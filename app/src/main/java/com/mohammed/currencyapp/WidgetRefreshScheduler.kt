@@ -55,6 +55,16 @@ object WidgetRefreshScheduler {
         )
     }
 
+    /** يجدول فقط لو ما في منبه شغال (حتى onUpdate المتكرر ما يزيح موعد التحديث كل مرة). */
+    fun scheduleIfMissing(context: Context) {
+        val existing = PendingIntent.getBroadcast(
+            context, 0,
+            Intent(context, FavoriteWidgetProvider::class.java).apply { action = ACTION_HOURLY_REFRESH },
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        if (existing == null) schedule(context)
+    }
+
     /** يوقف الجدولة — يُستدعى لما آخر ودجت ينحذف من الشاشة. */
     fun cancel(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return

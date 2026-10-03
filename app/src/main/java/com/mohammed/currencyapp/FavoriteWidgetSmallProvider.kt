@@ -13,17 +13,18 @@ import android.content.Intent
 class FavoriteWidgetSmallProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        WidgetRefreshScheduler.schedule(context)
+        WidgetRefreshScheduler.scheduleIfMissing(context)
+        if (FavoriteWidgetProvider.renderedRecently(context, appWidgetIds)) return
         FavoriteWidgetProvider.renderFromCache(context)
-        val pendingResult = goAsync()
-        FavoriteWidgetProvider.refreshFavorite(context) { pendingResult.finish() }
+        if (WidgetRefreshScheduler.shouldAutoRefresh(context)) {
+            FavoriteWidgetProvider.refreshAsync(this, context, animate = false)
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == FavoriteWidgetProvider.ACTION_REFRESH) {
-            val pendingResult = goAsync()
-            FavoriteWidgetProvider.refreshFavorite(context, animate = true) { pendingResult.finish() }
+            FavoriteWidgetProvider.refreshAsync(this, context, animate = true)
         }
     }
 

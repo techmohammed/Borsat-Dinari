@@ -38,20 +38,21 @@ object HistorySync {
     }
 
     private const val PREFS = "history_sync"
-    private const val WAVE = 6                       // عدد الصفحات المطلوبة بنفس الوقت
+    private const val WAVE = 4                       // عدد الصفحات المطلوبة بنفس الوقت (خفّفناها من 6 حتى ما يثقل الهاتف)
     private const val COMMIT_EVERY = 160             // نحفظ كل ~160 منشور (ثواني قليلة بكل دفعة)
     private const val MAX_PAGES = 450
     private const val TAIL_FRESH_MS = 45_000L        // لا نعيد فحص "الجديد" لو انفحص قبل أقل من هالمدة
     private const val RETENTION_MS = 60L * 24 * 60 * 60 * 1000
 
-    private val coordinator = Executors.newSingleThreadExecutor()
-    private val pool = Executors.newFixedThreadPool(WAVE)
+    private val coordinator = Executors.newSingleThreadExecutor(BackgroundThreads.factory("hist-sync"))
+    private val pool = Executors.newFixedThreadPool(WAVE, BackgroundThreads.factory("hist-fetch"))
     private val mainHandler = Handler(Looper.getMainLooper())
 
     @Volatile private var running = false
     @Volatile private var wantedSince = Long.MAX_VALUE
     @Volatile private var listener: Listener? = null
     @Volatile private var lastTailSyncAt = 0L
+    @Volatile private var cancelRequested = false
 
     private data class Coverage(
         val oldestId: Long,
@@ -73,6 +74,16 @@ object HistorySync {
         listener = null
     }
 
+    /**
+     * يوقف الجلب (لما المستخدم يطلع من صفحة السجل أو من التطبيق). اللي انحفظ يبقى
+     * محفوظ والتغطية مسجّلة، فالمرة الجاية نكمل من نفس المكان بدل ما يظل الجلب شغال
+     * بالخلفية ويثقل الهاتف.
+     */
+    fun cancel() {
+        cancelRequested = true
+        listener = null
+    }
+
     /** هل السجل المحلي يغطي من [sinceMillis] لليوم وحديث بما فيه الكفاية (بدون أي شبكة)؟ */
     fun isUpToDate(context: Context, sinceMillis: Long): Boolean {
         if (running) return false
@@ -88,6 +99,7 @@ object HistorySync {
      */
     fun request(context: Context, sinceMillis: Long, l: Listener) {
         listener = l
+        cancelRequested = false
         val since = max(sinceMillis, System.currentTimeMillis() - RETENTION_MS)
         synchronized(this) {
             if (running) {
@@ -126,7 +138,7 @@ object HistorySync {
 
         // الجزء الأقدم لو المستخدم طلب فترة أطول مما غطيناه (وممكن يتوسع أثناء الجلب).
         var guard = 0
-        while (guard++ < 4) {
+        while (guard++ < 4 && !cancelRequested) {
             val c = loadCoverage(ctx) ?: break
             val needOlder = wantedSince < c.oldestTime && !c.reachedStart
             if (!needOlder) break
@@ -177,7 +189,7 @@ object HistorySync {
             pending = ArrayList()
         }
 
-        while (!done && ok && pages < MAX_PAGES) {
+        while (!done && ok && pages < MAX_PAGES && !cancelRequested) {
             val before = nextBefore
             val befores: List<Long> = if (before == null) emptyList()
             else (0 until WAVE).map { before - step * it }.filter { it > 1 }
@@ -218,9 +230,9 @@ object HistorySync {
         if (tail) {
             // "الجديد": نحفظه بس لو وصلنا للتغطية القديمة بدون فجوة. لو القديمة أقدم من
             // 60 يوم وما وصلناها، نعتبر الجلب هذا تغطية جديدة بالكامل.
-            if (reachedStop && ok) {
+            if (reachedStop && ok && !cancelRequested) {
                 commit()
-            } else if (ok && done && !reachedStop) {
+            } else if (ok && done && !reachedStop && !cancelRequested) {
                 resetCoverage(ctx)
                 firstCommit = true
                 commit()

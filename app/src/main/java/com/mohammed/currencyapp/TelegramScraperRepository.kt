@@ -35,7 +35,7 @@ object TelegramScraperRepository {
     // معينة، نعتبرها "بدون تحديث حالياً" ونلوّنها رصاصي بدل الأخضر/الأحمر،
     // بغض النظر عن آخر اتجاه معروف.
     private const val STALE_THRESHOLD_MS = 3 * 60 * 60 * 1000L
-    private val executor = Executors.newSingleThreadExecutor()
+    private val executor = Executors.newSingleThreadExecutor(BackgroundThreads.factory("tg-scraper"))
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private data class CityPattern(
@@ -143,10 +143,29 @@ object TelegramScraperRepository {
                 return@execute
             }
             val cache = ScraperCache(context)
-            val messages = fetchTrustedBorsatDinariMessages()
+            val messages = fetchTrustedMessagesShared()
             val item = resolveCityItem(cp, messages, cache, context)
             mainHandler.post { onResult(item) }
         }
+    }
+
+    // الودجت يطلب سعر كل مفضلة لحالها (لحد 3 + الدولار)، وكل وحدة كانت تجلب نفس صفحات
+    // القناة من جديد (3 طلبات شبكة متتالية بمهلة 8 ثواني لكل وحدة). هسه أول طلب يجلب
+    // والباقي يستخدم نفس النتيجة لمدة 15 ثانية، ومحمي بـ synchronized حتى لو طلبوا بنفس الوقت
+    // من خيطين (المستودعين عندهم executor منفصل).
+    private var sharedMessages: List<Pair<String, String>> = emptyList()
+    private var sharedMessagesAt = 0L
+
+    @Synchronized
+    fun fetchTrustedMessagesShared(): List<Pair<String, String>> {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (sharedMessages.isNotEmpty() && now - sharedMessagesAt < 15_000L) return sharedMessages
+        val fresh = fetchTrustedBorsatDinariMessages()
+        if (fresh.isNotEmpty()) {
+            sharedMessages = fresh
+            sharedMessagesAt = now
+        }
+        return fresh
     }
 
     /** يبني PriceItem من الكاش المحلي فقط، بدون أي اتصال شبكة — يُستخدم لعرض

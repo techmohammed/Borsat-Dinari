@@ -154,7 +154,7 @@ class HistoryActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        HistorySync.detach()
+        HistorySync.cancel()
         binding.syncProgress.visibility = View.INVISIBLE
     }
 

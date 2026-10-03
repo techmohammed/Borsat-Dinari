@@ -3,15 +3,21 @@ package com.mohammed.currencyapp
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
+import android.os.SystemClock
+import android.provider.Settings
 import android.view.View
 import android.widget.RemoteViews
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -52,6 +58,34 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             R.id.smallCard, R.id.smallFlag, R.id.smallName, R.id.smallUnit,
             R.id.smallPrice, R.id.smallDeltaRow, R.id.smallDeltaArrow, R.id.smallDelta, 16f
         )
+
+        // بعض الـ Launchers تطلب onUpdate كل ما ترجع للشاشة الرئيسية. هالطلب ما يحتاج نبني
+        // الودجت من جديد لو رسمناه قبل دقايق لنفس الودجتات (والنظام محتفظ بآخر رسم)، وكل بناء
+        // = PendingIntents + صور + اتصالات Binder لحظة ما الـ Launcher مشغول. نتجاوز فقط لو:
+        // نفس تشغيل الجهاز (BOOT_COUNT)، رسم قبل <5 دقايق، وكل المعرّفات مرسومة سابقاً.
+        private const val RENDER_PREFS = "widget_render_state"
+
+        private fun bootCount(context: Context): Int =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                try { Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, 0) }
+                catch (_: Exception) { 0 }
+            } else 0
+
+        private fun markRendered(context: Context, ids: IntArray) {
+            context.getSharedPreferences(RENDER_PREFS, Context.MODE_PRIVATE).edit()
+                .putStringSet("ids", ids.map { it.toString() }.toSet())
+                .putInt("boot", bootCount(context))
+                .putLong("at", System.currentTimeMillis())
+                .apply()
+        }
+
+        fun renderedRecently(context: Context, requestedIds: IntArray): Boolean {
+            val p = context.getSharedPreferences(RENDER_PREFS, Context.MODE_PRIVATE)
+            if (p.getInt("boot", -1) != bootCount(context)) return false
+            if (System.currentTimeMillis() - p.getLong("at", 0L) > 5 * 60_000L) return false
+            val known = p.getStringSet("ids", emptySet()) ?: emptySet()
+            return requestedIds.isNotEmpty() && requestedIds.all { known.contains(it.toString()) }
+        }
 
         private fun displayPrice(raw: String?): String = raw?.removeSuffix(" د.ع") ?: "—"
 
@@ -201,6 +235,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
                 if (firstPriceOverride != null) v.setTextViewText(R.id.smallPrice, firstPriceOverride)
                 for (id in smallIds) manager.updateAppWidget(id, v)
             }
+            markRendered(context, largeIds + smallIds)
         }
 
         /** يرسم كل الودجتات الحالية بآخر أسعار محفوظة بالكاش فوراً (بدون شبكة). */
@@ -211,108 +246,198 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             pushAll(context, keys, items)
         }
 
+        // تحديث واحد فقط بنفس الوقت: لو المستخدم ضغط الزر كذا مرة، أو فتح الهاتف وصار
+        // onUpdate لودجتين، ما نبدأ تحديث جديد فوق اللي شغال (كل تحديث = طلبات شبكة +
+        // رسم ودجت، وتراكمها كان يسبب تأخير بالشاشة).
+        private val refreshing = AtomicBoolean(false)
+        @Volatile private var refreshStartedAt = 0L
+        private const val REFRESH_STALE_MS = 40_000L
+        private const val REFRESH_WATCHDOG_MS = 25_000L
+
         /**
          * يجيب أسعار جديدة فعلية للمفضلات (لحد 3)، ويحدّث كل الودجتات بنتيجتها.
-         * لو animate=true (زر التحديث اليدوي والتحديث الساعي)، سعر أول مفضلة يطلع
-         * بتأثير "عداد مبعثر" (أرقام عشوائية تستقر تدريجياً على الرقم الصحيح)
-         * بتحديثات RemoteViews متكررة بدل JavaScript.
+         * لو animate=true، سعر أول مفضلة يطلع بتأثير "عداد مبعثر" (أرقام عشوائية تستقر
+         * تدريجياً على الرقم الصحيح). [onDone] ينادى مرة وحدة فقط، حتى لو فشلت الشبكة أو
+         * تأخرت (مؤقّت أمان 25 ثانية) — مهم لأن goAsync لازم ينتهي وإلا يصير ANR.
          */
         fun refreshFavorite(context: Context, animate: Boolean = false, onDone: () -> Unit = {}) {
-            if (!hasAnyWidget(context)) {
-                onDone()
-                return
+            val finished = AtomicBoolean(false)
+            val finish = {
+                if (finished.compareAndSet(false, true)) {
+                    refreshing.set(false)
+                    try { onDone() } catch (_: Exception) {}
+                }
             }
-            val keys = FavoriteCityStore.getAll(context)
-            if (keys.isEmpty()) {
-                renderFromCache(context)
-                onDone()
-                return
-            }
-            val results = arrayOfNulls<PriceItem>(keys.size)
-            val remaining = AtomicInteger(keys.size)
-            keys.forEachIndexed { i, key ->
-                WidgetPriceProvider.fetchOne(context, key) { item ->
-                    results[i] = item ?: WidgetPriceProvider.buildCachedItem(context, key)
-                    if (item != null) {
-                        WidgetRefreshScheduler.markRefreshed(context)
-                        LastUpdateStore.save(context, System.currentTimeMillis())
+            try {
+                if (!hasAnyWidget(context)) { finish(); return }
+
+                val now = SystemClock.elapsedRealtime()
+                if (!refreshing.compareAndSet(false, true)) {
+                    if (now - refreshStartedAt < REFRESH_STALE_MS) {
+                        // تحديث شغال هسه: نسكّر هذا الطلب بدون ما نلمس الحالة.
+                        try { onDone() } catch (_: Exception) {}
+                        return
                     }
-                    if (remaining.decrementAndGet() == 0) {
-                        val items = results.toList()
-                        if (animate) animateReveal(context, keys, items, onDone)
-                        else {
-                            pushAll(context, keys, items)
-                            onDone()
+                    refreshing.set(true) // القديم عالق (>40ث): نكمل
+                }
+                refreshStartedAt = now
+
+                val keys = FavoriteCityStore.getAll(context)
+                if (keys.isEmpty()) {
+                    renderFromCache(context)
+                    finish()
+                    return
+                }
+
+                // مؤقّت أمان: لو الشبكة علّقت، نرسم من الكاش وننهي.
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (!finished.get()) {
+                        renderFromCache(context)
+                        finish()
+                    }
+                }, REFRESH_WATCHDOG_MS)
+
+                val results = arrayOfNulls<PriceItem>(keys.size)
+                val handled = BooleanArray(keys.size)
+                val remaining = AtomicInteger(keys.size)
+                keys.forEachIndexed { i, key ->
+                    WidgetPriceProvider.fetchOne(context, key) { item ->
+                        if (handled[i]) return@fetchOne // حماية من نداء مكرر لنفس العنصر
+                        handled[i] = true
+                        results[i] = item ?: WidgetPriceProvider.buildCachedItem(context, key)
+                        if (item != null) {
+                            WidgetRefreshScheduler.markRefreshed(context)
+                            LastUpdateStore.save(context, System.currentTimeMillis())
+                        }
+                        if (remaining.decrementAndGet() == 0 && !finished.get()) {
+                            val items = results.toList()
+                            try {
+                                if (animate) animateReveal(context, keys, items, finish)
+                                else {
+                                    pushAll(context, keys, items)
+                                    finish()
+                                }
+                            } catch (_: Exception) {
+                                finish()
+                            }
                         }
                     }
                 }
+            } catch (_: Exception) {
+                finish()
             }
         }
 
         /**
-         * يعيد رسم الودجت عدة مرات متتالية (كل ~45ms، لمدة ~1.4 ثانية)، وبكل مرة
-         * يستبدل أرقام سعر أول مفضلة بأرقام عشوائية تقترب تدريجياً من الرقم
-         * الحقيقي حتى تستقر عليه بآخر إطار. الفواصل والحروف تبقى ثابتة.
+         * أنيميشن الأرقام: رسم كامل واحد بأول إطار، وبعدها تحديثات "جزئية" (partiallyUpdateAppWidget)
+         * تغيّر نص السعر فقط (~12 إطار كل 75ms). قبل كان كل إطار يعيد بناء وإرسال الودجت كامل
+         * (أيقونات، أعلام، أسماء، PendingIntents) ~30 مرة بثانية ونص، وهذا يحمّل الـ Launcher
+         * والنظام ويسبب تأخير بالشاشة.
          */
         private fun animateReveal(
             context: Context,
             keys: List<String>,
             items: List<PriceItem?>,
-            onDone: () -> Unit
+            finish: () -> Unit
         ) {
             val finalPrice = items.firstOrNull()?.price?.removeSuffix(" د.ع")
             val plan = finalPrice?.let { DigitRevealAnimator.plan(it) }
 
-            // لا يوجد سعر جديد فعلي (فشل الاتصال مثلاً) أو نص بدون أرقام —
-            // نعرض النتيجة مباشرة بدون أنيميشن.
+            // لا يوجد سعر جديد فعلي (فشل الاتصال مثلاً) أو نص بدون أرقام — بدون أنيميشن.
             if (finalPrice == null || plan == null) {
                 pushAll(context, keys, items)
-                onDone()
+                finish()
                 return
             }
 
-            val duration = 1400L
-            val frameRate = 45L
-            val totalSteps = (duration / frameRate).toInt().coerceAtLeast(1)
-            val handler = Handler(Looper.getMainLooper())
-            var step = 0
+            val totalSteps = 12
+            val frameMs = 75L
+            val manager = AppWidgetManager.getInstance(context)
+            val largeIds = idsOf(context, FavoriteWidgetProvider::class.java)
+            val smallIds = idsOf(context, FavoriteWidgetSmallProvider::class.java)
 
-            fun renderFrame() {
+            pushAll(context, keys, items, DigitRevealAnimator.frameText(finalPrice, plan, 1, totalSteps))
+
+            val handler = Handler(Looper.getMainLooper())
+            var step = 1
+            fun nextFrame() {
                 step++
-                pushAll(context, keys, items, DigitRevealAnimator.frameText(finalPrice, plan, step, totalSteps))
-                if (step < totalSteps) {
-                    handler.postDelayed(::renderFrame, frameRate)
-                } else {
-                    onDone()
+                val text = if (step >= totalSteps) finalPrice
+                else DigitRevealAnimator.frameText(finalPrice, plan, step, totalSteps)
+                try {
+                    if (largeIds.isNotEmpty()) {
+                        manager.partiallyUpdateAppWidget(
+                            largeIds,
+                            RemoteViews(context.packageName, R.layout.widget_favorite_price)
+                                .apply { setTextViewText(R.id.widgetPrice1, text) }
+                        )
+                    }
+                    if (smallIds.isNotEmpty()) {
+                        manager.partiallyUpdateAppWidget(
+                            smallIds,
+                            RemoteViews(context.packageName, R.layout.widget_favorite_small)
+                                .apply { setTextViewText(R.id.smallPrice, text) }
+                        )
+                    }
+                } catch (_: Exception) {
+                    // لو فشل تحديث جزئي نرسم النتيجة النهائية كاملة وننهي.
+                    pushAll(context, keys, items)
+                    finish()
+                    return
+                }
+                if (step < totalSteps) handler.postDelayed(::nextFrame, frameMs) else finish()
+            }
+            handler.postDelayed(::nextFrame, frameMs)
+        }
+
+        /** هل الشاشة شغالة؟ (لا نشغّل أنيميشن بالخلفية والشاشة مطفية). */
+        fun isScreenOn(context: Context): Boolean = try {
+            (context.getSystemService(Context.POWER_SERVICE) as PowerManager).isInteractive
+        } catch (_: Exception) {
+            true
+        }
+
+        /** تحديث من داخل BroadcastReceiver: goAsync ينتهي مرة وحدة مضمون حتى لو صار خطأ. */
+        fun refreshAsync(receiver: BroadcastReceiver, context: Context, animate: Boolean) {
+            val pending = receiver.goAsync() ?: return
+            val done = AtomicBoolean(false)
+            val finish = {
+                if (done.compareAndSet(false, true)) {
+                    try { pending.finish() } catch (_: Exception) {}
                 }
             }
-            renderFrame()
+            try {
+                refreshFavorite(context, animate) { finish() }
+            } catch (_: Exception) {
+                finish()
+            }
         }
     }
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         // أندرويد يستدعي onUpdate بعد إعادة تشغيل الهاتف وبعد تحديث التطبيق، والمنبهات
         // تنمسح بالحالتين — فنعيد الجدولة هنا (آمنة للتكرار، ما تسوي منبه ثاني).
-        WidgetRefreshScheduler.schedule(context)
+        WidgetRefreshScheduler.scheduleIfMissing(context)
+        // رسمناه قبل دقايق لنفس الودجتات؟ ما نبنيه من جديد ولا نجلب (غالباً الـ Launcher رجع للشاشة).
+        if (renderedRecently(context, appWidgetIds)) return
         renderFromCache(context)
-        val pendingResult = goAsync()
-        refreshFavorite(context) { pendingResult.finish() }
+        // طلب الشبكة فقط لو يستاهل (ماكو تحديث قبل دقايق + في نت)، حتى ما يصير تحديث
+        // لكل onUpdate (مثلاً لودجتين بنفس الوقت أو تغيير حجم الودجت).
+        if (WidgetRefreshScheduler.shouldAutoRefresh(context)) {
+            refreshAsync(this, context, animate = false)
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        // نفس أنيميشن الأرقام المبعثرة تظهر بالحالتين: الضغط اليدوي على الزر،
-        // وأيضاً التحديث الساعي التلقائي بالخلفية (بناءً على طلب المستخدم).
         when (intent.action) {
-            ACTION_REFRESH -> {
-                val pendingResult = goAsync()
-                refreshFavorite(context, animate = true) { pendingResult.finish() }
-            }
+            // الضغط اليدوي: الأنيميشن يظهر دايماً (المستخدم يشوف الودجت).
+            ACTION_REFRESH -> refreshAsync(this, context, animate = true)
             WidgetRefreshScheduler.ACTION_HOURLY_REFRESH -> {
                 // تحديث تلقائي: نتخطاه لو ماكو نت أو تحدّث قبل دقايق (توفير بطارية وشبكة).
                 if (!WidgetRefreshScheduler.shouldAutoRefresh(context)) return
-                val pendingResult = goAsync()
-                refreshFavorite(context, animate = true) { pendingResult.finish() }
+                // الأنيميشن بس لو الشاشة شغالة؛ بالخلفية تحديث عادي بدون إطارات زايدة.
+                refreshAsync(this, context, animate = isScreenOn(context))
             }
         }
     }
