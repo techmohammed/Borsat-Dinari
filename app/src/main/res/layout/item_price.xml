@@ -19,7 +19,7 @@
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:background="@android:color/transparent"
-        android:contentDescription="مفضلة"
+        android:contentDescription="@string/cd_favorite"
         android:padding="2dp"
         android:src="@drawable/ic_star_outline"
         tools:visibility="visible" />

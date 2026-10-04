@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.GestureDetector
+import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -35,6 +36,25 @@ class AboutActivity : AppCompatActivity() {
         }
         val binding = ActivityAboutBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        KurdishFont.apply(binding.root, this)
+
+        // رقم الإصدار الحقيقي من النظام (يظهر حسب لغة الواجهة حوله).
+        val versionName = try {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(packageName, 0).versionName
+        } catch (_: Exception) { null }
+        binding.tvVersion.text = getString(R.string.about_version_format, versionName ?: "—")
+        val language = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            resources.configuration.locales[0].language
+        } else {
+            @Suppress("DEPRECATION")
+            resources.configuration.locale.language
+        }
+        val isRtl = language == "ar" || language == "ku"
+        binding.aboutVersionRow.layoutDirection =
+            if (isRtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+        binding.aboutVersionRow.gravity =
+            Gravity.CENTER_VERTICAL or if (isRtl) Gravity.RIGHT else Gravity.LEFT
         applySystemBarsInsets(binding.toolbar, binding.scrollAbout)
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -75,11 +95,11 @@ class AboutActivity : AppCompatActivity() {
             if (release == null || isFinishing || isDestroyed) return@fetchLatestAppRelease
             val status = binding.tvUpdateStatus
             if (TelegramScraperRepository.compareVersions(release.version, current) > 0) {
-                status.text = "يوجد تحديث جديد"
+                status.text = getString(R.string.update_available)
                 status.paintFlags = status.paintFlags or Paint.UNDERLINE_TEXT_FLAG
                 status.setOnClickListener { openLink(release.postUrl) }
             } else {
-                status.text = "لديك اخر اصدار"
+                status.text = getString(R.string.update_latest)
                 status.paintFlags = status.paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
                 status.isClickable = false
             }

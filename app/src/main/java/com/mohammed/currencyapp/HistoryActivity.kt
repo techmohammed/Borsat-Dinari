@@ -1,7 +1,6 @@
 package com.mohammed.currencyapp
 
 import android.content.Context
-import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
@@ -63,19 +62,12 @@ class HistoryActivity : AppCompatActivity() {
      * الجهاز. نص التطبيق نفسه ثابت عربي بالكود (مو من موارد locale)
      * فما يتأثر، بس اسم الشهر وأيام الأسبوع بالتقويم نفسه بيصيروا
      * إنكليزي كنتيجة جانبية (مقبولة مقارنة بأسهم مقلوبة). */
-    override fun attachBaseContext(newBase: Context) {
-        val fixedLocale = Locale.US
-        val config = Configuration(newBase.resources.configuration)
-        config.setLocale(fixedLocale)
-        config.setLayoutDirection(fixedLocale)
-        Locale.setDefault(fixedLocale)
-        super.attachBaseContext(newBase.createConfigurationContext(config))
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityHistoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        KurdishFont.apply(binding.root, this)
         applySystemBarsInsets(binding.toolbar, binding.recyclerHistory)
 
         itemKey = intent.getStringExtra(EXTRA_KEY) ?: run { finish(); return }
@@ -243,14 +235,14 @@ class HistoryActivity : AppCompatActivity() {
             .build()
 
         val picker = MaterialDatePicker.Builder.dateRangePicker()
-            .setTitleText("اختيار الفترة")
+            .setTitleText(getString(R.string.pick_range_title))
             .setTheme(R.style.ThemeOverlay_App_DatePicker)
             .setCalendarConstraints(constraints)
             .setSelection(
                 androidx.core.util.Pair(startOfDay(now), endOfDay(now))
             )
-            .setPositiveButtonText("اختيار")
-            .setNegativeButtonText("إلغاء")
+            .setPositiveButtonText(getString(R.string.pick_range_ok))
+            .setNegativeButtonText(getString(R.string.cancel))
             .build()
 
         picker.addOnPositiveButtonClickListener { selection ->
@@ -271,6 +263,7 @@ class HistoryActivity : AppCompatActivity() {
                 // بالستايل ما يبين. نوقف الحجم التلقائي ونفرض الحجم بعد ما ينعرض
                 // الهيدر (وبعد أول رسم أيضاً حتى ما يرجعه Material).
                 private fun enlarge(root: View?) {
+                    if (root != null) KurdishFont.apply(root, this@HistoryActivity)
                     val title = root?.findViewById<android.widget.TextView>(
                         com.google.android.material.R.id.mtrl_picker_title_text
                     ) ?: return
@@ -388,6 +381,7 @@ class HistoryActivity : AppCompatActivity() {
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): VH {
             val view = android.view.LayoutInflater.from(parent.context)
                 .inflate(R.layout.item_history_row, parent, false)
+            KurdishFont.apply(view, parent.context)
             return VH(view)
         }
 

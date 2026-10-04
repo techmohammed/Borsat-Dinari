@@ -9,17 +9,20 @@ import android.net.NetworkCapabilities
 import android.os.Build
 
 /**
- * تحديث تلقائي لودجت البورصة المفضلة كل نص ساعة، بأقل استهلاك ممكن للطاقة:
+ * تحديث تلقائي لودجت البورصة المفضلة كل 15 دقيقة، بأقل استهلاك ممكن للطاقة:
  *
- *  - منبه واحد فقط: AlarmManager.setInexactRepeating بنوع RTC (مو RTC_WAKEUP).
- *    يعني الهاتف ما ينفتح ولا يصحى من النوم عشان الودجت؛ لو كان نايم وقت
- *    الموعد، التحديث ينفذ فوراً أول ما يصحى (المستخدم يفتح الشاشة)، وهذا
- *    بالضبط الوقت اللي يحتاج فيه السعر. التوقيت "غير دقيق" عمداً حتى يجمعه
- *    النظام مع منبهات ثانية بدل ما يصحّي الشبكة لحاله، وبدون أي صلاحية
- *    منبهات دقيقة (SCHEDULE_EXACT_ALARM).
+ *  - منبه واحد فقط: AlarmManager.setInexactRepeating بنوع RTC (مو RTC_WAKEUP)
+ *    وبفترة INTERVAL_FIFTEEN_MINUTES (أقصر فترة نظامية للمنبهات غير الدقيقة —
+ *    بدون أي صلاحية SCHEDULE_EXACT_ALARM). "غير دقيق" عمداً: النظام يجمعه مع
+ *    منبهات تطبيقات ثانية بدل ما يصحّي الشبكة لحاله، ولو الهاتف نايم وقت
+ *    الموعد ينفذ أول ما يصحى (المستخدم يفتح الشاشة) — وهذا بالضبط الوقت
+ *    اللي يحتاج فيه السعر.
  *  - أوقفنا android:updatePeriodMillis بملف الودجت (صار 0)، لأنه كان يشغّل
- *    تحديث ثاني كل نص ساعة ويصحّي الجهاز (حسب توثيق أندرويد)، يعني طلبين
- *    شبكة بدل واحد + استهلاك زايد.
+ *    تحديث ثاني كل نص ساعة ويصحّي الجهاز (حسب توثيق أندرويد).
+ *  - الربط مع التطبيق: كل الطلبات تمر على الكاش المشترك (TelegramScraperRepository)
+ *    بفترة صلاحية دقيقتين، والتطبيق نفسه يسجّل هنا markRefreshed كل ما حدّث —
+ *    فلو منبه الودجت جاء بعد دقايق من تحديث التطبيق يتخطى طلب الشبكة ويكتفي
+ *    بالرسم من الكاش المشترك (صفر تكرار).
  *  - المنبه يُعاد جدولته من onEnabled و onUpdate (أندرويد يستدعي onUpdate بعد
  *    إعادة تشغيل الهاتف وبعد تحديث التطبيق، والمنبهات تنمسح بالحالتين)، بدون
  *    أي BootReceiver ولا إذن RECEIVE_BOOT_COMPLETED.
@@ -44,13 +47,13 @@ object WidgetRefreshScheduler {
         )
     }
 
-    /** يبدأ (أو يجدد) الجدولة كل نص ساعة. آمن الاستدعاء أكثر من مرة. */
+    /** يبدأ (أو يجدد) الجدولة كل 15 دقيقة. آمن الاستدعاء أكثر من مرة. */
     fun schedule(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
         alarmManager.setInexactRepeating(
             AlarmManager.RTC,
-            System.currentTimeMillis() + AlarmManager.INTERVAL_HALF_HOUR,
-            AlarmManager.INTERVAL_HALF_HOUR,
+            System.currentTimeMillis() + AlarmManager.INTERVAL_FIFTEEN_MINUTES,
+            AlarmManager.INTERVAL_FIFTEEN_MINUTES,
             pendingIntent(context)
         )
     }
@@ -71,7 +74,7 @@ object WidgetRefreshScheduler {
         alarmManager.cancel(pendingIntent(context))
     }
 
-    /** يسجّل وقت آخر تحديث ناجح للودجت. */
+    /** يسجّل وقت آخر تحديث ناجح — يناديه التطبيق والودجت معاً (الكاش مشترك). */
     fun markRefreshed(context: Context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putLong(KEY_LAST_OK, System.currentTimeMillis()).apply()

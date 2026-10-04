@@ -22,7 +22,7 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:background="@android:color/transparent"
-        android:contentDescription="مفضلة"
+        android:contentDescription="@string/cd_favorite"
         android:padding="4dp"
         android:src="@drawable/ic_star_filled" />
 

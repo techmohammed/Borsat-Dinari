@@ -61,12 +61,21 @@ class PriceListAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
-            TYPE_HEADER ->
-                HeaderViewHolder(inflater.inflate(R.layout.item_section_header, parent, false))
-            TYPE_FAVORITE ->
-                RowViewHolder(inflater.inflate(R.layout.item_price_favorite, parent, false), onStarClick, onRowClick)
-            else ->
-                RowViewHolder(inflater.inflate(R.layout.item_price, parent, false), onStarClick, onRowClick)
+            TYPE_HEADER -> {
+                val view = inflater.inflate(R.layout.item_section_header, parent, false)
+                KurdishFont.apply(view, parent.context)
+                HeaderViewHolder(view)
+            }
+            TYPE_FAVORITE -> {
+                val view = inflater.inflate(R.layout.item_price_favorite, parent, false)
+                KurdishFont.apply(view, parent.context)
+                RowViewHolder(view, onStarClick, onRowClick)
+            }
+            else -> {
+                val view = inflater.inflate(R.layout.item_price, parent, false)
+                KurdishFont.apply(view, parent.context)
+                RowViewHolder(view, onStarClick, onRowClick)
+            }
         }
     }
 

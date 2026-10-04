@@ -21,7 +21,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="right|center_vertical"
             android:layout_marginRight="16dp"
-            android:text="بورصة ديناري"
+            android:text="@string/app_name"
             android:textColor="@color/white"
             android:textSize="25sp"
             android:fontFamily="@font/cairo_bold"
@@ -41,9 +41,20 @@
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="حول التطبيق"
+                android:contentDescription="@string/cd_about"
                 android:padding="10dp"
                 android:src="@drawable/ic_menu_burger"
+                app:tint="@color/white" />
+
+            <!-- تغيير لغة التطبيق -->
+            <ImageButton
+                android:id="@+id/btnLanguage"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/cd_language"
+                android:padding="10dp"
+                android:src="@drawable/ic_globe"
                 app:tint="@color/white" />
 
             <!-- تبديل النمط الليلي/النهاري -->
@@ -52,7 +63,7 @@
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="تبديل النمط الليلي/النهاري"
+                android:contentDescription="@string/cd_theme"
                 android:padding="10dp"
                 android:src="@drawable/ic_theme_moon"
                 app:tint="@color/white" />
@@ -105,7 +116,7 @@
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_marginLeft="8dp"
-                android:contentDescription="تحديث الآن"
+                android:contentDescription="@string/cd_refresh_now"
                 android:src="@drawable/ic_refresh_history"
                 app:tint="@color/accentBlue" />
 

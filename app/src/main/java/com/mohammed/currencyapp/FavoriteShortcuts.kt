@@ -26,12 +26,12 @@ object FavoriteShortcuts {
             val intent = Intent(app, MainActivity::class.java).apply {
                 action = Intent.ACTION_VIEW
                 putExtra(MainActivity.EXTRA_SHORTCUT_CITY_KEY, key)
-                putExtra(MainActivity.EXTRA_SHORTCUT_CITY_NAME, meta.name)
+                putExtra(MainActivity.EXTRA_SHORTCUT_CITY_NAME, meta.name(app))
                 putExtra(MainActivity.EXTRA_SHORTCUT_CITY_FLAG, meta.flag)
             }
             ShortcutInfoCompat.Builder(app, "fav_$key")
-                .setShortLabel(meta.name)
-                .setLongLabel(meta.name)
+                .setShortLabel(meta.name(app))
+                .setLongLabel(meta.name(app))
                 .setIcon(IconCompat.createWithBitmap(flagBitmap))
                 .setIntent(intent)
                 .setRank(index)

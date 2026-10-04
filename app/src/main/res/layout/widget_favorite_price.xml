@@ -49,7 +49,7 @@
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:background="@android:color/transparent"
-                    android:contentDescription="تحديث الأسعار"
+                    android:contentDescription="@string/cd_widget_refresh"
                     android:padding="4dp"
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_widget_refresh" />
@@ -63,10 +63,11 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/widgetUpdateLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:includeFontPadding="false"
-                        android:text="آخر تحديث"
+                        android:text="@string/last_update_label"
                         android:textColor="#B8CCE8"
                         android:textSize="9sp" />
 

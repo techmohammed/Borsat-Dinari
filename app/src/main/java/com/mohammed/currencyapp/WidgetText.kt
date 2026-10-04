@@ -22,11 +22,17 @@ object WidgetText {
     @Synchronized
     fun render(context: Context, text: String, sizeSp: Float, color: Int): Bitmap {
         val dm = context.resources.displayMetrics
-        val key = "$text|$sizeSp|$color|${dm.densityDpi}"
+        val kurdish = isKurdish(text)
+        val key = "$text|$sizeSp|$color|${dm.densityDpi}|$kurdish"
         cache[key]?.let { return it }
 
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply {
-            typeface = ResourcesCompat.getFont(context, R.font.cairo_bold)
+            // أسماء المدن/العنوان الكوردي تستخدم Peshang، أما الأرقام والأسعار
+            // فهي TextViews منفصلة وتبقى على الخط الحالي كما هي.
+            typeface = ResourcesCompat.getFont(
+                context,
+                if (kurdish) R.font.peshang_des_5_bold else R.font.cairo_bold
+            )
             textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sizeSp, dm)
             this.color = color
         }
@@ -42,4 +48,8 @@ object WidgetText {
         cache[key] = bmp
         return bmp
     }
+
+    /** محارف مميزة للنص السوراني؛ لا نغير خط النصوص العربية/الإنجليزية العادية. */
+    private fun isKurdish(text: String): Boolean =
+        text.any { it in "ەێۆڕڵڤگچپژ" }
 }

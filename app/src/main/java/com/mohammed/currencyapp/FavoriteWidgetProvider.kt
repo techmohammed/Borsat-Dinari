@@ -18,19 +18,20 @@ import android.view.View
 import android.widget.RemoteViews
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * ودجت الشاشة الرئيسية 4×2: يعرض أول 3 مفضلات — الأولى ببطاقة كبيرة (علم + اسم +
  * سعر + مقدار التغيير)، والثانية والثالثة ببطاقتين صغيرتين تحتها. لون كل بطاقة
  * حسب اتجاه السعر (أخضر/أحمر/رصاصي فاتح). أعلى الودجت: اسم البورصة، وقت آخر
  * تحديث، وزر تحديث يدوي يحدّث المفضلات الظاهرة (مو كل القائمة)، وتحديث تلقائي
- * كل نص ساعة عبر WidgetRefreshScheduler (منبه واحد خفيف بدون إيقاظ الجهاز).
+ * كل 15 دقيقة عبر WidgetRefreshScheduler (منبه inexact غير wakeup — النظام
+ * يجمعه مع منبهات تطبيقات ثانية وما يصحّي الجهاز من النوم).
  *
  * لا يوجد أي عملية دائمة بالخلفية: أندرويد يشغّل هذا الـ Provider فقط لحظة
- * إضافة الودجت، أو الضغط على زر التحديث، أو عند المنبه الساعي — وبكل مرة
+ * إضافة الودجت، أو الضغط على زر التحديث، أو عند المنبه الربع ساعي — وبكل مرة
  * يرسم القيم المحفوظة بالكاش فوراً (بدون انتظار شبكة)، ثم يسوي طلب شبكة
- * مستهدف لكل مفضلة بالخلفية ويحدّث الودجت بنتيجتها.
+ * واحد مشترك لكل المفضلات معاً (نفس كاش التطبيق: أول من يحدّث يجيب صفحة
+ * القناة والباقي يشاركه خلال دقيقتين) ويحدّث الودجت بنتيجتها.
  */
 class FavoriteWidgetProvider : AppWidgetProvider() {
 
@@ -94,7 +95,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
         ) {
             val meta = WidgetPriceProvider.metaFor(key)
             views.setViewVisibility(ids.card, View.VISIBLE)
-            setName(context, views, ids, item?.name ?: meta?.name ?: "—")
+            setName(context, views, ids, item?.name ?: meta?.name(context) ?: "—")
             views.setTextViewText(ids.unit, item?.unit ?: "")
             views.setTextViewText(ids.price, displayPrice(item?.price))
 
@@ -142,8 +143,8 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
 
         private fun placeholderCard(context: Context, views: RemoteViews, ids: CardIds) {
             views.setViewVisibility(ids.card, View.VISIBLE)
-            setName(context, views, ids, "اختر مفضلة")
-            views.setTextViewText(ids.unit, "اضغط ☆ بالتطبيق")
+            setName(context, views, ids, context.getString(R.string.widget_pick_favorite))
+            views.setTextViewText(ids.unit, context.getString(R.string.widget_pick_hint))
             views.setTextViewText(ids.price, "—")
             views.setViewVisibility(ids.deltaRow, View.INVISIBLE)
             views.setInt(ids.card, "setBackgroundResource", R.drawable.bg_widget_card_flat)
@@ -166,8 +167,17 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
         ): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_favorite_price)
 
+            // نرسم العنوان كصورة حتى نحافظ على خط Cairo داخل RemoteViews، لكن
+            // النص نفسه يأتي من لغة التطبيق الحالية بدل صورة عربية ثابتة.
+            views.setImageViewBitmap(
+                R.id.widgetTitle,
+                WidgetText.render(context, context.getString(R.string.app_name), 20f, Color.WHITE)
+            )
+            views.setContentDescription(R.id.widgetTitle, context.getString(R.string.app_name))
+
             val last = LastUpdateStore.load(context)
-            views.setTextViewText(R.id.widgetUpdateTime, if (last != null) UpdateTimeFormat.timeAndDate(last) else "—")
+            views.setTextViewText(R.id.widgetUpdateLabel, context.getString(R.string.last_update_label))
+            views.setTextViewText(R.id.widgetUpdateTime, if (last != null) UpdateTimeFormat.timeAndDate(context, last) else "—")
 
             if (keys.isEmpty()) {
                 placeholderCard(context, views, CARDS[0])
@@ -194,8 +204,14 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             context: Context, keys: List<String>, items: List<PriceItem?>
         ): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_favorite_small)
+            views.setImageViewBitmap(
+                R.id.smallTitle,
+                WidgetText.render(context, context.getString(R.string.app_name), 18f, Color.WHITE)
+            )
+            views.setContentDescription(R.id.smallTitle, context.getString(R.string.app_name))
             val last = LastUpdateStore.load(context)
-            views.setTextViewText(R.id.smallUpdateTime, if (last != null) UpdateTimeFormat.timeAndDate(last) else "—")
+            views.setTextViewText(R.id.smallUpdateLabel, context.getString(R.string.last_update_label))
+            views.setTextViewText(R.id.smallUpdateTime, if (last != null) UpdateTimeFormat.timeAndDate(context, last) else "—")
             if (keys.isEmpty()) placeholderCard(context, views, SMALL_CARD)
             else fillCard(context, views, SMALL_CARD, keys[0], items.getOrNull(0))
 
@@ -260,7 +276,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
          * تدريجياً على الرقم الصحيح). [onDone] ينادى مرة وحدة فقط، حتى لو فشلت الشبكة أو
          * تأخرت (مؤقّت أمان 25 ثانية) — مهم لأن goAsync لازم ينتهي وإلا يصير ANR.
          */
-        fun refreshFavorite(context: Context, animate: Boolean = false, onDone: () -> Unit = {}) {
+        fun refreshFavorite(context: Context, animate: Boolean = false, forceFresh: Boolean = false, onDone: () -> Unit = {}) {
             val finished = AtomicBoolean(false)
             val finish = {
                 if (finished.compareAndSet(false, true)) {
@@ -289,6 +305,11 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
                     return
                 }
 
+                // التحديث اليدوي (زر الودجت) يتجاوز الكاش المشترك حتى يجيب بيانات
+                // حية فعلاً؛ التحديث التلقائي يستفيد من كاش آخر تحديث (تطبيق أو
+                // ودجت) خلال آخر دقيقتين بدل ما يكرر نفس طلب الشبكة.
+                if (forceFresh) TelegramScraperRepository.invalidateSharedMessages()
+
                 // مؤقّت أمان: لو الشبكة علّقت، نرسم من الكاش وننهي.
                 Handler(Looper.getMainLooper()).postDelayed({
                     if (!finished.get()) {
@@ -297,30 +318,21 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
                     }
                 }, REFRESH_WATCHDOG_MS)
 
-                val results = arrayOfNulls<PriceItem>(keys.size)
-                val handled = BooleanArray(keys.size)
-                val remaining = AtomicInteger(keys.size)
-                keys.forEachIndexed { i, key ->
-                    WidgetPriceProvider.fetchOne(context, key) { item ->
-                        if (handled[i]) return@fetchOne // حماية من نداء مكرر لنفس العنصر
-                        handled[i] = true
-                        results[i] = item ?: WidgetPriceProvider.buildCachedItem(context, key)
-                        if (item != null) {
-                            WidgetRefreshScheduler.markRefreshed(context)
-                            LastUpdateStore.save(context, System.currentTimeMillis())
+                // طلب شبكة واحد لكل المفضلات معاً — الصفحة تجلب مرة وحدة
+                // وتُحل منها كل المفاتيح، والنتيجة تنحفظ بالكاش المشترك فيقرأها
+                // التطبيق بدون طلب إضافي.
+                WidgetPriceProvider.refreshAll(context, keys) { items ->
+                    if (finished.get()) return@refreshAll
+                    WidgetRefreshScheduler.markRefreshed(context)
+                    LastUpdateStore.save(context, System.currentTimeMillis())
+                    try {
+                        if (animate) animateReveal(context, keys, items, finish)
+                        else {
+                            pushAll(context, keys, items)
+                            finish()
                         }
-                        if (remaining.decrementAndGet() == 0 && !finished.get()) {
-                            val items = results.toList()
-                            try {
-                                if (animate) animateReveal(context, keys, items, finish)
-                                else {
-                                    pushAll(context, keys, items)
-                                    finish()
-                                }
-                            } catch (_: Exception) {
-                                finish()
-                            }
-                        }
+                    } catch (_: Exception) {
+                        finish()
                     }
                 }
             } catch (_: Exception) {
@@ -397,8 +409,9 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             true
         }
 
-        /** تحديث من داخل BroadcastReceiver: goAsync ينتهي مرة وحدة مضمون حتى لو صار خطأ. */
-        fun refreshAsync(receiver: BroadcastReceiver, context: Context, animate: Boolean) {
+        /** تحديث من داخل BroadcastReceiver: goAsync ينتهي مرة وحدة مضمون حتى لو صار خطأ.
+         * [forceFresh] للتحديث اليدوي فقط (يتجاوز الكاش المشترك حتى يجيب حيّ فعلاً). */
+        fun refreshAsync(receiver: BroadcastReceiver, context: Context, animate: Boolean, forceFresh: Boolean = false) {
             val pending = receiver.goAsync() ?: return
             val done = AtomicBoolean(false)
             val finish = {
@@ -407,7 +420,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
                 }
             }
             try {
-                refreshFavorite(context, animate) { finish() }
+                refreshFavorite(context, animate, forceFresh) { finish() }
             } catch (_: Exception) {
                 finish()
             }
@@ -431,8 +444,9 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         when (intent.action) {
-            // الضغط اليدوي: الأنيميشن يظهر دايماً (المستخدم يشوف الودجت).
-            ACTION_REFRESH -> refreshAsync(this, context, animate = true)
+            // الضغط اليدوي: أنيميشن + تجاوز الكاش المشترك (المستخدم يريد سعراً
+            // حياً فعلاً مو نسخة من طلب قبل دقيقة).
+            ACTION_REFRESH -> refreshAsync(this, context, animate = true, forceFresh = true)
             WidgetRefreshScheduler.ACTION_HOURLY_REFRESH -> {
                 // تحديث تلقائي: نتخطاه لو ماكو نت أو تحدّث قبل دقايق (توفير بطارية وشبكة).
                 if (!WidgetRefreshScheduler.shouldAutoRefresh(context)) return

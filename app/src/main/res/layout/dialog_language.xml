@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layoutDirection="rtl"
+    android:background="@drawable/bg_dialog_card"
+    android:orientation="vertical"
+    android:padding="6dp">
+
+    <LinearLayout
+        android:id="@+id/langAr"
+        style="@style/LanguageRow">
+        <ImageView style="@style/LanguageFlag" android:src="@drawable/flag_iq" />
+        <TextView style="@style/LanguageLabel" android:text="@string/language_ar" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/langEn"
+        style="@style/LanguageRow">
+        <ImageView style="@style/LanguageFlag" android:src="@drawable/flag_us" />
+        <TextView style="@style/LanguageLabel" android:text="@string/language_en" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/langTr"
+        style="@style/LanguageRow">
+        <ImageView style="@style/LanguageFlag" android:src="@drawable/flag_tr" />
+        <TextView style="@style/LanguageLabel" android:text="@string/language_tr" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/langKu"
+        style="@style/LanguageRow">
+        <ImageView style="@style/LanguageFlag" android:src="@drawable/flag_kurdistan" />
+        <TextView style="@style/LanguageLabel" android:text="@string/language_ku" />
+    </LinearLayout>
+
+</LinearLayout>

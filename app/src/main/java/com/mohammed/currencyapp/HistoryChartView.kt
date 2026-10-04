@@ -11,6 +11,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
+import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.ColorUtils
@@ -58,7 +59,16 @@ class HistoryChartView @JvmOverloads constructor(
     private val colorAxisText = ContextCompat.getColor(context, R.color.chartAxisText)
     private val colorGrid = ContextCompat.getColor(context, R.color.chartGrid)
     private val colorRing = ContextCompat.getColor(context, R.color.cardWhite)
-    private val labelTypeface = ResourcesCompat.getFont(context, R.font.cairo_regular)
+    private val isKurdish = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        context.resources.configuration.locales[0].language == "ku"
+    } else {
+        @Suppress("DEPRECATION")
+        context.resources.configuration.locale.language == "ku"
+    }
+    private val labelTypeface = ResourcesCompat.getFont(
+        context,
+        if (isKurdish) R.font.cairo_bold else R.font.cairo_regular
+    )
 
     private fun dp(value: Float): Float = value * resources.displayMetrics.density
 
@@ -70,6 +80,7 @@ class HistoryChartView @JvmOverloads constructor(
         color = colorAxisText
         textSize = dp(11.5f)
         typeface = labelTypeface
+        isFakeBoldText = isKurdish
     }
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -89,6 +100,7 @@ class HistoryChartView @JvmOverloads constructor(
         color = colorAxisText
         textSize = dp(13f)
         typeface = labelTypeface
+        isFakeBoldText = isKurdish
     }
 
     private fun startOfDay(millis: Long): Long =
@@ -136,7 +148,7 @@ class HistoryChartView @JvmOverloads constructor(
     }
 
     private fun drawEmptyMessage(canvas: Canvas, w: Float, h: Float) {
-        val message = "لا توجد بيانات كافية لرسم المخطط، جرّب فترة أطول أو اختر فترة من التقويم"
+        val message = context.getString(R.string.chart_no_data)
         val horizontalPadding = dp(24f)
         val layoutWidth = (w - horizontalPadding * 2).toInt().coerceAtLeast(dp(120f).toInt())
 

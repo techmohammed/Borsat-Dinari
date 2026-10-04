@@ -26,7 +26,7 @@
             android:layout_gravity="left|center_vertical"
             android:layout_marginLeft="6dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="رجوع"
+            android:contentDescription="@string/cd_back"
             android:padding="10dp"
             android:src="@drawable/ic_back_arrow"
             app:tint="@color/white" />
@@ -52,7 +52,7 @@
             android:layout_gravity="right|center_vertical"
             android:layout_marginRight="6dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="اختيار فترة"
+            android:contentDescription="@string/cd_pick_range"
             android:padding="10dp"
             android:src="@drawable/ic_calendar_31"
             app:tint="@color/white" />
@@ -84,22 +84,22 @@
         <TextView
             android:id="@+id/tab60"
             style="@style/HistoryTab"
-            android:text="شهرين" />
+            android:text="@string/tab_2months" />
 
         <TextView
             android:id="@+id/tab30"
             style="@style/HistoryTab"
-            android:text="شهر" />
+            android:text="@string/tab_month" />
 
         <TextView
             android:id="@+id/tab7"
             style="@style/HistoryTab"
-            android:text="أسبوع" />
+            android:text="@string/tab_week" />
 
         <TextView
             android:id="@+id/tabDay"
             style="@style/HistoryTab"
-            android:text="يوم" />
+            android:text="@string/tab_day" />
 
     </LinearLayout>
 
@@ -123,7 +123,7 @@
         android:layout_marginTop="60dp"
         android:fontFamily="@font/cairo_regular"
         android:gravity="center"
-        android:text="لا توجد بيانات"
+        android:text="@string/no_data"
         android:textColor="@color/textSecondary"
         android:textSize="14sp"
         android:visibility="gone" />

@@ -3,6 +3,9 @@ package com.mohammed.currencyapp
 import android.content.Intent
 import android.os.Bundle
 import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
+import android.widget.PopupWindow
 import android.view.GestureDetector
 import android.os.Build
 import android.os.Handler
@@ -41,6 +44,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        KurdishFont.apply(binding.root, this)
         applySystemBarsInsets(binding.toolbar, binding.recyclerView)
 
         adapter = PriceListAdapter(
@@ -68,6 +72,8 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerView.adapter = adapter
 
         binding.swipeRefresh.setOnRefreshListener {
+            // تحديث يدوي: نتجاوز الكاش المشترك حتى يجيب بيانات حية فعلاً.
+            TelegramScraperRepository.invalidateSharedMessages()
             loadExchanges()
             loadCurrencies()
         }
@@ -85,7 +91,12 @@ class MainActivity : AppCompatActivity() {
             // theme)، فما نحتاج نحدث الأيقونة يدوياً هنا.
         }
 
+        // زر الكرة الأرضية: ينزل مستطيل اختيار اللغة (4 لغات بأعلامها).
+        binding.btnLanguage.setOnClickListener { showLanguagePopup(it) }
+
         binding.btnRefreshNow.setOnClickListener {
+            // تحديث يدوي: نتجاوز الكاش المشترك حتى يجيب بيانات حية فعلاً.
+            TelegramScraperRepository.invalidateSharedMessages()
             loadExchanges()
             loadCurrencies()
         }
@@ -173,10 +184,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateLastUpdateLabel(millis: Long?) {
-        // شريط "آخر تحديث: 16:45" أعلى القائمة (وقت 24 ساعة بدون تاريخ).
         binding.tvLastUpdate.text = if (millis != null) {
-            "آخر تحديث: ${UpdateTimeFormat.timeAndDate(millis)}"
-        } else "آخر تحديث: —"
+            getString(R.string.last_update_prefix, UpdateTimeFormat.timeAndDate(this, millis))
+        } else getString(R.string.last_update_none)
     }
 
     private fun rebuildRows() {
@@ -200,5 +210,33 @@ class MainActivity : AppCompatActivity() {
         // التطبيق أصلاً يحدّث كل 15 دقيقة وهو مفتوح، فنفس الفرصة نحدث الودجت
         // من نفس الكاش (بدون أي طلب شبكة إضافي).
         FavoriteWidgetProvider.renderFromCache(this)
+        // نسجّل التحديث عند منبه الودجت حتى لو جاء بعد دقايق يتخطى طلب
+        // الشبكة المكرر (الكاش المشترك نفسه صار محدث).
+        WidgetRefreshScheduler.markRefreshed(this)
+    }
+
+    /** مستطيل اللغات: ينزل تحت زر الكرة الأرضية، والضغط على لغة يطبقها
+     *  ويخزنها (AppCompat يتكفل بالحفظ وإعادة إنشاء الشاشات تلقائياً). */
+    private fun showLanguagePopup(anchor: View) {
+        val content = layoutInflater.inflate(R.layout.dialog_language, null)
+        KurdishFont.apply(content, this)
+        val popup = PopupWindow(
+            content,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true
+        )
+        popup.elevation = 16f
+        fun select(viewId: Int, tag: String) {
+            content.findViewById<View>(viewId).setOnClickListener {
+                popup.dismiss()
+                AppLanguage.apply(tag)
+            }
+        }
+        select(R.id.langAr, "ar")
+        select(R.id.langEn, "en")
+        select(R.id.langTr, "tr")
+        select(R.id.langKu, "ku")
+        popup.showAsDropDown(anchor, 0, (6 * resources.displayMetrics.density).toInt())
     }
 }

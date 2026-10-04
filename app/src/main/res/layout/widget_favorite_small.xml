@@ -48,23 +48,39 @@
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:background="@android:color/transparent"
-                    android:contentDescription="تحديث الأسعار"
+                    android:contentDescription="@string/cd_widget_refresh"
                     android:padding="4dp"
                     android:scaleType="fitCenter"
                     android:src="@drawable/ic_widget_refresh" />
 
-                <TextView
-                    android:id="@+id/smallUpdateTime"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="2dp"
                     android:layout_marginRight="4dp"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:gravity="left"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/smallUpdateLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:includeFontPadding="false"
+                        android:text="@string/last_update_label"
+                        android:textColor="#B8CCE8"
+                        android:textSize="8sp" />
+
+                    <TextView
+                        android:id="@+id/smallUpdateTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
         </RelativeLayout>
 

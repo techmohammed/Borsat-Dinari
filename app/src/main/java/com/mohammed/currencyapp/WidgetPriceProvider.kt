@@ -1,7 +1,10 @@
 package com.mohammed.currencyapp
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import java.util.Locale
+import java.util.concurrent.Executors
 
 /**
  * جسر بسيط بين ودجت الشاشة الرئيسية والمستودعات الموجودة (TelegramScraperRepository
@@ -16,12 +19,12 @@ object WidgetPriceProvider {
     fun metaFor(key: String): TelegramScraperRepository.CityMeta? {
         TelegramScraperRepository.metaFor(key)?.let { return it }
         return when (key) {
-            "FX_EUR" -> TelegramScraperRepository.CityMeta(key, "يورو", "eu")
-            "FX_GBP" -> TelegramScraperRepository.CityMeta(key, "پاوند", "gb")
-            "TRY_INVESTING" -> TelegramScraperRepository.CityMeta(key, "ليرة", "tr")
-            "IRR_TELEGRAM" -> TelegramScraperRepository.CityMeta(key, "تومان", "ir")
-            "USD_OFFICIAL" -> TelegramScraperRepository.CityMeta(key, "الرسمي", "us")
-            "USD_BAGHDAD" -> TelegramScraperRepository.CityMeta(key, "دولار", "us")
+            "FX_EUR" -> TelegramScraperRepository.CityMeta(key, R.string.cur_eur, "eu")
+            "FX_GBP" -> TelegramScraperRepository.CityMeta(key, R.string.cur_gbp, "gb")
+            "TRY_INVESTING" -> TelegramScraperRepository.CityMeta(key, R.string.cur_try, "tr")
+            "IRR_TELEGRAM" -> TelegramScraperRepository.CityMeta(key, R.string.cur_irr, "ir")
+            "USD_OFFICIAL" -> TelegramScraperRepository.CityMeta(key, R.string.cur_usd_official, "us")
+            "USD_BAGHDAD" -> TelegramScraperRepository.CityMeta(key, R.string.cur_usd_avg, "us")
             else -> null
         }
     }
@@ -50,24 +53,56 @@ object WidgetPriceProvider {
      * MainActivity.buildUsdAverageItem)، فنحدّث بغداد أولاً ثم نبني عليه. */
     private fun fetchUsdMirror(context: Context, onResult: (PriceItem?) -> Unit) {
         TelegramScraperRepository.fetchOne(context, "baghdad") { baghdad ->
-            val digits = baghdad?.price?.replace(",", "")?.replace("د.ع", "")?.trim()?.toLongOrNull()
-            if (baghdad == null || digits == null) {
-                onResult(buildCachedItem(context, "USD_BAGHDAD"))
-                return@fetchOne
-            }
-            val cache = FxCache(context)
-            val key = "USD_BAGHDAD"
-            val previous = cache.load(key)
-            val trend = if (previous != null) {
-                when {
-                    digits > previous -> Trend.UP
-                    digits < previous -> Trend.DOWN
-                    else -> cache.loadTrend(key) ?: Trend.UP
-                }
-            } else cache.loadTrend(key) ?: Trend.UP
-            cache.save(key, digits.toDouble())
-            cache.saveTrend(key, trend)
-            onResult(PriceItem("دولار", "us", "${String.format(Locale.US, "%,d", digits)} د.ع", "100\$", trend, key))
+            onResult(usdFromBaghdad(context, baghdad))
         }
+    }
+
+    /** يحوّل عنصر بغداد المُحلّ لعنصر "دولار" (USD_BAGHDAD) مع حفظه بالكاش —
+     * نفس قيمة بغداد تماماً. لو بغداد غير متوفرة نرجع لآخر قيمة محفوظة. */
+    private fun usdFromBaghdad(context: Context, baghdad: PriceItem?): PriceItem? {
+        val digits = baghdad?.price?.replace(",", "")?.replace("د.ع", "")?.trim()?.toLongOrNull()
+        if (baghdad == null || digits == null) return buildCachedItem(context, "USD_BAGHDAD")
+        val cache = FxCache(context)
+        val key = "USD_BAGHDAD"
+        val previous = cache.load(key)
+        val trend = if (previous != null) {
+            when {
+                digits > previous -> Trend.UP
+                digits < previous -> Trend.DOWN
+                else -> cache.loadTrend(key) ?: Trend.UP
+            }
+        } else cache.loadTrend(key) ?: Trend.UP
+        cache.save(key, digits.toDouble())
+        cache.saveTrend(key, trend)
+        return PriceItem(context.getString(R.string.cur_usd_avg), "us", "${String.format(Locale.US, "%,d", digits)} د.ع", "100\$", trend, key)
+    }
+
+    private val executor = Executors.newSingleThreadExecutor(BackgroundThreads.factory("widget-batch"))
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    /**
+     * يحدّث كل المفضلات دفعة وحدة بأقل عدد ممكن من طلبات الشبكة: صفحة القناة
+     * تجلب مرة وحدة وتُمرر لكل المفاتيح (نفس الكاش المشترك مع التطبيق، بفترة
+     * صلاحية دقيقتين)، وكل سعر ينحفظ بالكاشات المشتركة فيقرأه التطبيق والودجت
+     * بعدين بدون أي طلب إضافي.
+     */
+    fun refreshAll(context: Context, keys: List<String>, onResult: (List<PriceItem?>) -> Unit) {
+        executor.execute {
+            val messages = TelegramScraperRepository.fetchTrustedMessagesShared()
+            val results = keys.map { key -> resolveFromMessages(context, key, messages) }
+            mainHandler.post { onResult(results) }
+        }
+    }
+
+    private fun resolveFromMessages(
+        context: Context,
+        key: String,
+        messages: List<Pair<String, String>>
+    ): PriceItem? = when {
+        key == "USD_BAGHDAD" ->
+            usdFromBaghdad(context, TelegramScraperRepository.resolveBlocking(context, "baghdad", messages))
+        key == "USD_OFFICIAL" || key == "TRY_INVESTING" || key == "IRR_TELEGRAM" || key.startsWith("FX_") ->
+            CurrenciesRepository.resolveBlocking(context, key, messages)
+        else -> TelegramScraperRepository.resolveBlocking(context, key, messages)
     }
 }

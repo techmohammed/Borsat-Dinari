@@ -34,7 +34,7 @@
                 android:layout_width="128dp"
                 android:layout_height="128dp"
                 android:layout_gravity="center_horizontal"
-                android:contentDescription="أيقونة التطبيق"
+                android:contentDescription="@string/cd_app_icon"
                 android:src="@mipmap/ic_launcher" />
 
             <!-- اسم التطبيق -->
@@ -44,7 +44,7 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="16dp"
                 android:fontFamily="@font/cairo_bold"
-                android:text="بورصة ديناري"
+                android:text="@string/app_name"
                 android:textColor="@color/textPrimary"
                 android:textSize="30sp" />
 
@@ -56,7 +56,7 @@
                 android:fontFamily="@font/cairo_regular"
                 android:gravity="center"
                 android:lineSpacingExtra="6dp"
-                android:text="تطبيق يوفر لك أسعار الدولار والعملات العالمية مقارنة بالدينار العراقي في جميع محافظات العراق واقليم كوردستان ، يتم تحديث الأسعار تلقائياً كل 15 دقيقة أثناء استخدام التطبيق ، مع إمكانية التحديث اليدوي في أي وقت ."
+                android:text="@string/about_description"
                 android:textColor="@color/textSecondary"
                 android:textSize="15sp" />
 
@@ -75,7 +75,7 @@
                 android:layout_marginTop="24dp"
                 android:gravity="center"
                 android:fontFamily="@font/cairo_bold"
-                android:text="مميزات التطبيق"
+                android:text="@string/about_features_title"
                 android:textColor="@color/textPrimary"
                 android:textSize="18sp" />
 
@@ -89,47 +89,47 @@
 
                 <TextView
                     style="@style/AboutFeatureLine"
-                    android:text="✓  التطبيق مجاني مدى الحياة" />
+                    android:text="@string/about_feature_free" />
 
                 <TextView
                     style="@style/AboutFeatureLine"
                     android:layout_marginTop="10dp"
-                    android:text="✓  التطبيق خالٍ من الإعلانات مدى الحياة" />
+                    android:text="@string/about_feature_ads" />
 
                 <TextView
                     style="@style/AboutFeatureLine"
                     android:layout_marginTop="10dp"
-                    android:text="✓  التطبيق غير ربحي مدى الحياة" />
+                    android:text="@string/about_feature_nonprofit" />
 
                 <TextView
                     style="@style/AboutFeatureLine"
                     android:layout_marginTop="10dp"
-                    android:text="✓  التطبيق لا يطلب اذونات حساسة" />
+                    android:text="@string/about_feature_permissions" />
 
                 <TextView
                     style="@style/AboutFeatureLine"
                     android:layout_marginTop="10dp"
-                    android:text="✓  التطبيق خالٍ من التنبيهات المزعجة" />
+                    android:text="@string/about_feature_notifications" />
 
                 <TextView
                     style="@style/AboutFeatureLine"
                     android:layout_marginTop="10dp"
-                    android:text="✓  التطبيق خفيف جداً وسريع" />
+                    android:text="@string/about_feature_lightweight" />
 
                 <TextView
                     style="@style/AboutFeatureLine"
                     android:layout_marginTop="10dp"
-                    android:text="✓  التطبيق لا يجمع بياناتك الخاصة" />
+                    android:text="@string/about_feature_privacy" />
 
                 <TextView
                     style="@style/AboutFeatureLine"
                     android:layout_marginTop="10dp"
-                    android:text="✓  التطبيق يحتفظ بسجل الأسعار لآخر 60 يوم" />
+                    android:text="@string/about_feature_history" />
 
                 <TextView
                     style="@style/AboutFeatureLine"
                     android:layout_marginTop="10dp"
-                    android:text="✓  التطبيق مفتوح المصدر" />
+                    android:text="@string/about_feature_opensource" />
 
             </LinearLayout>
 
@@ -140,7 +140,7 @@
                 android:layout_marginTop="24dp"
                 android:gravity="center"
                 android:fontFamily="@font/cairo_bold"
-                android:text="حقوق الاستخدام"
+                android:text="@string/about_rights_title"
                 android:textColor="@color/textPrimary"
                 android:textSize="18sp" />
 
@@ -154,12 +154,12 @@
 
                 <TextView
                     style="@style/AboutFeatureLine"
-                    android:text="•  لا توجد حقوق نشر أو قيود على التوزيع" />
+                    android:text="@string/about_rights_1" />
 
                 <TextView
                     style="@style/AboutFeatureLine"
                     android:layout_marginTop="10dp"
-                    android:text="•  يمكنك استخدام التطبيق بأي شكل من الأشكال" />
+                    android:text="@string/about_rights_2" />
 
             </LinearLayout>
 
@@ -170,7 +170,7 @@
                 android:layout_marginTop="24dp"
                 android:gravity="center"
                 android:fontFamily="@font/cairo_bold"
-                android:text="توضيح هام"
+                android:text="@string/about_important_title"
                 android:textColor="@color/textPrimary"
                 android:textSize="18sp" />
 
@@ -188,7 +188,7 @@
                     android:fontFamily="@font/cairo_regular"
                     android:gravity="center"
                     android:lineSpacingExtra="6dp"
-                    android:text="أسعار العملات هي لغرض الاطلاع والمعرفة فقط، وأن التطبيق لا يتحمل مسؤولية القرار المالي للمستخدم أثناء التداول أو الصرف"
+                    android:text="@string/about_important_text"
                     android:textColor="@color/textSecondary"
                     android:textSize="14sp" />
 
@@ -205,7 +205,7 @@
                     android:fontFamily="@font/cairo_regular"
                     android:gravity="center"
                     android:lineSpacingExtra="6dp"
-                    android:text="يوجد تطبيق مصغر (ويدجت) يمكنك إضافته من الشاشة الرئيسية في هاتفك لتظهر لك أسعار بورصاتك المفضلة (حتى 3)، مع تحديث تلقائي كل نص ساعة وزر تحديث فوري"
+                    android:text="@string/about_widget_text"
                     android:textColor="@color/textSecondary"
                     android:textSize="14sp" />
 
@@ -233,7 +233,7 @@
                         android:layout_weight="1"
                         android:layout_marginLeft="10dp"
                         android:fontFamily="@font/cairo_regular"
-                        android:text="هبوط السعر"
+                        android:text="@string/legend_down"
                         android:textColor="@color/textSecondary"
                         android:textSize="13sp" />
 
@@ -257,7 +257,7 @@
                         android:layout_weight="1"
                         android:layout_marginLeft="10dp"
                         android:fontFamily="@font/cairo_regular"
-                        android:text="صعود السعر"
+                        android:text="@string/legend_up"
                         android:textColor="@color/textSecondary"
                         android:textSize="13sp" />
 
@@ -281,7 +281,7 @@
                         android:layout_weight="1"
                         android:layout_marginLeft="10dp"
                         android:fontFamily="@font/cairo_regular"
-                        android:text="السعر مستقر أو لا يتوفر تحديث حالياً"
+                        android:text="@string/legend_flat"
                         android:textColor="@color/textSecondary"
                         android:textSize="13sp" />
 
@@ -296,7 +296,7 @@
                 android:layout_marginTop="24dp"
                 android:gravity="center"
                 android:fontFamily="@font/cairo_bold"
-                android:text="معلومات التطبيق"
+                android:text="@string/about_info_title"
                 android:textColor="@color/textPrimary"
                 android:textSize="18sp" />
 
@@ -312,16 +312,17 @@
                      (تنضغط وتفتح منشور القناة) أو "لديك اخر اصدار". تبقى مخفية
                      لو ماكو نت أو فشل الفحص. -->
                 <LinearLayout
+                    android:id="@+id/aboutVersionRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical|right"
-                    android:layoutDirection="rtl"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
+                        android:id="@+id/tvVersion"
                         style="@style/AboutInfoLine"
                         android:layout_width="wrap_content"
-                        android:text="نسخة التطبيق: 1.0.9" />
+                        android:text="@string/about_version_format" />
 
                     <TextView
                         android:id="@+id/tvUpdateStatus"
@@ -340,17 +341,17 @@
                 <TextView
                     style="@style/AboutInfoLine"
                     android:layout_marginTop="10dp"
-                    android:text="تصميم المهندس: محمد مختار فائق" />
+                    android:text="@string/about_designer" />
 
                 <TextView
                     style="@style/AboutInfoLine"
                     android:layout_marginTop="10dp"
-                    android:text="سنة الإصدار: 2026" />
+                    android:text="@string/about_year" />
 
                 <TextView
                     style="@style/AboutInfoLine"
                     android:layout_marginTop="10dp"
-                    android:text="آخر تحديث: تشرين الاول - 2026" />
+                    android:text="@string/about_last_update" />
 
             </LinearLayout>
 
@@ -383,7 +384,7 @@
                         android:fontFamily="@font/cairo_regular"
                         android:gravity="center"
                         android:lineSpacingExtra="8dp"
-                        android:text="&quot;في عالم يملؤه الضجيج، اصنع أثرك بصمت..\nفالمطر الذي ينبت الزرع لا يحدث رعداً&quot;"
+                        android:text="@string/about_quote"
                         android:textColor="@color/textSecondary"
                         android:textSize="14sp"
                         android:textStyle="italic" />
@@ -398,7 +399,7 @@
                 android:layout_marginTop="24dp"
                 android:gravity="center"
                 android:fontFamily="@font/cairo_bold"
-                android:text="تابعنا"
+                android:text="@string/follow_us"
                 android:textColor="@color/textPrimary"
                 android:textSize="18sp" />
 
@@ -422,7 +423,7 @@
                         android:layout_height="44dp"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="قناة التليغرام"
+                        android:contentDescription="@string/cd_telegram"
                         android:scaleType="fitCenter"
                         android:src="@drawable/telegram" />
 
@@ -432,7 +433,7 @@
                         android:layout_height="44dp"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="حساب X"
+                        android:contentDescription="@string/cd_x"
                         android:scaleType="fitCenter"
                         android:src="@drawable/x" />
 
@@ -442,7 +443,7 @@
                         android:layout_height="44dp"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="صفحة فيسبوك"
+                        android:contentDescription="@string/cd_facebook"
                         android:scaleType="fitCenter"
                         android:src="@drawable/facebook" />
 
@@ -452,7 +453,7 @@
                         android:layout_height="44dp"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="حساب انستغرام"
+                        android:contentDescription="@string/cd_instagram"
                         android:scaleType="fitCenter"
                         android:src="@drawable/instagram" />
 
@@ -462,7 +463,7 @@
                         android:layout_height="44dp"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="قناة واتساب"
+                        android:contentDescription="@string/cd_whatsapp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/whatsapp" />
 
@@ -481,7 +482,7 @@
                         android:layout_height="44dp"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="حساب تيك توك"
+                        android:contentDescription="@string/cd_tiktok"
                         android:scaleType="fitCenter"
                         android:src="@drawable/tiktok" />
 
@@ -491,7 +492,7 @@
                         android:layout_height="44dp"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="مستودع GitHub"
+                        android:contentDescription="@string/cd_github"
                         android:scaleType="fitCenter"
                         android:src="@drawable/github" />
 
@@ -501,7 +502,7 @@
                         android:layout_height="44dp"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="البريد الإلكتروني"
+                        android:contentDescription="@string/cd_email"
                         android:scaleType="fitCenter"
                         android:src="@drawable/email" />
 
@@ -522,7 +523,7 @@
                         android:layout_height="44dp"
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="حساب Threads"
+                        android:contentDescription="@string/cd_threads"
                         android:scaleType="fitCenter"
                         android:src="@drawable/threads" />
 

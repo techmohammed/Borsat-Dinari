@@ -40,7 +40,7 @@ object TelegramScraperRepository {
 
     private data class CityPattern(
         val key: String,
-        val name: String,
+        val nameRes: Int,
         val flag: String,
         // اسم المدينة كما يكتبه بوتنا بمنشوره (قد يكون بأكثر من صيغة).
         val keywords: List<String>
@@ -52,47 +52,52 @@ object TelegramScraperRepository {
 
     /** بيانات وصفية بسيطة (اسم + علم) لأي مدينة — تُستخدم بالودجت لعرض
      * الاسم/العلم الصحيحين حتى قبل ما يتوفر أي سعر بالكاش. */
-    data class CityMeta(val key: String, val name: String, val flag: String)
+    data class CityMeta(val key: String, val nameRes: Int, val flag: String) {
+        fun name(context: Context): String = context.getString(nameRes)
+    }
 
     fun metaFor(cityKey: String): CityMeta? =
-        cityPatterns.find { it.key == cityKey }?.let { CityMeta(it.key, it.name, it.flag) }
+        cityPatterns.find { it.key == cityKey }?.let { CityMeta(it.key, it.nameRes, it.flag) }
 
     private val cityPatterns = listOf(
-        CityPattern("baghdad", "بغداد", "iq", listOf("بغداد")),
-        CityPattern("basra", "بصرة", "iq", listOf("البصرة", "بصرة")),
-        CityPattern("erbil", "أربيل", "kurdistan", listOf("أربيل", "اربيل", "هەولێر")),
-        CityPattern("kirkuk", "كركوك", "kurdistan", listOf("كركوك")),
-        CityPattern("sulaymaniyah", "سليمانية", "kurdistan", listOf("السليمانية", "سليمانية", "سليمانی", "سليماني", "سلێمانی")),
-        CityPattern("duhok", "دهوك", "kurdistan", listOf("دهوك")),
-        CityPattern("mosul", "الموصل", "iq", listOf("الموصل", "موصل")),
-        CityPattern("karbala", "كربلاء", "iq", listOf("كربلاء")),
-        CityPattern("najaf", "النجف", "iq", listOf("النجف", "نجف")),
+        CityPattern("baghdad", R.string.city_baghdad, "iq", listOf("بغداد")),
+        CityPattern("basra", R.string.city_basra, "iq", listOf("البصرة", "بصرة")),
+        CityPattern("erbil", R.string.city_erbil, "kurdistan", listOf("أربيل", "اربيل", "هەولێر")),
+        CityPattern("kirkuk", R.string.city_kirkuk, "kurdistan", listOf("كركوك")),
+        CityPattern("sulaymaniyah", R.string.city_sulaymaniyah, "kurdistan", listOf("السليمانية", "سليمانية", "سليمانی", "سليماني", "سلێمانی")),
+        CityPattern("duhok", R.string.city_duhok, "kurdistan", listOf("دهوك")),
+        CityPattern("mosul", R.string.city_mosul, "iq", listOf("الموصل", "موصل")),
+        CityPattern("karbala", R.string.city_karbala, "iq", listOf("كربلاء")),
+        CityPattern("najaf", R.string.city_najaf, "iq", listOf("النجف", "نجف")),
         // 9 محافظات جديدة ضافتها القناة — كلهن بعلم العراق (iq) نفس بغداد.
-        CityPattern("wasit", "واسط", "iq", listOf("واسط")),
-        CityPattern("muthanna", "المثنى", "iq", listOf("المثنى", "مثنى")),
-        CityPattern("salahaldin", "صلاح الدين", "iq", listOf("صلاح الدين")),
-        CityPattern("diyala", "ديالى", "iq", listOf("ديالى", "ديالي")),
-        CityPattern("dhiqar", "ذي قار", "iq", listOf("ذي قار")),
-        CityPattern("qadisiyyah", "القادسية", "iq", listOf("القادسية", "قادسية")),
-        CityPattern("babil", "بابل", "iq", listOf("بابل")),
-        CityPattern("maysan", "ميسان", "iq", listOf("ميسان")),
-        CityPattern("anbar", "الأنبار", "iq", listOf("الأنبار", "أنبار")),
+        CityPattern("wasit", R.string.city_wasit, "iq", listOf("واسط")),
+        CityPattern("muthanna", R.string.city_muthanna, "iq", listOf("المثنى", "مثنى")),
+        CityPattern("salahaldin", R.string.city_salahaldin, "iq", listOf("صلاح الدين")),
+        CityPattern("diyala", R.string.city_diyala, "iq", listOf("ديالى", "ديالي")),
+        CityPattern("dhiqar", R.string.city_dhiqar, "iq", listOf("ذي قار")),
+        CityPattern("qadisiyyah", R.string.city_qadisiyyah, "iq", listOf("القادسية", "قادسية")),
+        CityPattern("babil", R.string.city_babil, "iq", listOf("بابل")),
+        CityPattern("maysan", R.string.city_maysan, "iq", listOf("ميسان")),
+        CityPattern("anbar", R.string.city_anbar, "iq", listOf("الأنبار", "أنبار")),
     )
 
     /** يجيب سعر التومان الإيراني من آخر منشور بقناة بورصة ديناري. */
-    fun fetchCurrencyRatesBlocking(): CurrencyTelegramRates {
-        val borsatDinariMessages = fetchTrustedBorsatDinariMessages()
+    fun fetchCurrencyRatesBlocking(): CurrencyTelegramRates =
+        CurrencyTelegramRates(extractTomanFromMessages(fetchTrustedMessagesShared()))
 
+    /** يستخرج سعر التومان (لكل 100$) من قائمة رسائل جاهزة — نفس منطق
+     * fetchCurrencyRatesBlocking بس يشتغل على رسائل ممرّرة، حتى يشارك نفس
+     * طلب الشبكة مع باقي العملات بالتحديث الجماعي (ودجت/تطبيق). */
+    internal fun extractTomanFromMessages(messages: List<Pair<String, String>>): Long? {
         var bestTimestamp: String? = null
         var bestValue: Long? = null
-        for ((ts, chunk) in borsatDinariMessages) {
+        for ((ts, chunk) in messages) {
             if (bestTimestamp != null && ts <= bestTimestamp) continue
             val value = extractBorsatDinariTomanRate(chunk) ?: continue
             bestTimestamp = ts
             bestValue = value
         }
-
-        return CurrencyTelegramRates(bestValue)
+        return bestValue
     }
 
     /** يرجع كل رسائل قناة بورصة ديناري بدون أي فلترة — تُستخدم هنا لأسعار
@@ -124,7 +129,7 @@ object TelegramScraperRepository {
     fun fetch(context: Context, onResult: (List<PriceItem>) -> Unit) {
         executor.execute {
             val cache = ScraperCache(context)
-            val messages = fetchTrustedBorsatDinariMessages()
+            val messages = fetchTrustedMessagesShared()
             val items = cityPatterns.map { cp -> resolveCityItem(cp, messages, cache, context) }
             mainHandler.post { onResult(items) }
         }
@@ -149,23 +154,35 @@ object TelegramScraperRepository {
         }
     }
 
-    // الودجت يطلب سعر كل مفضلة لحالها (لحد 3 + الدولار)، وكل وحدة كانت تجلب نفس صفحات
-    // القناة من جديد (3 طلبات شبكة متتالية بمهلة 8 ثواني لكل وحدة). هسه أول طلب يجلب
-    // والباقي يستخدم نفس النتيجة لمدة 15 ثانية، ومحمي بـ synchronized حتى لو طلبوا بنفس الوقت
-    // من خيطين (المستودعين عندهم executor منفصل).
+    // الكاش المشترك بين التطبيق والودجت: أول من يحدّث يجيب صفحة القناة مرة وحدة،
+    // وأي تحديث ثاني خلال دقيقتين يستخدم نفس النتيجة بدل ما يكرر طلب الشبكة.
+    // دقيقتين كافية لأن التطبيق والودجت غالباً يتحدثون بفارق ثوانٍ من نفس
+    // الدورة (15 دقيقة)، وقصيرة بما يكفي حتى ما يبين للمستخدم سعر قديم لو
+    // حدّث يدوياً بعد دقيقة — والتحديث اليدوي أصلاً يتجاوز الكاش عبر
+    // invalidateSharedMessages(). محمي بـ synchronized حتى لو طلبوا بنفس
+    // الوقت من خيطين (المستودعين عندهم executor منفصل).
     private var sharedMessages: List<Pair<String, String>> = emptyList()
     private var sharedMessagesAt = 0L
+    private const val SHARED_TTL_MS = 120_000L
 
     @Synchronized
     fun fetchTrustedMessagesShared(): List<Pair<String, String>> {
         val now = android.os.SystemClock.elapsedRealtime()
-        if (sharedMessages.isNotEmpty() && now - sharedMessagesAt < 15_000L) return sharedMessages
+        if (sharedMessages.isNotEmpty() && now - sharedMessagesAt < SHARED_TTL_MS) return sharedMessages
         val fresh = fetchTrustedBorsatDinariMessages()
         if (fresh.isNotEmpty()) {
             sharedMessages = fresh
             sharedMessagesAt = now
         }
         return fresh
+    }
+
+    /** يفرّغ الكاش المشترك — يناديه التحديث اليدوي (سحب للأسفل بالتطبيق أو
+     * زر تحديث الودجت) حتى يجيب بيانات حية فعلاً بدل ما يرجع نفس صفحة
+     * جلبها قبل دقيقة تحديث تلقائي. */
+    @Synchronized
+    fun invalidateSharedMessages() {
+        sharedMessagesAt = 0L
     }
 
     /** يبني PriceItem من الكاش المحلي فقط، بدون أي اتصال شبكة — يُستخدم لعرض
@@ -175,7 +192,20 @@ object TelegramScraperRepository {
         val cache = ScraperCache(context)
         val digitsOnly = cache.load(cp.key) ?: return null
         val trend = cache.loadTrend(cp.key) ?: Trend.UP
-        return PriceItem(cp.name, cp.flag, formatIqd(digitsOnly), "100\$", trend, cp.key)
+        return PriceItem(context.getString(cp.nameRes), cp.flag, formatIqd(digitsOnly), "100\$", trend, cp.key)
+    }
+
+    /** يحل سعر مدينة وحدة من رسائل القناة الجاهزة — بدون أي طلب شبكة هنا
+     * (الصفحة تجلب مرة وحدة خارجياً ويُمرر نصها لكل المفاتيح). يحفظ بالكاش
+     * المشترك ويسجل هيستوري إذا تغيّر السعر، نفس resolveCityItem بالضبط.
+     * يُستخدم من تحديث الودجت الجماعي. */
+    internal fun resolveBlocking(
+        context: Context,
+        cityKey: String,
+        messages: List<Pair<String, String>>
+    ): PriceItem? {
+        val cp = cityPatterns.find { it.key == cityKey } ?: return null
+        return resolveCityItem(cp, messages, ScraperCache(context), context)
     }
 
     private fun resolveCityItem(
@@ -228,7 +258,7 @@ object TelegramScraperRepository {
         cache.saveTrend(cp.key, finalTrend)
         val priceText = if (digitsOnly != null) formatIqd(digitsOnly) else "—"
         return PriceItem(
-            name = cp.name,
+            name = context.getString(cp.nameRes),
             flagDrawable = cp.flag,
             price = priceText,
             unit = "100\$",
