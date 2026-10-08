@@ -3,6 +3,8 @@
     <string name="last_update_label">Last update</string>
     <string name="last_update_prefix">Last update: %1$s</string>
     <string name="last_update_none">Last update: —</string>
+    <string name="announcement_label">Notice</string>
+    <string name="announcement_close">Close notice</string>
     <string name="cancel">Cancel</string>
     <string name="time_am">AM</string>
     <string name="time_pm">PM</string>
@@ -13,6 +15,18 @@
     <string name="language_ku">کوردی</string>
     <string name="cd_about">About the app</string>
     <string name="cd_theme">Toggle night/day theme</string>
+    <string name="cd_calculator">Dollar calculator</string>
+    <string name="calculator_title">Calculator</string>
+    <string name="currency_us_dollar">US dollar</string>
+    <string name="calculator_amount_label">Amount in dollars</string>
+    <string name="calculator_exchange_label">Choose exchange</string>
+    <string name="calculator_result_label">Result in Iraqi dinars</string>
+    <string name="iqd_short">IQD</string>
+    <string name="currency_iqd_unit">Iraqi dinar</string>
+    <string name="currency_try_unit">Turkish lira</string>
+    <string name="currency_irr_unit">Iranian toman</string>
+    <string name="currency_eur_unit">Euro</string>
+    <string name="currency_gbp_unit">Pound</string>
     <string name="cd_refresh_now">Refresh now</string>
     <string name="cd_favorite">Favorite</string>
     <string name="city_baghdad">Baghdad</string>

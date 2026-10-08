@@ -11,6 +11,7 @@ import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -218,6 +219,10 @@ class HistoryActivity : AppCompatActivity() {
     private fun openRangePicker() {
         val now = System.currentTimeMillis()
         val earliest = now - (RETENTION_DAYS * 24 * 60 * 60 * 1000)
+        val arabicNumeralsLocale = Locale.forLanguageTag("ar-IQ-u-nu-latn")
+        val originalDefaultLocale = Locale.getDefault()
+        val useArabicCalendarLocale = AppLanguage.currentTag() == "ar"
+        if (useArabicCalendarLocale) Locale.setDefault(arabicNumeralsLocale)
 
         // نحدد بداية ونهاية التقويم نفسه (Builder.setStart/setEnd) حتى ما
         // يعرض شهور بلا داعي قبل أول يوم عندنا فيه بيانات أو بعد اليوم
@@ -255,15 +260,47 @@ class HistoryActivity : AppCompatActivity() {
             // (startSync يعتمد على currentFrom/currentTo اللي للتو ضبطناها).
             startSync()
         }
+        picker.addOnDismissListener {
+            if (useArabicCalendarLocale) Locale.setDefault(originalDefaultLocale)
+        }
 
         // نكبّر عنوان "اختيار الفترة" بالهيدر بالكود (حجم الستايل وحده ما كان يظهر).
         supportFragmentManager.registerFragmentLifecycleCallbacks(
             object : FragmentManager.FragmentLifecycleCallbacks() {
+                private var digitListenerAttached = false
+
+                private fun normalizeCalendarDigits(root: View?) {
+                    if (root == null) return
+                    if (root is android.widget.TextView) {
+                        val old = root.text?.toString().orEmpty()
+                        val converted = old.map { ch ->
+                            when (ch) {
+                                in '٠'..'٩' -> ('0'.code + ch.code - '٠'.code).toChar()
+                                in '۰'..'۹' -> ('0'.code + ch.code - '۰'.code).toChar()
+                                else -> ch
+                            }
+                        }.joinToString("")
+                        if (converted != old) root.text = converted
+                    }
+                    if (root is ViewGroup) {
+                        for (i in 0 until root.childCount) {
+                            normalizeCalendarDigits(root.getChildAt(i))
+                        }
+                    }
+                }
+
                 // Material يطبّق "الحجم التلقائي" على عنوان الهيدر فيصغّره، ولذلك الحجم
                 // بالستايل ما يبين. نوقف الحجم التلقائي ونفرض الحجم بعد ما ينعرض
                 // الهيدر (وبعد أول رسم أيضاً حتى ما يرجعه Material).
                 private fun enlarge(root: View?) {
                     if (root != null) KurdishFont.apply(root, this@HistoryActivity)
+                    normalizeCalendarDigits(root)
+                    if (!digitListenerAttached && root != null) {
+                        digitListenerAttached = true
+                        root.viewTreeObserver.addOnGlobalLayoutListener {
+                            normalizeCalendarDigits(root)
+                        }
+                    }
                     val title = root?.findViewById<android.widget.TextView>(
                         com.google.android.material.R.id.mtrl_picker_title_text
                     ) ?: return

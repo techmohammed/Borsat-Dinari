@@ -10,6 +10,7 @@ import android.view.GestureDetector
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.widget.TextView
 import kotlin.math.abs
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -21,6 +22,10 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_SHORTCUT_CITY_KEY = "shortcut_city_key"
         const val EXTRA_SHORTCUT_CITY_NAME = "shortcut_city_name"
         const val EXTRA_SHORTCUT_CITY_FLAG = "shortcut_city_flag"
+        private const val ANNOUNCEMENT_PREFS = "announcement_banner_prefs"
+        private const val ANNOUNCEMENT_POST_ID = "announcement_post_id"
+        private const val ANNOUNCEMENT_FIRST_SEEN = "announcement_first_seen"
+        private const val ANNOUNCEMENT_VISIBLE_MS = 24 * 60 * 60 * 1000L
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -93,6 +98,9 @@ class MainActivity : AppCompatActivity() {
 
         // زر الكرة الأرضية: ينزل مستطيل اختيار اللغة (4 لغات بأعلامها).
         binding.btnLanguage.setOnClickListener { showLanguagePopup(it) }
+        binding.btnCalculator.setOnClickListener {
+            startActivity(Intent(this, CalculatorActivity::class.java))
+        }
 
         binding.btnRefreshNow.setOnClickListener {
             // تحديث يدوي: نتجاوز الكاش المشترك حتى يجيب بيانات حية فعلاً.
@@ -132,7 +140,7 @@ class MainActivity : AppCompatActivity() {
         // أندرويد 14+: الانزلاق يتحدد داخل AboutActivity (overrideActivityTransition).
     }
 
-    // سحب من اليسار لليمين بأي مكان بالصفحة = يفتح "حول التطبيق".
+    // سحب وسط الشاشة لليمين = حول التطبيق، ولليسار = الحاسبة.
     private val drawerSwipeDetector by lazy {
         GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onFling(
@@ -142,7 +150,11 @@ class MainActivity : AppCompatActivity() {
                 val dx = e2.x - e1.x
                 val dy = e2.y - e1.y
                 val minDistance = resources.displayMetrics.density * 80f
-                if (dx > minDistance && dx > abs(dy) * 1.8f && velocityX > 600f) {
+                if (abs(dx) > minDistance && abs(dx) > abs(dy) * 1.8f && abs(velocityX) > 600f) {
+                    if (dx < 0) {
+                        startActivity(Intent(this@MainActivity, CalculatorActivity::class.java))
+                        return true
+                    }
                     openAbout()
                     return true
                 }
@@ -169,11 +181,69 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadExchanges() {
         binding.swipeRefresh.isRefreshing = true
+        loadLatestAnnouncement()
         TelegramScraperRepository.fetch(this) { items ->
             latestExchanges = FavoriteCityStore.sortWithFavoriteFirst(this, items)
             binding.swipeRefresh.isRefreshing = false
             rebuildRows()
         }
+    }
+
+    /** يعرض أحدث منشور يبدأ بـ"تنويه" داخل شريط متحرك تحت الهيدر. */
+    private fun loadLatestAnnouncement() {
+        // التنويه مخصص للواجهة العربية فقط؛ لا نرسل طلباً للقناة أصلاً
+        // عند اختيار الإنجليزية أو التركية أو الكوردية.
+        if (AppLanguage.currentTag() != "ar") {
+            binding.announcementBar.visibility = View.GONE
+            return
+        }
+        TelegramScraperRepository.fetchLatestAnnouncement { announcement ->
+            if (announcement == null) {
+                binding.announcementBar.visibility = View.GONE
+                return@fetchLatestAnnouncement
+            }
+
+            val prefs = getSharedPreferences(ANNOUNCEMENT_PREFS, MODE_PRIVATE)
+            val savedPostId = prefs.getLong(ANNOUNCEMENT_POST_ID, -1L)
+            val firstSeen = prefs.getLong(ANNOUNCEMENT_FIRST_SEEN, 0L)
+            val now = System.currentTimeMillis()
+            if (savedPostId == announcement.postId && now - firstSeen >= ANNOUNCEMENT_VISIBLE_MS) {
+                binding.announcementBar.visibility = View.GONE
+                return@fetchLatestAnnouncement
+            }
+            if (savedPostId != announcement.postId) {
+                prefs.edit()
+                    .putLong(ANNOUNCEMENT_POST_ID, announcement.postId)
+                    .putLong(ANNOUNCEMENT_FIRST_SEEN, now)
+                    .apply()
+            }
+
+            binding.tvAnnouncementText.text = announcement.text
+            binding.tvAnnouncementText.isSelected = true
+            speedUpAnnouncementMarquee()
+            binding.announcementBar.visibility = View.VISIBLE
+            KurdishFont.apply(binding.announcementBar, this)
+
+            // الضغط على النص لا يفتح المنشور؛ الشريط مخصص للعرض فقط.
+            binding.tvAnnouncementText.setOnClickListener(null)
+            binding.btnCloseAnnouncement.setOnClickListener {
+                binding.announcementBar.visibility = View.GONE
+            }
+        }
+    }
+
+    /** يزيد سرعة الـmarquee الافتراضية قليلاً مع إبقاء الحركة مستمرة. */
+    private fun speedUpAnnouncementMarquee() {
+        binding.tvAnnouncementText.postDelayed({
+            runCatching {
+                val marqueeField = TextView::class.java.getDeclaredField("mMarquee")
+                marqueeField.isAccessible = true
+                val marquee = marqueeField.get(binding.tvAnnouncementText) ?: return@runCatching
+                val speedField = marquee.javaClass.getDeclaredField("mPixelsPerSecond")
+                speedField.isAccessible = true
+                speedField.setFloat(marquee, 72f)
+            }
+        }, 100L)
     }
 
     private fun loadCurrencies() {
@@ -231,6 +301,7 @@ class MainActivity : AppCompatActivity() {
             content.findViewById<View>(viewId).setOnClickListener {
                 popup.dismiss()
                 AppLanguage.apply(tag)
+                CalculatorWidgetProvider.refreshLanguage(this)
             }
         }
         select(R.id.langAr, "ar")

@@ -3,6 +3,8 @@
     <string name="last_update_label">Son güncelleme</string>
     <string name="last_update_prefix">Son güncelleme: %1$s</string>
     <string name="last_update_none">Son güncelleme: —</string>
+    <string name="announcement_label">Duyuru</string>
+    <string name="announcement_close">Duyuruyu kapat</string>
     <string name="cancel">İptal</string>
     <string name="time_am">ÖÖ</string>
     <string name="time_pm">ÖS</string>
@@ -13,6 +15,18 @@
     <string name="language_ku">کوردی</string>
     <string name="cd_about">Uygulama hakkında</string>
     <string name="cd_theme">Gece/gündüz modunu değiştir</string>
+    <string name="cd_calculator">Dolar hesaplayıcı</string>
+    <string name="calculator_title">Hesap makinesi</string>
+    <string name="currency_us_dollar">ABD doları</string>
+    <string name="calculator_amount_label">Dolar miktarı</string>
+    <string name="calculator_exchange_label">Borsayı seçin</string>
+    <string name="calculator_result_label">Irak dinarı sonucu</string>
+    <string name="iqd_short">IQD</string>
+    <string name="currency_iqd_unit">Irak dinarı</string>
+    <string name="currency_try_unit">Türk lirası</string>
+    <string name="currency_irr_unit">İran tümeni</string>
+    <string name="currency_eur_unit">Euro</string>
+    <string name="currency_gbp_unit">Sterlin</string>
     <string name="cd_refresh_now">Şimdi yenile</string>
     <string name="cd_favorite">Favori</string>
     <string name="city_baghdad">Bağdat</string>

@@ -302,6 +302,61 @@ object TelegramScraperRepository {
     /** آخر إصدار للتطبيق منشور بالقناة: رقم النسخة + رابط المنشور نفسه. */
     data class AppRelease(val version: String, val postUrl: String)
 
+    /** تنويه القناة لعرضه في الشريط العلوي. */
+    data class Announcement(val text: String, val postId: Long)
+
+    /**
+     * يبحث في نفس رسائل القناة المشتركة عن أحدث منشور يبدأ بكلمة "تنويه".
+     * لا يفتح اتصالاً منفصلاً إذا كانت الأسعار قد جلبت الصفحة قبلَه، لأن
+     * fetchTrustedMessagesShared() يعيد نفس نتيجة الكاش لمدة دقيقتين.
+     */
+    fun fetchLatestAnnouncement(onResult: (Announcement?) -> Unit) {
+        executor.execute {
+            val announcement = try {
+                parseLatestAnnouncement(fetchTrustedMessagesShared())
+            } catch (_: Exception) {
+                null
+            }
+            mainHandler.post { onResult(announcement) }
+        }
+    }
+
+    private fun parseLatestAnnouncement(messages: List<Pair<String, String>>): Announcement? {
+        val idRegex = Regex("""data-post="[^/"]+/(\d+)""")
+        // نأخذ محتوى عنصر نص الرسالة فقط، وليس كامل حاوية Telegram التي
+        // تحتوي أحياناً على بيانات داخلية مثل view و TWeb.init.
+        val messageTextRegex = Regex(
+            """<div[^>]*class="[^"]*tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)</div>""",
+            RegexOption.IGNORE_CASE
+        )
+        var best: Triple<String, Long, String>? = null
+        for ((timestamp, chunk) in messages) {
+            val id = idRegex.find(chunk)?.groupValues?.get(1)?.toLongOrNull() ?: continue
+            val rawMessageText = messageTextRegex.find(chunk)?.groupValues?.get(1) ?: continue
+            val text = stripHtml(rawMessageText)
+                .replace(bidiRegex, "")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+            // صفحة t.me/s قد تضع اسم القناة قبل نص المنشور، مثل:
+            // "بورصة ديناري تنويه: الأسعار تقريبية..."؛ لذلك لا نشترط
+            // أن تكون كلمة تنويه أول كلمة حرفياً، بل نبحث عنها قرب البداية.
+            val noticeIndex = text.indexOf("تنويه")
+            if (noticeIndex !in 0..120) continue
+            if (best == null || timestamp > best.first) {
+                best = Triple(timestamp, id, text)
+            }
+        }
+        return best?.let { (_, id, text) ->
+            val noticeIndex = text.indexOf("تنويه")
+            val displayText = text
+                .substring(noticeIndex + "تنويه".length)
+                .replaceFirst(Regex("^[\\s:：،,\\-–—|]+"), "")
+                .trim()
+                .ifEmpty { "تنويه" }
+            Announcement(displayText, id)
+        }
+    }
+
     /**
      * يدور بالقناة على منشور الـAPK (نصه "تطبيق بورصة ديناري 1.0.7") ويرجع
      * أعلى رقم نسخة لقاه مع رابط منشوره — المقارنة برقم النسخة نفسه مو

@@ -411,12 +411,14 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
 
         /** تحديث من داخل BroadcastReceiver: goAsync ينتهي مرة وحدة مضمون حتى لو صار خطأ.
          * [forceFresh] للتحديث اليدوي فقط (يتجاوز الكاش المشترك حتى يجيب حيّ فعلاً). */
-        fun refreshAsync(receiver: BroadcastReceiver, context: Context, animate: Boolean, forceFresh: Boolean = false) {
+        fun refreshAsync(receiver: BroadcastReceiver, context: Context, animate: Boolean, forceFresh: Boolean = false, onDone: () -> Unit = {}) {
             val pending = receiver.goAsync() ?: return
             val done = AtomicBoolean(false)
             val finish = {
                 if (done.compareAndSet(false, true)) {
                     try { pending.finish() } catch (_: Exception) {}
+                    try { CalculatorWidgetProvider.refreshFromSharedCache(context) } catch (_: Exception) {}
+                    try { onDone() } catch (_: Exception) {}
                 }
             }
             try {

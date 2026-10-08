@@ -35,6 +35,11 @@
     <color name="accentBlue">#003078</color>
     <color name="pickerHighlight">#33003078</color>
 
+    <!-- شريط التنويه العلوي -->
+    <color name="announcementAccent">#FFC107</color>
+    <color name="announcementLabelText">#172033</color>
+    <color name="announcementClose">#B8C7DD</color>
+
     <!-- مخطط صفحة سجل الأسعار -->
     <color name="chartAxisText">#5B6B8C</color>
     <color name="chartGrid">#1F5B6B8C</color>

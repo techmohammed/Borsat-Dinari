@@ -28,6 +28,11 @@
 
         <activity android:name=".AboutActivity" android:exported="false" />
         <activity android:name=".HistoryActivity" android:exported="false" />
+        <activity android:name=".CalculatorActivity" android:exported="false" />
+        <activity
+            android:name=".CalculatorWidgetPickerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.CurrencyApp.WidgetPicker" />
 
         <!-- ودجت الشاشة الرئيسية 4×2: يعرض أول 3 مفضلات، مع زر تحديث يدوي
              وتحديث تلقائي ساعي (WidgetRefreshScheduler + AlarmManager). -->
@@ -57,6 +62,21 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/favorite_price_widget_small_info" />
+        </receiver>
+
+        <receiver
+            android:name=".CalculatorWidgetProvider"
+            android:label="@string/app_name"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.mohammed.currencyapp.ACTION_CALCULATOR_KEY" />
+                <action android:name="com.mohammed.currencyapp.ACTION_CALCULATOR_SELECT" />
+                <action android:name="com.mohammed.currencyapp.ACTION_CALCULATOR_REFRESH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/calculator_widget_info" />
         </receiver>
 
     </application>

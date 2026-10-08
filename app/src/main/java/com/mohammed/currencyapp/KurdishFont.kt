@@ -13,6 +13,7 @@ import android.text.style.MetricAffectingSpan
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.EditText
 import androidx.core.content.res.ResourcesCompat
 import java.util.WeakHashMap
 
@@ -42,8 +43,12 @@ object KurdishFont {
             view.typeface = peshang
             // تقوية الكلمات الكوردية، مع بقاء الأرقام بخط Cairo Bold الأوضح.
             view.paint.isFakeBoldText = true
-            styleNumbers(view, cairo)
-            watchForLaterText(view, cairo)
+            // EditText يحتاج أن يحتفظ بالمؤشر والنص أثناء الكتابة؛ إعادة وضع
+            // Spannable بعد كل حرف كانت تجعل خانة المبلغ تقبل رقماً واحداً فقط.
+            if (view !is EditText) {
+                styleNumbers(view, cairo)
+                watchForLaterText(view, cairo)
+            }
         }
         if (view is ViewGroup) {
             for (index in 0 until view.childCount) {

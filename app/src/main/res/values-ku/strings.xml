@@ -3,6 +3,8 @@
     <string name="last_update_label">دوایین نوێکاری</string>
     <string name="last_update_prefix">دوایین نوێکاری: %1$s</string>
     <string name="last_update_none">دوایین نوێکاری: —</string>
+    <string name="announcement_label">ئاگاداری</string>
+    <string name="announcement_close">داخستنی ئاگاداری</string>
     <string name="cancel">هەڵوەشاندنەوە</string>
     <string name="time_am">س</string>
     <string name="time_pm">ئـ</string>
@@ -13,6 +15,18 @@
     <string name="language_ku">کوردی</string>
     <string name="cd_about">دەربارەی ئەپ</string>
     <string name="cd_theme">گۆڕینی دۆخی شەو/ڕۆژ</string>
+    <string name="cd_calculator">ژمێرەری دۆلار</string>
+    <string name="calculator_title">ژمێرەر</string>
+    <string name="currency_us_dollar">دۆلاری ئەمریکی</string>
+    <string name="calculator_amount_label">بڕی دۆلار</string>
+    <string name="calculator_exchange_label">بۆرسە هەڵبژێرە</string>
+    <string name="calculator_result_label">ئەنجام بە دیناری عێراقی</string>
+    <string name="iqd_short">د.ع</string>
+    <string name="currency_iqd_unit">دیناری عێراقی</string>
+    <string name="currency_try_unit">لیرەی تورکی</string>
+    <string name="currency_irr_unit">تۆمانی ئێرانی</string>
+    <string name="currency_eur_unit">یۆرۆ</string>
+    <string name="currency_gbp_unit">پاوند</string>
     <string name="cd_refresh_now">ئێستا نوێ بکەرەوە</string>
     <string name="cd_favorite">دڵخواز</string>
     <string name="city_baghdad">بەغدا</string>
