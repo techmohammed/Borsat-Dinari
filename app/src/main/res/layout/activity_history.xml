@@ -10,15 +10,19 @@
 
     <!-- الهيدر: اسم البورصة/المدينة بالوسط، زر الرجوع يسار، زر التقويم يمين -->
     <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:layoutDirection="ltr"
         android:background="@color/brandBlue"
         android:elevation="0dp"
         app:contentInsetEnd="0dp"
         app:contentInsetStart="0dp"
         app:contentInsetStartWithNavigation="0dp">
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
         <ImageButton
             android:id="@+id/btnBack"
             android:layout_width="44dp"
@@ -46,6 +50,18 @@
             tools:text="بغداد" />
 
         <ImageButton
+            android:id="@+id/btnSharePdf"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="right|center_vertical"
+            android:layout_marginRight="54dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cd_share_history_pdf"
+            android:padding="10dp"
+            android:src="@drawable/ic_share_pdf"
+            app:tint="@color/white" />
+
+        <ImageButton
             android:id="@+id/btnPickRange"
             android:layout_width="44dp"
             android:layout_height="44dp"
@@ -57,6 +73,7 @@
             android:src="@drawable/ic_calendar_31"
             app:tint="@color/white" />
 
+        </FrameLayout>
     </androidx.appcompat.widget.Toolbar>
 
     <!-- شريط تقدم رفيع يظهر فقط أثناء جلب السجلات من القناة -->

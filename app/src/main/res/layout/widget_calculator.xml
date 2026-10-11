@@ -54,6 +54,7 @@
                         android:layout_height="wrap_content"
                         android:includeFontPadding="false"
                         android:text="@string/last_update_label"
+                        android:visibility="gone"
                         android:textColor="#B8CCE8"
                         android:textSize="9sp" />
                     <TextView
@@ -62,7 +63,8 @@
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
                         android:includeFontPadding="false"
-                        android:maxLines="1"
+                        android:gravity="center"
+                        android:maxLines="2"
                         android:text="—"
                         android:textColor="#FFFFFF"
                         android:textSize="11sp"
@@ -102,7 +104,9 @@
             <ImageView
                 android:layout_width="40dp"
                 android:layout_height="40dp"
+                android:background="@drawable/bg_flag_ring"
                 android:contentDescription="@string/currency_us_dollar"
+                android:padding="1dp"
                 android:src="@drawable/flag_us"
                 android:scaleType="fitCenter" />
         </LinearLayout>
@@ -143,6 +147,8 @@
                 android:id="@+id/calculatorWidgetExchangeFlag"
                 android:layout_width="28dp"
                 android:layout_height="30dp"
+                android:background="@drawable/bg_flag_ring"
+                android:padding="1dp"
                 android:scaleType="fitCenter" />
         </LinearLayout>
 

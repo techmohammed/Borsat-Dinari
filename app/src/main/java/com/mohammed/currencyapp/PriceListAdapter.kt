@@ -108,6 +108,7 @@ class PriceListAdapter(
     ) : RecyclerView.ViewHolder(view) {
         private val tvPrice: android.widget.TextView = view.findViewById(R.id.tvPrice)
         private val tvUnit: android.widget.TextView = view.findViewById(R.id.tvUnit)
+        private val tvUpdateTime: android.widget.TextView = view.findViewById(R.id.tvUpdateTime)
         private val tvName: android.widget.TextView = view.findViewById(R.id.tvName)
         private val ivFlag: android.widget.ImageView = view.findViewById(R.id.ivFlag)
         private val deltaRow: View = view.findViewById(R.id.deltaRow)
@@ -121,6 +122,8 @@ class PriceListAdapter(
         fun bind(item: PriceItem, favoriteKeys: List<String>, animatePrice: Boolean) {
             val context = itemView.context
             tvUnit.text = item.unit
+            tvUpdateTime.text = item.updateTimeMillis?.let { UpdateTimeFormat.cardTimeAndDate(context, it) } ?: ""
+            tvUpdateTime.visibility = if (item.updateTimeMillis != null) View.VISIBLE else View.GONE
             tvName.text = item.name
 
             // خلفية الصف كاملة: أخضر فاتح = صعود، أحمر فاتح = نزول.
@@ -158,10 +161,12 @@ class PriceListAdapter(
                     if (item.trend == Trend.UP) {
                         ivDeltaArrow.setImageResource(R.drawable.ic_tri_up)
                         tvDelta.text = "+$amount"
+                        KurdishFont.emphasizeMainNumber(tvDelta)
                         tvDelta.setTextColor(ContextCompat.getColor(context, R.color.deltaUp))
                     } else {
                         ivDeltaArrow.setImageResource(R.drawable.ic_tri_down)
                         tvDelta.text = "-$amount"
+                        KurdishFont.emphasizeMainNumber(tvDelta)
                         tvDelta.setTextColor(ContextCompat.getColor(context, R.color.deltaDown))
                     }
                 }
@@ -184,6 +189,7 @@ class PriceListAdapter(
             val plan = if (animatePrice) DigitRevealAnimator.plan(displayPrice) else null
             if (plan == null) {
                 tvPrice.text = displayPrice
+                KurdishFont.emphasizeMainNumber(tvPrice)
                 return
             }
 
@@ -197,6 +203,7 @@ class PriceListAdapter(
                 override fun run() {
                     step++
                     tvPrice.text = DigitRevealAnimator.frameText(displayPrice, plan, step, totalSteps)
+                    KurdishFont.emphasizeMainNumber(tvPrice)
                     if (step < totalSteps) animHandler.postDelayed(this, frameRate)
                 }
             }

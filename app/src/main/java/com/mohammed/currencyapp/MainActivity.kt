@@ -24,8 +24,11 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_SHORTCUT_CITY_FLAG = "shortcut_city_flag"
         private const val ANNOUNCEMENT_PREFS = "announcement_banner_prefs"
         private const val ANNOUNCEMENT_POST_ID = "announcement_post_id"
-        private const val ANNOUNCEMENT_FIRST_SEEN = "announcement_first_seen"
-        private const val ANNOUNCEMENT_VISIBLE_MS = 24 * 60 * 60 * 1000L
+        private const val ANNOUNCEMENT_TEXT = "announcement_text"
+        private const val ANNOUNCEMENT_PUBLISHED_AT = "announcement_published_at"
+        private const val ANNOUNCEMENT_CLOSE_COUNT = "announcement_close_count"
+        private const val ANNOUNCEMENT_VISIBLE_MS = 12 * 60 * 60 * 1000L
+        private const val ANNOUNCEMENT_MAX_CLOSES = 3
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -34,13 +37,18 @@ class MainActivity : AppCompatActivity() {
     private var latestExchanges: List<PriceItem> = emptyList()
     private var latestCurrencies: List<PriceItem> = emptyList()
 
+    // رقم دورة التحديث الحالية حتى لا يؤثر رد شبكة قديم على دورة أحدث.
+    private var refreshGeneration = 0
+    private var exchangesLoadedGeneration = -1
+    private var currenciesLoadedGeneration = -1
+    private var updateTimeRecordedGeneration = -1
+
     // تحديث الأسعار كل 15 دقيقة طالما التطبيق مفتوح بالمقدمة
     private val refreshHandler = Handler(Looper.getMainLooper())
     private val refreshIntervalMs = 15 * 60 * 1000L
     private val refreshRunnable = object : Runnable {
         override fun run() {
-            loadExchanges()
-            loadCurrencies()
+            startDataRefresh()
             refreshHandler.postDelayed(this, refreshIntervalMs)
         }
     }
@@ -69,6 +77,7 @@ class MainActivity : AppCompatActivity() {
                     putExtra(HistoryActivity.EXTRA_KEY, item.cityKey ?: item.name)
                     putExtra(HistoryActivity.EXTRA_NAME, item.name)
                     putExtra(HistoryActivity.EXTRA_FLAG, item.flagDrawable)
+                    putExtra(HistoryActivity.EXTRA_UNIT, item.unit)
                 }
                 startActivity(intent)
             }
@@ -78,9 +87,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.swipeRefresh.setOnRefreshListener {
             // تحديث يدوي: نتجاوز الكاش المشترك حتى يجيب بيانات حية فعلاً.
-            TelegramScraperRepository.invalidateSharedMessages()
-            loadExchanges()
-            loadCurrencies()
+            startDataRefresh(invalidateNetworkCache = true)
         }
 
         binding.btnAbout.setOnClickListener { openAbout() }
@@ -104,9 +111,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnRefreshNow.setOnClickListener {
             // تحديث يدوي: نتجاوز الكاش المشترك حتى يجيب بيانات حية فعلاً.
-            TelegramScraperRepository.invalidateSharedMessages()
-            loadExchanges()
-            loadCurrencies()
+            startDataRefresh(invalidateNetworkCache = true)
         }
 
         updateLastUpdateLabel(LastUpdateStore.load(this))
@@ -116,18 +121,30 @@ class MainActivity : AppCompatActivity() {
 
         // فتحنا من اختصار الشاشة الرئيسية (ضغطة مطولة على أيقونة التطبيق)؟
         // نفتح هيستوري المدينة المطلوبة مباشرة فوق الشاشة الرئيسية.
-        intent?.getStringExtra(EXTRA_SHORTCUT_CITY_KEY)?.let { key ->
-            val name = intent.getStringExtra(EXTRA_SHORTCUT_CITY_NAME) ?: ""
-            val flag = intent.getStringExtra(EXTRA_SHORTCUT_CITY_FLAG) ?: ""
-            startActivity(Intent(this, HistoryActivity::class.java).apply {
-                putExtra(HistoryActivity.EXTRA_KEY, key)
-                putExtra(HistoryActivity.EXTRA_NAME, name)
-                putExtra(HistoryActivity.EXTRA_FLAG, flag)
-            })
-        }
+        openShortcutHistory(intent)
 
-        loadExchanges()
-        loadCurrencies()
+        startDataRefresh()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openShortcutHistory(intent)
+    }
+
+    private fun openShortcutHistory(source: Intent?) {
+        val key = source?.getStringExtra(EXTRA_SHORTCUT_CITY_KEY) ?: return
+        val name = source.getStringExtra(EXTRA_SHORTCUT_CITY_NAME) ?: ""
+        val flag = source.getStringExtra(EXTRA_SHORTCUT_CITY_FLAG) ?: ""
+        source.removeExtra(EXTRA_SHORTCUT_CITY_KEY)
+        source.removeExtra(EXTRA_SHORTCUT_CITY_NAME)
+        source.removeExtra(EXTRA_SHORTCUT_CITY_FLAG)
+        setIntent(source)
+        startActivity(Intent(this, HistoryActivity::class.java).apply {
+            putExtra(HistoryActivity.EXTRA_KEY, key)
+            putExtra(HistoryActivity.EXTRA_NAME, name)
+            putExtra(HistoryActivity.EXTRA_FLAG, flag)
+        })
     }
 
     /** يفتح "حول التطبيق" بانزلاق من اليسار (مثل سحب القائمة البرگر). */
@@ -179,13 +196,27 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun loadExchanges() {
+    private fun startDataRefresh(invalidateNetworkCache: Boolean = false) {
+        if (invalidateNetworkCache) {
+            TelegramScraperRepository.invalidateSharedMessages()
+        }
+        refreshGeneration++
+        exchangesLoadedGeneration = -1
+        currenciesLoadedGeneration = -1
+        updateTimeRecordedGeneration = -1
+        val generation = refreshGeneration
+        loadExchanges(generation)
+        loadCurrencies(generation)
+    }
+
+    private fun loadExchanges(generation: Int) {
         binding.swipeRefresh.isRefreshing = true
         loadLatestAnnouncement()
         TelegramScraperRepository.fetch(this) { items ->
+            if (generation != refreshGeneration) return@fetch
             latestExchanges = FavoriteCityStore.sortWithFavoriteFirst(this, items)
-            binding.swipeRefresh.isRefreshing = false
-            rebuildRows()
+            exchangesLoadedGeneration = generation
+            rebuildRows(recordRefreshCompletion = true)
         }
     }
 
@@ -198,27 +229,51 @@ class MainActivity : AppCompatActivity() {
             return
         }
         TelegramScraperRepository.fetchLatestAnnouncement { announcement ->
-            if (announcement == null) {
+            val prefs = getSharedPreferences(ANNOUNCEMENT_PREFS, MODE_PRIVATE)
+            val savedPostId = prefs.getLong(ANNOUNCEMENT_POST_ID, -1L)
+            val savedText = prefs.getString(ANNOUNCEMENT_TEXT, null)
+            val savedPublishedAt = prefs.getLong(ANNOUNCEMENT_PUBLISHED_AT, 0L)
+            val savedAnnouncement = if (savedPostId >= 0L && !savedText.isNullOrBlank() && savedPublishedAt > 0L) {
+                TelegramScraperRepository.Announcement(savedText, savedPostId, savedPublishedAt)
+            } else null
+
+            // إذا خرج التنويه من صفحة Telegram الحالية، نكمل عرض آخر تنويه محفوظ
+            // بدل إخفائه قبل انتهاء الـ12 ساعة.
+            val activeAnnouncement = when {
+                announcement == null -> savedAnnouncement
+                savedAnnouncement != null && announcement.postId < savedAnnouncement.postId -> savedAnnouncement
+                else -> announcement
+            }
+            if (activeAnnouncement == null) {
                 binding.announcementBar.visibility = View.GONE
                 return@fetchLatestAnnouncement
             }
 
-            val prefs = getSharedPreferences(ANNOUNCEMENT_PREFS, MODE_PRIVATE)
-            val savedPostId = prefs.getLong(ANNOUNCEMENT_POST_ID, -1L)
-            val firstSeen = prefs.getLong(ANNOUNCEMENT_FIRST_SEEN, 0L)
             val now = System.currentTimeMillis()
-            if (savedPostId == announcement.postId && now - firstSeen >= ANNOUNCEMENT_VISIBLE_MS) {
+            val closeCount = if (savedPostId == activeAnnouncement.postId) {
+                prefs.getInt(ANNOUNCEMENT_CLOSE_COUNT, 0)
+            } else 0
+            val publishedAt = activeAnnouncement.publishedAtMillis
+            if (publishedAt <= 0L || now - publishedAt >= ANNOUNCEMENT_VISIBLE_MS || closeCount >= ANNOUNCEMENT_MAX_CLOSES) {
                 binding.announcementBar.visibility = View.GONE
                 return@fetchLatestAnnouncement
             }
-            if (savedPostId != announcement.postId) {
+            if (savedPostId != activeAnnouncement.postId) {
                 prefs.edit()
-                    .putLong(ANNOUNCEMENT_POST_ID, announcement.postId)
-                    .putLong(ANNOUNCEMENT_FIRST_SEEN, now)
+                    .putLong(ANNOUNCEMENT_POST_ID, activeAnnouncement.postId)
+                    .putString(ANNOUNCEMENT_TEXT, activeAnnouncement.text)
+                    .putLong(ANNOUNCEMENT_PUBLISHED_AT, activeAnnouncement.publishedAtMillis)
+                    .putInt(ANNOUNCEMENT_CLOSE_COUNT, 0)
+                    .apply()
+            } else if (savedText.isNullOrBlank() || savedPublishedAt <= 0L) {
+                // توافق مع النسخ السابقة التي كانت تحفظ رقم المنشور فقط.
+                prefs.edit()
+                    .putString(ANNOUNCEMENT_TEXT, activeAnnouncement.text)
+                    .putLong(ANNOUNCEMENT_PUBLISHED_AT, activeAnnouncement.publishedAtMillis)
                     .apply()
             }
 
-            binding.tvAnnouncementText.text = announcement.text
+            binding.tvAnnouncementText.text = activeAnnouncement.text
             binding.tvAnnouncementText.isSelected = true
             speedUpAnnouncementMarquee()
             binding.announcementBar.visibility = View.VISIBLE
@@ -227,6 +282,11 @@ class MainActivity : AppCompatActivity() {
             // الضغط على النص لا يفتح المنشور؛ الشريط مخصص للعرض فقط.
             binding.tvAnnouncementText.setOnClickListener(null)
             binding.btnCloseAnnouncement.setOnClickListener {
+                val currentId = prefs.getLong(ANNOUNCEMENT_POST_ID, -1L)
+                if (currentId == activeAnnouncement.postId) {
+                    val nextCount = prefs.getInt(ANNOUNCEMENT_CLOSE_COUNT, 0) + 1
+                    prefs.edit().putInt(ANNOUNCEMENT_CLOSE_COUNT, nextCount).apply()
+                }
                 binding.announcementBar.visibility = View.GONE
             }
         }
@@ -246,10 +306,12 @@ class MainActivity : AppCompatActivity() {
         }, 100L)
     }
 
-    private fun loadCurrencies() {
+    private fun loadCurrencies(generation: Int) {
         CurrenciesRepository.fetch(this) { currencies ->
+            if (generation != refreshGeneration) return@fetch
             latestCurrencies = currencies
-            rebuildRows()
+            currenciesLoadedGeneration = generation
+            rebuildRows(recordRefreshCompletion = true)
         }
     }
 
@@ -259,7 +321,7 @@ class MainActivity : AppCompatActivity() {
         } else getString(R.string.last_update_none)
     }
 
-    private fun rebuildRows() {
+    private fun rebuildRows(recordRefreshCompletion: Boolean = false) {
         val allItems = mutableListOf<PriceItem>()
         allItems.addAll(latestExchanges)
         allItems.addAll(latestCurrencies)
@@ -271,11 +333,25 @@ class MainActivity : AppCompatActivity() {
         }
         adapter.submitList(ordered.map { ListRow.Row(it) }, favorites)
 
-        // نسجل توقيت آخر تحديث فعلي للقائمة (يشمل التحديث اليدوي بالسحب أو
-        // بزر الأيقونة، والتحديث التلقائي كل 15 دقيقة).
-        val now = System.currentTimeMillis()
-        LastUpdateStore.save(this, now)
-        updateLastUpdateLabel(now)
+        // نسجل التوقيت مرة واحدة فقط بعد اكتمال المصدرين، لا عند وصول أول
+        // مصدر. لا ننتظر هنا ولا نؤخر عرض القائمة؛ كل مصدر يُعرض فور وصوله.
+        if (
+            recordRefreshCompletion &&
+            exchangesLoadedGeneration == refreshGeneration &&
+            currenciesLoadedGeneration == refreshGeneration &&
+            updateTimeRecordedGeneration != refreshGeneration
+        ) {
+            val now = System.currentTimeMillis()
+            updateTimeRecordedGeneration = refreshGeneration
+            LastUpdateStore.save(this, now)
+            updateLastUpdateLabel(now)
+            // نفس لحظة اكتمال تحديث التطبيق تُحفظ للحاسبة وتُعرض كل ويدجتاتها
+            // فوراً من الكاش المحلي، فلا يبقى وقت الحاسبة قديماً.
+            CalculatorWidgetProvider.syncFromMainRefresh(this, now)
+        }
+        if (exchangesLoadedGeneration == refreshGeneration && currenciesLoadedGeneration == refreshGeneration) {
+            binding.swipeRefresh.isRefreshing = false
+        }
 
         // التطبيق أصلاً يحدّث كل 15 دقيقة وهو مفتوح، فنفس الفرصة نحدث الودجت
         // من نفس الكاش (بدون أي طلب شبكة إضافي).

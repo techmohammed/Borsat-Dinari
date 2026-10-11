@@ -75,8 +75,9 @@
                 android:textStyle="bold"
                 tools:text="+500"
                 tools:textColor="@color/deltaUp" />
+            </LinearLayout>
+
         </LinearLayout>
-    </LinearLayout>
 
     <!-- اسم المدينة/العملة وتحته الوحدة (100$) -->
     <LinearLayout
@@ -105,12 +106,26 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="1dp"
-            android:fontFamily="@font/cairo_regular"
             android:includeFontPadding="false"
             android:maxLines="1"
             android:textColor="@color/textSecondary"
+            android:fontFamily="@font/cairo_bold"
             android:textSize="12sp"
+            android:textStyle="bold"
             tools:text="100$" />
+
+        <TextView
+            android:id="@+id/tvUpdateTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:fontFamily="@font/cairo_regular"
+            android:includeFontPadding="false"
+            android:gravity="right"
+            android:maxLines="1"
+            android:textColor="@color/textSecondary"
+            android:textSize="8sp"
+            tools:text="◷ 13:45  ▦ 30/10/2026" />
     </LinearLayout>
 
     <!-- علم صغير بدائرة -->

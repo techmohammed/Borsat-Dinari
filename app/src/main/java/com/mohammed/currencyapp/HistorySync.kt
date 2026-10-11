@@ -80,8 +80,10 @@ object HistorySync {
      * بالخلفية ويثقل الهاتف.
      */
     fun cancel() {
-        cancelRequested = true
-        listener = null
+        synchronized(this) {
+            cancelRequested = true
+            listener = null
+        }
     }
 
     /** هل السجل المحلي يغطي من [sinceMillis] لليوم وحديث بما فيه الكفاية (بدون أي شبكة)؟ */
@@ -98,10 +100,12 @@ object HistorySync {
      * هدفها (مثلاً المستخدم انتقل من أسبوع لشهر) بدل ما نبدأ ثانية.
      */
     fun request(context: Context, sinceMillis: Long, l: Listener) {
-        listener = l
-        cancelRequested = false
         val since = max(sinceMillis, System.currentTimeMillis() - RETENTION_MS)
         synchronized(this) {
+            // تغيير المستمع والـcancel flag داخل نفس القفل يمنع أن يلغي onStop
+            // طلباً جديداً بين تسجيله وبدء/استئناف المزامنة.
+            listener = l
+            cancelRequested = false
             if (running) {
                 wantedSince = min(wantedSince, since)
                 return

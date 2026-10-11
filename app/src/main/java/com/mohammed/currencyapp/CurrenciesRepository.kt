@@ -9,9 +9,8 @@ import java.util.concurrent.Executors
 
 /**
  * كل العملات العالمية (الدولار الرسمي، اليورو، الپاوند، الليرة التركية،
- * التومان الإيراني) تُقرأ الآن حصراً من آخر منشور بقناتنا الخاصة "بورصة
- * ديناري" عبر TelegramScraperRepository — بدون أي API خارجي (open.er-api.com)
- * ولا كشط investing.com، بنفس مبدأ أسعار المدن.
+ * التومان الإيراني) تُقرأ حصراً من آخر منشور بقناتنا الخاصة "بورصة ديناري"
+ * عبر TelegramScraperRepository، بنفس مبدأ أسعار المدن.
  */
 object CurrenciesRepository {
 
@@ -125,7 +124,7 @@ object CurrenciesRepository {
                 val cache = FxTextCache(context)
                 val value = cache.load(key) ?: return null
                 val trend = cache.loadTrend(key) ?: Trend.UP
-                PriceItem(context.getString(R.string.cur_usd_official), "us", "${formatLong(value)} د.ع", "100$", trend, key)
+                PriceItem(context.getString(R.string.cur_usd_official), "us", "${formatLong(value)} د.ع", "100$", trend, key, HistoryStore.latestTimestamp(context, key) ?: cache.loadUpdateTime(key))
             }
             key == "FX_EUR" || key == "FX_GBP" -> {
                 val code = key.removePrefix("FX_")
@@ -138,25 +137,25 @@ object CurrenciesRepository {
                 } else {
                     "${def.label} ${String.format(Locale.US, "%.2f", value)}"
                 }
-                PriceItem(context.getString(def.nameRes), def.flag, priceText, def.unit, trend, key)
+                PriceItem(context.getString(def.nameRes), def.flag, priceText, def.unit, trend, key, HistoryStore.latestTimestamp(context, key) ?: cache.loadUpdateTime(def.code))
             }
             key == "TRY_INVESTING" -> {
                 val cache = FxTextCache(context)
                 val value = cache.load(key) ?: return null
                 val trend = cache.loadTrend(key) ?: Trend.UP
-                PriceItem(context.getString(R.string.cur_try), "tr", formatLong(value), "100\$", trend, key)
+                PriceItem(context.getString(R.string.cur_try), "tr", formatLong(value), "100\$", trend, key, HistoryStore.latestTimestamp(context, key) ?: cache.loadUpdateTime(key))
             }
             key == "IRR_TELEGRAM" -> {
                 val cache = FxTextCache(context)
                 val value = cache.load(key) ?: return null
                 val trend = cache.loadTrend(key) ?: Trend.UP
-                PriceItem(context.getString(R.string.cur_irr), "ir", formatLong(value), "100\$", trend, key)
+                PriceItem(context.getString(R.string.cur_irr), "ir", formatLong(value), "100\$", trend, key, HistoryStore.latestTimestamp(context, key) ?: cache.loadUpdateTime(key))
             }
             key == "USD_BAGHDAD" -> {
                 val cache = FxCache(context)
                 val value = cache.load(key) ?: return null
                 val trend = cache.loadTrend(key) ?: Trend.UP
-                PriceItem(context.getString(R.string.cur_usd_avg), "us", "${String.format(Locale.US, "%,d", value.toLong())} د.ع", "100\$", trend, key)
+                PriceItem(context.getString(R.string.cur_usd_avg), "us", "${String.format(Locale.US, "%,d", value.toLong())} د.ع", "100\$", trend, key, HistoryStore.latestTimestamp(context, key) ?: cache.loadUpdateTime(key))
             }
             else -> null
         }
@@ -198,14 +197,11 @@ object CurrenciesRepository {
         val finalTrend = if (isStale) Trend.FLAT else trend
         cache.saveTrend(cacheKey, finalTrend)
 
-        return PriceItem(context.getString(R.string.cur_usd_official), "us", "${formatLong(effective)} د.ع", "100$", finalTrend, cacheKey)
+        return PriceItem(context.getString(R.string.cur_usd_official), "us", "${formatLong(effective)} د.ع", "100$", finalTrend, cacheKey, HistoryStore.latestTimestamp(context, cacheKey) ?: cache.loadUpdateTime(cacheKey))
     }
 
-    /**
-     * يستخرج سعر الليرة التركية من آخر منشور بقناة بورصة ديناري.
-     * (سابقاً كان يجيب من investing.com مباشرة أو open.er-api.com — استغنينا
-     * عن الاثنين، ونعتمد قناتنا حصراً الآن، نفس بقية الأسعار).
-     */
+    /** يستخرج سعر الليرة التركية من آخر منشور بقناة بورصة ديناري، وهي المصدر
+     * الرئيسي والوحيد للأسعار في التطبيق. */
     private fun fetchTryFromBorsatDinari(context: Context, messages: List<Pair<String, String>>): PriceItem? {
         val cache = FxTextCache(context)
         val cacheKey = "TRY_INVESTING"
@@ -246,7 +242,8 @@ object CurrenciesRepository {
             price = formatLong(effective),
             unit = "100\$",
             trend = finalTrend,
-            cityKey = cacheKey
+            cityKey = cacheKey,
+            updateTimeMillis = HistoryStore.latestTimestamp(context, cacheKey) ?: cache.loadUpdateTime(cacheKey)
         )
     }
 
@@ -304,7 +301,8 @@ object CurrenciesRepository {
             if (valueChanged) {
                 HistoryStore.record(context, "FX_${def.code}", priceText, trend)
             }
-            items.add(PriceItem(context.getString(def.nameRes), def.flag, priceText, def.unit, finalTrend, "FX_${def.code}"))
+            val historyKey = "FX_${def.code}"
+            items.add(PriceItem(context.getString(def.nameRes), def.flag, priceText, def.unit, finalTrend, historyKey, HistoryStore.latestTimestamp(context, historyKey) ?: cache.loadUpdateTime(def.code)))
         }
         return items
     }
@@ -349,7 +347,8 @@ object CurrenciesRepository {
             price = if (suffix.isBlank()) formatLong(effective) else "${formatLong(effective)} $suffix",
             unit = unit,
             trend = finalTrend,
-            cityKey = cacheKey
+            cityKey = cacheKey,
+            updateTimeMillis = HistoryStore.latestTimestamp(context, cacheKey) ?: cache.loadUpdateTime(cacheKey)
         )
     }
 

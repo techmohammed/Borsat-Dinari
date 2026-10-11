@@ -192,7 +192,7 @@ object TelegramScraperRepository {
         val cache = ScraperCache(context)
         val digitsOnly = cache.load(cp.key) ?: return null
         val trend = cache.loadTrend(cp.key) ?: Trend.UP
-        return PriceItem(context.getString(cp.nameRes), cp.flag, formatIqd(digitsOnly), "100\$", trend, cp.key)
+        return PriceItem(context.getString(cp.nameRes), cp.flag, formatIqd(digitsOnly), "100\$", trend, cp.key, HistoryStore.latestTimestamp(context, cp.key) ?: cache.loadUpdateTime(cp.key))
     }
 
     /** يحل سعر مدينة وحدة من رسائل القناة الجاهزة — بدون أي طلب شبكة هنا
@@ -263,7 +263,8 @@ object TelegramScraperRepository {
             price = priceText,
             unit = "100\$",
             trend = finalTrend,
-            cityKey = cp.key
+            cityKey = cp.key,
+            updateTimeMillis = HistoryStore.latestTimestamp(context, cp.key) ?: cache.loadUpdateTime(cp.key)
         )
     }
 
@@ -302,8 +303,8 @@ object TelegramScraperRepository {
     /** آخر إصدار للتطبيق منشور بالقناة: رقم النسخة + رابط المنشور نفسه. */
     data class AppRelease(val version: String, val postUrl: String)
 
-    /** تنويه القناة لعرضه في الشريط العلوي. */
-    data class Announcement(val text: String, val postId: Long)
+    /** تنويه القناة لعرضه في الشريط العلوي، مع وقت نشره الحقيقي في Telegram. */
+    data class Announcement(val text: String, val postId: Long, val publishedAtMillis: Long)
 
     /**
      * يبحث في نفس رسائل القناة المشتركة عن أحدث منشور يبدأ بكلمة "تنويه".
@@ -346,14 +347,14 @@ object TelegramScraperRepository {
                 best = Triple(timestamp, id, text)
             }
         }
-        return best?.let { (_, id, text) ->
+        return best?.let { (timestamp, id, text) ->
             val noticeIndex = text.indexOf("تنويه")
             val displayText = text
                 .substring(noticeIndex + "تنويه".length)
                 .replaceFirst(Regex("^[\\s:：،,\\-–—|]+"), "")
                 .trim()
                 .ifEmpty { "تنويه" }
-            Announcement(displayText, id)
+            Announcement(displayText, id, parseIsoToMillis(timestamp) ?: 0L)
         }
     }
 

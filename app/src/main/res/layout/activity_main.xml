@@ -176,7 +176,7 @@
                 android:fontFamily="@font/cairo_semibold"
                 android:includeFontPadding="false"
                 android:textColor="@color/textPrimary"
-                android:textDirection="rtl"
+                android:textDirection="ltr"
                 android:textSize="14sp"
                 tools:text="آخر تحديث: 16:45" />
 

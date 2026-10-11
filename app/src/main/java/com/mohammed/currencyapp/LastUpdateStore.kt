@@ -7,6 +7,7 @@ import android.content.Context
 object LastUpdateStore {
     private const val PREFS = "last_update_prefs"
     private const val KEY_TIME = "last_update_millis"
+    private const val KEY_CALCULATOR_TIME = "calculator_last_update_millis"
 
     fun save(context: Context, millis: Long) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -18,6 +19,19 @@ object LastUpdateStore {
     fun load(context: Context): Long? {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val value = prefs.getLong(KEY_TIME, -1L)
+        return if (value == -1L) null else value
+    }
+
+    fun saveCalculator(context: Context, millis: Long) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putLong(KEY_CALCULATOR_TIME, millis)
+            .apply()
+    }
+
+    fun loadCalculator(context: Context): Long? {
+        val value = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getLong(KEY_CALCULATOR_TIME, -1L)
         return if (value == -1L) null else value
     }
 }

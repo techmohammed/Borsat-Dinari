@@ -6,8 +6,6 @@
     <string name="announcement_label">تنويه</string>
     <string name="announcement_close">إغلاق التنويه</string>
     <string name="cancel">إلغاء</string>
-    <string name="time_am">ص</string>
-    <string name="time_pm">م</string>
     <string name="cd_language">تغيير لغة التطبيق</string>
     <string name="language_ar">العربية</string>
     <string name="language_en">English</string>
@@ -111,4 +109,9 @@
     <string name="cd_threads">حساب Threads</string>
     <string name="update_available">يوجد تحديث جديد</string>
     <string name="update_latest">لديك اخر اصدار</string>
+    <string name="cd_share_history_pdf">مشاركة سجل الأسعار PDF</string>
+    <string name="cd_open_history_pdf">فتح ملف PDF</string>
+    <string name="widget_name_1">بورصة ديناري 1</string>
+    <string name="widget_name_2">بورصة ديناري 2</string>
+    <string name="widget_name_3">بورصة ديناري 3</string>
 </resources>

@@ -6,8 +6,6 @@
     <string name="announcement_label">ئاگاداری</string>
     <string name="announcement_close">داخستنی ئاگاداری</string>
     <string name="cancel">هەڵوەشاندنەوە</string>
-    <string name="time_am">س</string>
-    <string name="time_pm">ئـ</string>
     <string name="cd_language">گۆڕینی زمان</string>
     <string name="language_ar">العربية</string>
     <string name="language_en">English</string>
@@ -17,6 +15,10 @@
     <string name="cd_theme">گۆڕینی دۆخی شەو/ڕۆژ</string>
     <string name="cd_calculator">ژمێرەری دۆلار</string>
     <string name="calculator_title">ژمێرەر</string>
+    <string name="calculator_widget_title">ژمێرەر</string>
+    <string name="calculator_widget_open">کردنەوەی ژمێرەر</string>
+    <string name="calculator_widget_description">ویدجێتی ژمێرەرێکی بچووک بۆ دۆلار بە قەبارەی 3×5</string>
+    <string name="cd_calculator_widget_open">کردنەوەی پەڕەی ژمێرەر</string>
     <string name="currency_us_dollar">دۆلاری ئەمریکی</string>
     <string name="calculator_amount_label">بڕی دۆلار</string>
     <string name="calculator_exchange_label">بۆرسە هەڵبژێرە</string>
@@ -107,4 +109,9 @@
     <string name="cd_threads">هەژماری Threads</string>
     <string name="update_available">نوێکردنەوەیەکی نوێ بەردەستە</string>
     <string name="update_latest">دوایین وەشتانت هەیە</string>
+    <string name="cd_share_history_pdf">بڵاوکردنەوەی PDF ـی مێژووی نرخەکان</string>
+    <string name="cd_open_history_pdf">کردنەوەی فایلەکەی PDF</string>
+    <string name="widget_name_1">بورصە دیناری ١</string>
+    <string name="widget_name_2">بورصە دیناری ٢</string>
+    <string name="widget_name_3">بورصە دیناری ٣</string>
 </resources>

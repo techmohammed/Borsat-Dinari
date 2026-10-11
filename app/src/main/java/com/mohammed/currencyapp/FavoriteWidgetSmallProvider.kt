@@ -24,7 +24,8 @@ class FavoriteWidgetSmallProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == FavoriteWidgetProvider.ACTION_REFRESH) {
-            FavoriteWidgetProvider.refreshAsync(this, context, animate = true)
+            FavoriteWidgetProvider.renderFromCache(context)
+            FavoriteWidgetProvider.refreshAsync(this, context, animate = true, forceFresh = true)
         }
     }
 

@@ -27,22 +27,33 @@ object KurdishFont {
     private val numberPattern = Regex("[0-9٠-٩۰-۹][0-9٠-٩۰-۹,./:-]*")
 
     fun apply(root: View, context: Context) {
-        if (!isKurdish(context)) return
-        val peshang = ResourcesCompat.getFont(context, R.font.peshang_des_5_bold) ?: return
+        // الكلمات فقط تتبع لغة الواجهة؛ الأرقام تبقى دائماً على شكل العربية الثابت.
+        val peshang = if (isKurdish(context))
+            ResourcesCompat.getFont(context, R.font.peshang_des_5_bold) else null
         val cairo = ResourcesCompat.getFont(context, R.font.cairo_bold) ?: return
         applyToView(root, peshang, cairo, context)
     }
 
+    /** إبراز أرقام بطاقات الصفحة الرئيسية فقط؛ بقية الصفحات تبقى بالوزن الموحد. */
+    fun emphasizeMainNumber(view: TextView) {
+        val source = view.text?.toString() ?: return
+        formattingViews[view] = true
+        view.text = source
+        formattingViews.remove(view)
+        view.typeface = ResourcesCompat.getFont(view.context, R.font.cairo_bold)
+        view.paint.isFakeBoldText = true
+    }
+
     private fun applyToView(
         view: View,
-        peshang: Typeface,
+        peshang: Typeface?,
         cairo: Typeface,
         context: Context
     ) {
         if (view is TextView) {
-            view.typeface = peshang
-            // تقوية الكلمات الكوردية، مع بقاء الأرقام بخط Cairo Bold الأوضح.
-            view.paint.isFakeBoldText = true
+            if (peshang != null) view.typeface = peshang
+            // الأرقام تستخدم Cairo Bold الحقيقي المطابق للعربية، بدون fake bold.
+            view.paint.isFakeBoldText = false
             // EditText يحتاج أن يحتفظ بالمؤشر والنص أثناء الكتابة؛ إعادة وضع
             // Spannable بعد كل حرف كانت تجعل خانة المبلغ تقبل رقماً واحداً فقط.
             if (view !is EditText) {
@@ -91,10 +102,12 @@ object KurdishFont {
     private class NumberTypefaceSpan(private val typeface: Typeface) : MetricAffectingSpan() {
         override fun updateDrawState(textPaint: TextPaint) {
             textPaint.typeface = typeface
+            textPaint.isFakeBoldText = false
         }
 
         override fun updateMeasureState(textPaint: TextPaint) {
             textPaint.typeface = typeface
+            textPaint.isFakeBoldText = false
         }
     }
 

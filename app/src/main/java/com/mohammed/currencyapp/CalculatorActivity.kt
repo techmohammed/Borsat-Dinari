@@ -138,7 +138,6 @@ class CalculatorActivity : AppCompatActivity() {
                 setTextColor(getColor(R.color.textPrimary))
                 textSize = 18f
                 typeface = itemFont
-                paint.isFakeBoldText = true
                 text = item.name
             }
             row.addView(flag)
@@ -193,8 +192,8 @@ class CalculatorActivity : AppCompatActivity() {
             }
         }
         binding.keyPoint.setOnClickListener {
-            if (amountDigits.isNotEmpty() && !amountDigits.contains('.')) {
-                amountDigits += "."
+            if (!amountDigits.contains('.')) {
+                amountDigits = if (amountDigits.isEmpty()) "0." else "$amountDigits."
                 refreshAmount()
             }
         }

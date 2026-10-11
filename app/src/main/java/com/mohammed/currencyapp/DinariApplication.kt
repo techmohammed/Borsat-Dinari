@@ -12,6 +12,7 @@ class DinariApplication : Application() {
         // بالنهاري لو المستخدم اختار الليلي سابقاً.
         ThemePreferences.applySavedMode(this)
         // اللغة الافتراضية عربي أول تشغيل (آخر اختيار للمستخدم يبقى محفوظاً).
+        AppLanguage.initialize(this)
         AppLanguage.ensureDefault()
 
         // المحاذاة RTL ثابتة مهما كانت اللغة المختارة: نفرض اتجاه الشاشة

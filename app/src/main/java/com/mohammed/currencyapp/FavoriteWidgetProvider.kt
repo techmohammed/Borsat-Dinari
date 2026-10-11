@@ -41,23 +41,23 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
         private class CardIds(
             val card: Int, val flag: Int, val name: Int, val unit: Int,
             val price: Int, val deltaRow: Int, val arrow: Int, val delta: Int,
-            val nameSp: Float
+            val nameSp: Float, val updateTime: Int
         )
 
         // الودجت الكبير 4×2: ثلاث بطاقات (أول 3 مفضلات).
         private val CARDS = listOf(
             CardIds(R.id.widgetCard1, R.id.widgetFlag1, R.id.widgetName1, R.id.widgetUnit1,
-                R.id.widgetPrice1, R.id.widgetDeltaRow1, R.id.widgetDeltaArrow1, R.id.widgetDelta1, 19f),
+                R.id.widgetPrice1, R.id.widgetDeltaRow1, R.id.widgetDeltaArrow1, R.id.widgetDelta1, 19f, R.id.widgetUpdateTime1),
             CardIds(R.id.widgetCard2, R.id.widgetFlag2, R.id.widgetName2, R.id.widgetUnit2,
-                R.id.widgetPrice2, R.id.widgetDeltaRow2, R.id.widgetDeltaArrow2, R.id.widgetDelta2, 14f),
+                R.id.widgetPrice2, R.id.widgetDeltaRow2, R.id.widgetDeltaArrow2, R.id.widgetDelta2, 14f, R.id.widgetUpdateTime2),
             CardIds(R.id.widgetCard3, R.id.widgetFlag3, R.id.widgetName3, R.id.widgetUnit3,
-                R.id.widgetPrice3, R.id.widgetDeltaRow3, R.id.widgetDeltaArrow3, R.id.widgetDelta3, 14f)
+                R.id.widgetPrice3, R.id.widgetDeltaRow3, R.id.widgetDeltaArrow3, R.id.widgetDelta3, 14f, R.id.widgetUpdateTime3)
         )
 
         // الودجت الصغير 4×1: بطاقة وحدة (أول مفضلة).
         private val SMALL_CARD = CardIds(
             R.id.smallCard, R.id.smallFlag, R.id.smallName, R.id.smallUnit,
-            R.id.smallPrice, R.id.smallDeltaRow, R.id.smallDeltaArrow, R.id.smallDelta, 16f
+            R.id.smallPrice, R.id.smallDeltaRow, R.id.smallDeltaArrow, R.id.smallDelta, 16f, R.id.smallPriceUpdateTime
         )
 
         // بعض الـ Launchers تطلب onUpdate كل ما ترجع للشاشة الرئيسية. هالطلب ما يحتاج نبني
@@ -98,6 +98,11 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             setName(context, views, ids, item?.name ?: meta?.name(context) ?: "—")
             views.setTextViewText(ids.unit, item?.unit ?: "")
             views.setTextViewText(ids.price, displayPrice(item?.price))
+            views.setTextViewText(
+                ids.updateTime,
+                item?.updateTimeMillis?.let { UpdateTimeFormat.cardTimeAndDate(context, it) } ?: ""
+            )
+            views.setViewVisibility(ids.updateTime, if (item?.updateTimeMillis != null) View.VISIBLE else View.GONE)
 
             views.setInt(
                 ids.card, "setBackgroundResource",
@@ -146,14 +151,11 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             setName(context, views, ids, context.getString(R.string.widget_pick_favorite))
             views.setTextViewText(ids.unit, context.getString(R.string.widget_pick_hint))
             views.setTextViewText(ids.price, "—")
+            views.setTextViewText(ids.updateTime, "")
+            views.setViewVisibility(ids.updateTime, View.GONE)
             views.setViewVisibility(ids.deltaRow, View.INVISIBLE)
             views.setInt(ids.card, "setBackgroundResource", R.drawable.bg_widget_card_flat)
         }
-
-        private fun openAppPending(context: Context): PendingIntent = PendingIntent.getActivity(
-            context, 0, Intent(context, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
 
         private fun refreshPending(context: Context, target: Class<*>, requestCode: Int): PendingIntent =
             PendingIntent.getBroadcast(
@@ -176,8 +178,8 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             views.setContentDescription(R.id.widgetTitle, context.getString(R.string.app_name))
 
             val last = LastUpdateStore.load(context)
-            views.setTextViewText(R.id.widgetUpdateLabel, context.getString(R.string.last_update_label))
-            views.setTextViewText(R.id.widgetUpdateTime, if (last != null) UpdateTimeFormat.timeAndDate(context, last) else "—")
+            views.setViewVisibility(R.id.widgetUpdateLabel, View.GONE)
+            views.setTextViewText(R.id.widgetUpdateTime, if (last != null) UpdateTimeFormat.timeAboveDate(context, last) else "—")
 
             if (keys.isEmpty()) {
                 placeholderCard(context, views, CARDS[0])
@@ -191,7 +193,6 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             }
             views.setViewVisibility(R.id.widgetSmallRow, if (keys.size >= 2) View.VISIBLE else View.GONE)
 
-            views.setOnClickPendingIntent(R.id.widgetRoot, openAppPending(context))
             // الضغط على الزر أو الوقت والتاريخ (كل منطقة التحديث) يسوي تحديث.
             val refresh = refreshPending(context, FavoriteWidgetProvider::class.java, 1)
             views.setOnClickPendingIntent(R.id.widgetUpdateArea, refresh)
@@ -210,12 +211,11 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             )
             views.setContentDescription(R.id.smallTitle, context.getString(R.string.app_name))
             val last = LastUpdateStore.load(context)
-            views.setTextViewText(R.id.smallUpdateLabel, context.getString(R.string.last_update_label))
-            views.setTextViewText(R.id.smallUpdateTime, if (last != null) UpdateTimeFormat.timeAndDate(context, last) else "—")
+            views.setViewVisibility(R.id.smallUpdateLabel, View.GONE)
+            views.setTextViewText(R.id.smallUpdateTime, if (last != null) UpdateTimeFormat.timeAboveDate(context, last) else "—")
             if (keys.isEmpty()) placeholderCard(context, views, SMALL_CARD)
             else fillCard(context, views, SMALL_CARD, keys[0], items.getOrNull(0))
 
-            views.setOnClickPendingIntent(R.id.widgetRoot, openAppPending(context))
             val refresh = refreshPending(context, FavoriteWidgetSmallProvider::class.java, 2)
             views.setOnClickPendingIntent(R.id.smallUpdateArea, refresh)
             views.setOnClickPendingIntent(R.id.smallRefreshButton, refresh)
@@ -324,7 +324,10 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
                 WidgetPriceProvider.refreshAll(context, keys) { items ->
                     if (finished.get()) return@refreshAll
                     WidgetRefreshScheduler.markRefreshed(context)
-                    LastUpdateStore.save(context, System.currentTimeMillis())
+                    val sharedTime = System.currentTimeMillis()
+                    // أي تحديث من ويدجت المفضلات يصبح تحديثاً عاماً: نفس الوقت
+                    // والسعر ينتقلان فوراً إلى كل ويدجتات الحاسبة والمفضلات.
+                    CalculatorWidgetProvider.syncAllWidgetsAt(context, sharedTime)
                     try {
                         if (animate) animateReveal(context, keys, items, finish)
                         else {
@@ -352,11 +355,11 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             items: List<PriceItem?>,
             finish: () -> Unit
         ) {
-            val finalPrice = items.firstOrNull()?.price?.removeSuffix(" د.ع")
-            val plan = finalPrice?.let { DigitRevealAnimator.plan(it) }
+            val finalPrices = items.take(3).map { it?.price?.removeSuffix(" د.ع") }
+            val plans = finalPrices.map { it?.let(DigitRevealAnimator::plan) }
 
-            // لا يوجد سعر جديد فعلي (فشل الاتصال مثلاً) أو نص بدون أرقام — بدون أنيميشن.
-            if (finalPrice == null || plan == null) {
+            // نحرّك كل مفضلة لها سعر قابل للعرض، وليس الأولى فقط.
+            if (plans.none { it != null }) {
                 pushAll(context, keys, items)
                 finish()
                 return
@@ -368,28 +371,37 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             val largeIds = idsOf(context, FavoriteWidgetProvider::class.java)
             val smallIds = idsOf(context, FavoriteWidgetSmallProvider::class.java)
 
-            pushAll(context, keys, items, DigitRevealAnimator.frameText(finalPrice, plan, 1, totalSteps))
+            pushAll(context, keys, items)
 
             val handler = Handler(Looper.getMainLooper())
             var step = 1
             fun nextFrame() {
                 step++
-                val text = if (step >= totalSteps) finalPrice
-                else DigitRevealAnimator.frameText(finalPrice, plan, step, totalSteps)
                 try {
                     if (largeIds.isNotEmpty()) {
-                        manager.partiallyUpdateAppWidget(
-                            largeIds,
-                            RemoteViews(context.packageName, R.layout.widget_favorite_price)
-                                .apply { setTextViewText(R.id.widgetPrice1, text) }
-                        )
+                        val large = RemoteViews(context.packageName, R.layout.widget_favorite_price)
+                        val largePriceIds = intArrayOf(R.id.widgetPrice1, R.id.widgetPrice2, R.id.widgetPrice3)
+                        for (i in 0..2) {
+                            val text = finalPrices.getOrNull(i)?.let { value ->
+                                plans[i]?.let { plan ->
+                                    if (step >= totalSteps) value else DigitRevealAnimator.frameText(value, plan, step, totalSteps)
+                                }
+                            }
+                            if (text != null) large.setTextViewText(largePriceIds[i], text)
+                        }
+                        manager.partiallyUpdateAppWidget(largeIds, large)
                     }
                     if (smallIds.isNotEmpty()) {
-                        manager.partiallyUpdateAppWidget(
-                            smallIds,
-                            RemoteViews(context.packageName, R.layout.widget_favorite_small)
-                                .apply { setTextViewText(R.id.smallPrice, text) }
-                        )
+                        val value = finalPrices.firstOrNull()
+                        val plan = plans.firstOrNull()
+                        if (value != null && plan != null) {
+                            val text = if (step >= totalSteps) value else DigitRevealAnimator.frameText(value, plan, step, totalSteps)
+                            manager.partiallyUpdateAppWidget(
+                                smallIds,
+                                RemoteViews(context.packageName, R.layout.widget_favorite_small)
+                                    .apply { setTextViewText(R.id.smallPrice, text) }
+                            )
+                        }
                     }
                 } catch (_: Exception) {
                     // لو فشل تحديث جزئي نرسم النتيجة النهائية كاملة وننهي.
@@ -448,7 +460,12 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
         when (intent.action) {
             // الضغط اليدوي: أنيميشن + تجاوز الكاش المشترك (المستخدم يريد سعراً
             // حياً فعلاً مو نسخة من طلب قبل دقيقة).
-            ACTION_REFRESH -> refreshAsync(this, context, animate = true, forceFresh = true)
+            ACTION_REFRESH -> {
+                // أعد الرسم فوراً من الكاش الدائم حتى لا ينتظر الودجت الشبكة عند
+                // كون التطبيق مغلقاً؛ بعدها يستمر الجلب الحي بالخلفية.
+                renderFromCache(context)
+                refreshAsync(this, context, animate = true, forceFresh = true)
+            }
             WidgetRefreshScheduler.ACTION_HOURLY_REFRESH -> {
                 // تحديث تلقائي: نتخطاه لو ماكو نت أو تحدّث قبل دقايق (توفير بطارية وشبكة).
                 if (!WidgetRefreshScheduler.shouldAutoRefresh(context)) return

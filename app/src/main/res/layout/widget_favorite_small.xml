@@ -67,6 +67,7 @@
                         android:layout_height="wrap_content"
                         android:includeFontPadding="false"
                         android:text="@string/last_update_label"
+                        android:visibility="gone"
                         android:textColor="#B8CCE8"
                         android:textSize="8sp" />
 
@@ -76,7 +77,8 @@
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
                         android:includeFontPadding="false"
-                        android:maxLines="1"
+                        android:gravity="center"
+                        android:maxLines="2"
                         android:textColor="#FFFFFF"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -138,16 +140,17 @@
                         android:layout_height="9dp"
                         android:contentDescription="@null" />
 
-                    <TextView
-                        android:id="@+id/smallDelta"
+                <TextView
+                    android:id="@+id/smallDelta"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="3dp"
                         android:includeFontPadding="false"
                         android:maxLines="1"
                         android:textSize="10sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                    android:textStyle="bold" />
+
+            </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -177,6 +180,15 @@
                     android:maxLines="1"
                     android:textColor="#546E7A"
                     android:textSize="9sp" />
+
+                    <TextView
+                        android:id="@+id/smallPriceUpdateTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                                                android:textColor="#546E7A"
+                        android:textSize="7sp" />
             </LinearLayout>
         </RelativeLayout>
 

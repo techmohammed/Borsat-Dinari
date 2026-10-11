@@ -4,19 +4,8 @@ import android.content.Context
 import java.util.Calendar
 import java.util.Locale
 
-/** تنسيق وقت "آخر تحديث": ساعة بنظام 12 مع لاحقة ص/م حسب لغة الواجهة،
- * والتاريخ يوم/شهر/سنة بأرقام لاتينية (نفس الشكل الحالي). */
+/** تنسيق الوقت والتاريخ بأرقام لاتينية ونظام 24 ساعة. */
 object UpdateTimeFormat {
-
-    /** مثال: 10:45 م */
-    fun time12(context: Context, millis: Long): String {
-        val cal = Calendar.getInstance().apply { timeInMillis = millis }
-        var hour = cal.get(Calendar.HOUR)
-        if (hour == 0) hour = 12
-        val suffix = if (cal.get(Calendar.AM_PM) == Calendar.AM)
-            context.getString(R.string.time_am) else context.getString(R.string.time_pm)
-        return String.format(Locale.US, "%d:%02d %s", hour, cal.get(Calendar.MINUTE), suffix)
-    }
 
     /** مثال: 1/10/2026 (يوم/شهر/سنة بدون أصفار زائدة) */
     fun dateDMY(millis: Long): String {
@@ -27,7 +16,24 @@ object UpdateTimeFormat {
         )
     }
 
-    /** مثال: 10:45 م  1/10/2026 */
+    /** مثال: 22:45 - 1/10/2026، الوقت يساراً والتاريخ يميناً. */
     fun timeAndDate(context: Context, millis: Long): String =
-        "${time12(context, millis)}  ${dateDMY(millis)}"
+        Calendar.getInstance().run {
+            timeInMillis = millis
+            String.format(Locale.US, "\u200E%02d:%02d\u200E - \u200E%s\u200E", get(Calendar.HOUR_OF_DAY), get(Calendar.MINUTE), dateDMY(millis))
+        }
+
+    /** للودجت: الوقت في سطر مستقل فوق التاريخ. */
+    fun timeAboveDate(context: Context, millis: Long): String =
+        Calendar.getInstance().run {
+            timeInMillis = millis
+            String.format(Locale.US, "%02d:%02d\n%s", get(Calendar.HOUR_OF_DAY), get(Calendar.MINUTE), dateDMY(millis))
+        }
+
+    /** نص الوقت والتاريخ؛ الأيقونتان الفعليتان تأتيان من تخطيط البطاقة. */
+    fun cardTimeAndDate(context: Context, millis: Long): String =
+        Calendar.getInstance().run {
+            timeInMillis = millis
+            String.format(Locale.US, "\u200E%02d:%02d\u200E - \u200E%s\u200E", get(Calendar.HOUR_OF_DAY), get(Calendar.MINUTE), dateDMY(millis))
+        }
 }

@@ -6,8 +6,6 @@
     <string name="announcement_label">Notice</string>
     <string name="announcement_close">Close notice</string>
     <string name="cancel">Cancel</string>
-    <string name="time_am">AM</string>
-    <string name="time_pm">PM</string>
     <string name="cd_language">Change app language</string>
     <string name="language_ar">العربية</string>
     <string name="language_en">English</string>
@@ -17,6 +15,10 @@
     <string name="cd_theme">Toggle night/day theme</string>
     <string name="cd_calculator">Dollar calculator</string>
     <string name="calculator_title">Calculator</string>
+    <string name="calculator_widget_title">Calculator</string>
+    <string name="calculator_widget_open">Open calculator</string>
+    <string name="calculator_widget_description">A small 3×5 dollar calculator widget</string>
+    <string name="cd_calculator_widget_open">Open calculator page</string>
     <string name="currency_us_dollar">US dollar</string>
     <string name="calculator_amount_label">Amount in dollars</string>
     <string name="calculator_exchange_label">Choose exchange</string>
@@ -107,4 +109,9 @@
     <string name="cd_threads">Threads account</string>
     <string name="update_available">New update available</string>
     <string name="update_latest">You have the latest version</string>
+    <string name="cd_share_history_pdf">Share price history PDF</string>
+    <string name="cd_open_history_pdf">Open PDF</string>
+    <string name="widget_name_1">Borsat Dinari 1</string>
+    <string name="widget_name_2">Borsat Dinari 2</string>
+    <string name="widget_name_3">Borsat Dinari 3</string>
 </resources>

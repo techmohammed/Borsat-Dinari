@@ -6,8 +6,6 @@
     <string name="announcement_label">Duyuru</string>
     <string name="announcement_close">Duyuruyu kapat</string>
     <string name="cancel">İptal</string>
-    <string name="time_am">ÖÖ</string>
-    <string name="time_pm">ÖS</string>
     <string name="cd_language">Uygulama dilini değiştir</string>
     <string name="language_ar">العربية</string>
     <string name="language_en">English</string>
@@ -17,6 +15,10 @@
     <string name="cd_theme">Gece/gündüz modunu değiştir</string>
     <string name="cd_calculator">Dolar hesaplayıcı</string>
     <string name="calculator_title">Hesap makinesi</string>
+    <string name="calculator_widget_title">Hesap makinesi</string>
+    <string name="calculator_widget_open">Hesap makinesini aç</string>
+    <string name="calculator_widget_description">3×5 boyutunda küçük dolar hesap makinesi widget\'ı</string>
+    <string name="cd_calculator_widget_open">Hesap makinesi sayfasını aç</string>
     <string name="currency_us_dollar">ABD doları</string>
     <string name="calculator_amount_label">Dolar miktarı</string>
     <string name="calculator_exchange_label">Borsayı seçin</string>
@@ -107,4 +109,9 @@
     <string name="cd_threads">Threads hesabı</string>
     <string name="update_available">Yeni güncelleme mevcut</string>
     <string name="update_latest">En son sürüme sahipsiniz</string>
+    <string name="cd_share_history_pdf">Fiyat geçmişi PDF paylaş</string>
+    <string name="cd_open_history_pdf">PDF dosyasını aç</string>
+    <string name="widget_name_1">Borsat Dinari 1</string>
+    <string name="widget_name_2">Borsat Dinari 2</string>
+    <string name="widget_name_3">Borsat Dinari 3</string>
 </resources>

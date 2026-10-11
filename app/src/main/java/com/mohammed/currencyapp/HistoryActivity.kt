@@ -1,6 +1,7 @@
 package com.mohammed.currencyapp
 
 import android.content.Context
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
@@ -41,15 +42,19 @@ class HistoryActivity : AppCompatActivity() {
         const val EXTRA_KEY = "extra_key"
         const val EXTRA_NAME = "extra_name"
         const val EXTRA_FLAG = "extra_flag"
+        const val EXTRA_UNIT = "extra_unit"
         private const val RETENTION_DAYS = 60L
     }
 
     private lateinit var binding: ActivityHistoryBinding
     private lateinit var itemKey: String
     private lateinit var itemName: String
+    private lateinit var itemFlag: String
+    private lateinit var itemUnit: String
     private val listAdapter = HistoryAdapter()
     private var currentFrom: Long = 0L
     private var currentTo: Long = 0L
+    private var currentEntries: List<HistoryEntry> = emptyList()
 
     /** نفرض Locale.US كامل (مو "ar" بامتداد nu-latn زي المحاولة الأولى)
      * لصفحة الهيستوري كلها — وبالأخص تقويم اختيار الفترة
@@ -73,6 +78,8 @@ class HistoryActivity : AppCompatActivity() {
 
         itemKey = intent.getStringExtra(EXTRA_KEY) ?: run { finish(); return }
         itemName = intent.getStringExtra(EXTRA_NAME) ?: ""
+        itemFlag = intent.getStringExtra(EXTRA_FLAG) ?: "iq"
+        itemUnit = intent.getStringExtra(EXTRA_UNIT) ?: getString(R.string.currency_iqd_unit)
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.title = ""
@@ -87,6 +94,7 @@ class HistoryActivity : AppCompatActivity() {
 
         binding.btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         binding.btnPickRange.setOnClickListener { openRangePicker() }
+        binding.btnSharePdf.setOnClickListener { shareHistoryPdf() }
     }
 
     // أزرار الفترة: يوم / أسبوع / شهر / شهرين (الأيام تنتهي باليوم الحالي).
@@ -141,8 +149,13 @@ class HistoryActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        // لو المزامنة لسا شغالة (رجعنا للصفحة) نكمل نعرض تقدمها.
-        if (HistorySync.attach(syncListener)) binding.syncProgress.visibility = View.VISIBLE
+        // لو المزامنة شغالة نعيد ربط المستمع، وإذا توقفت أثناء الخروج نطلب
+        // مزامنة جديدة تغطي نفس الفترة (مع احترام isUpToDate حتى لا نكرر الشبكة).
+        if (HistorySync.attach(syncListener)) {
+            binding.syncProgress.visibility = View.VISIBLE
+        } else {
+            startSync()
+        }
     }
 
     override fun onStop() {
@@ -337,12 +350,37 @@ class HistoryActivity : AppCompatActivity() {
         currentFrom = fromMillis
         currentTo = toMillis
         val entries = HistoryStore.query(this, itemKey, fromMillis, toMillis)
+        currentEntries = entries
         listAdapter.submit(entries)
         binding.historyChart.setEntries(entries, fromMillis, toMillis)
         val isEmpty = entries.isEmpty()
         binding.tvEmpty.visibility = if (isEmpty) View.VISIBLE else View.GONE
         binding.recyclerHistory.visibility = if (isEmpty) View.GONE else View.VISIBLE
         binding.chartContainer.visibility = if (isEmpty) View.GONE else View.VISIBLE
+    }
+
+    private fun shareHistoryPdf() {
+        if (currentEntries.isEmpty()) {
+            return
+        }
+        binding.btnSharePdf.isEnabled = false
+        Thread {
+            try {
+                val uri = HistoryPdfExporter.export(this, itemKey, itemName, itemFlag, itemUnit, currentEntries, currentFrom, currentTo)
+                runOnUiThread {
+                    binding.btnSharePdf.isEnabled = true
+                    val viewer = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "application/pdf")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    startActivity(Intent.createChooser(viewer, getString(R.string.cd_open_history_pdf)))
+                }
+            } catch (_: Exception) {
+                runOnUiThread {
+                    binding.btnSharePdf.isEnabled = true
+                }
+            }
+        }.start()
     }
 
     private fun startOfDay(millis: Long): Long {

@@ -52,6 +52,7 @@ class HistoryChartView @JvmOverloads constructor(
     private val hourMs = 60L * 60 * 1000
     private val dateFormat = SimpleDateFormat("d/M", Locale.US)
     private val hourFormat = SimpleDateFormat("HH:mm", Locale.US)
+    private val priceRegex = Regex("""[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?""")
 
     private val colorUp = ContextCompat.getColor(context, R.color.deltaUp)
     private val colorDown = ContextCompat.getColor(context, R.color.deltaDown)
@@ -67,7 +68,7 @@ class HistoryChartView @JvmOverloads constructor(
     }
     private val labelTypeface = ResourcesCompat.getFont(
         context,
-        if (isKurdish) R.font.cairo_bold else R.font.cairo_regular
+        R.font.cairo_bold
     )
 
     private fun dp(value: Float): Float = value * resources.displayMetrics.density
@@ -80,7 +81,7 @@ class HistoryChartView @JvmOverloads constructor(
         color = colorAxisText
         textSize = dp(11.5f)
         typeface = labelTypeface
-        isFakeBoldText = isKurdish
+        isFakeBoldText = false
     }
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -100,7 +101,7 @@ class HistoryChartView @JvmOverloads constructor(
         color = colorAxisText
         textSize = dp(13f)
         typeface = labelTypeface
-        isFakeBoldText = isKurdish
+        isFakeBoldText = false
     }
 
     private fun startOfDay(millis: Long): Long =
@@ -143,7 +144,7 @@ class HistoryChartView @JvmOverloads constructor(
     }
 
     private fun parsePriceValue(priceText: String): Double? {
-        val match = Regex("""[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?""").find(priceText) ?: return null
+        val match = priceRegex.find(priceText) ?: return null
         return match.value.replace(",", "").toDoubleOrNull()
     }
 

@@ -42,8 +42,8 @@ private class HistoryDbHelper(context: Context) :
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE")
-        onCreate(db)
+        // لا نحذف السجل عند تحديث التطبيق. لا يوجد تغيير مخطط يحتاج migration
+        // حالياً؛ وأي تغيير مستقبلي يجب أن يضيف migration يحافظ على البيانات.
     }
 }
 
@@ -277,6 +277,20 @@ object HistoryStore {
             }
         }
         return result
+    }
+
+    /** وقت أحدث سعر محفوظ لهذا المفتاح، وهو مصدر وقت البطاقة في الشاشة الرئيسية. */
+    fun latestTimestamp(context: Context, key: String): Long? {
+        val cursor = db(context).query(
+            TABLE,
+            arrayOf(COL_TIME),
+            "$COL_KEY = ?",
+            arrayOf(key),
+            null, null,
+            "$COL_TIME DESC",
+            "1"
+        )
+        cursor.use { return if (it.moveToFirst()) it.getLong(0) else null }
     }
 
     /** يحذف سجل هيستوري وحد بمعرفه (يُستخدم من زر سلة المهملات بكل صف — حذف

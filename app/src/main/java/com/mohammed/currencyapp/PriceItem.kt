@@ -8,7 +8,8 @@ data class PriceItem(
     val price: String,
     val unit: String,
     val trend: Trend = Trend.FLAT,
-    val cityKey: String? = null // غير null فقط لصفوف "البورصات المحلية" (لعرض نجمة المفضلة)
+    val cityKey: String? = null, // مفتاح السجل/المفضلة
+    val updateTimeMillis: Long? = null // وقت آخر سعر محفوظ فعلياً، وليس وقت ضغط التحديث العام
 )
 
 // عنصر يمثل صف بالقائمة: إما عنوان قسم أو بطاقة سعر

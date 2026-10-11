@@ -6,6 +6,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.RemoteViews
 import java.text.DecimalFormat
@@ -22,6 +24,12 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         private const val VALUE_PREFIX = "value_"
         private const val INDEX_PREFIX = "index_"
         private var cachedItems: List<PriceItem>? = null
+        private val calculatorKeys = listOf(
+            "baghdad", "basra", "erbil", "kirkuk", "sulaymaniyah", "duhok", "mosul",
+            "karbala", "najaf", "wasit", "muthanna", "salahaldin", "diyala", "dhiqar",
+            "qadisiyyah", "babil", "maysan", "anbar", "USD_OFFICIAL", "USD_BAGHDAD",
+            "FX_EUR", "FX_GBP", "TRY_INVESTING", "IRR_TELEGRAM"
+        )
 
         private val keyIds = mapOf(
             "9" to R.id.calculatorKey9, "8" to R.id.calculatorKey8, "7" to R.id.calculatorKey7,
@@ -33,7 +41,21 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
 
         fun refreshFromSharedCache(context: Context) {
             cachedItems = null
-            CalculatorWidgetProvider().renderAllFromSharedCache(context)
+            CalculatorWidgetProvider().renderAllFromDiskCache(context)
+        }
+
+        /** يحفظ وقتاً مشتركاً ويرسم كل ويدجتات الحاسبة والمفضلات من الكاش. */
+        fun syncAllWidgetsAt(context: Context, millis: Long) {
+            LastUpdateStore.save(context, millis)
+            LastUpdateStore.saveCalculator(context, millis)
+            cachedItems = null
+            CalculatorWidgetProvider().renderAllFromDiskCache(context)
+            FavoriteWidgetProvider.renderFromCache(context)
+        }
+
+        /** مزامنة الحاسبة مع آخر تحديث مكتمل داخل التطبيق. */
+        fun syncFromMainRefresh(context: Context, millis: Long) {
+            syncAllWidgetsAt(context, millis)
         }
 
         fun refreshLanguage(context: Context) {
@@ -43,8 +65,15 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        val pending = goAsync()
         ids.forEach { renderWithItems(context, manager, it, emptyList()) }
-        loadItems(context, force = true) { items -> ids.forEach { renderWithItems(context, manager, it, items) } }
+        loadItems(context, force = true) { items ->
+            try {
+                ids.forEach { renderWithItems(context, manager, it, items) }
+            } finally {
+                pending.finish()
+            }
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -54,32 +83,66 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
             AppWidgetManager.INVALID_APPWIDGET_ID
         )
         if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
+        val pending = goAsync()
+        var finished = false
+        fun finishAsync() {
+            if (!finished) {
+                finished = true
+                pending.finish()
+            }
+        }
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         when (intent.action) {
             ACTION_KEY -> {
-                val key = intent.getStringExtra(EXTRA_KEY) ?: return
+                val key = intent.getStringExtra(EXTRA_KEY) ?: run { finishAsync(); return }
                 val old = prefs.getString(VALUE_PREFIX + widgetId, "") ?: ""
                 val value = when (key) {
                     "delete" -> old.dropLast(1)
-                    "." -> if (old.isNotEmpty() && !old.contains('.')) "$old." else old
+                    "." -> if (!old.contains('.')) {
+                        if (old.isEmpty()) "0." else "$old."
+                    } else old
                     else -> appendDigit(old, key)
                 }
                 prefs.edit().putString(VALUE_PREFIX + widgetId, value).apply()
-                refreshOne(context, widgetId, force = false)
+                // الإدخال يظهر فوراً؛ لا ننتظر شبكة أو تحميل القائمة لكل ضغطة.
+                renderWithItems(context, AppWidgetManager.getInstance(context), widgetId,
+                    cachedItems ?: cachedItemsFromDisk(context))
+                finishAsync()
             }
             ACTION_SELECT -> {
                 val chosen = intent.getIntExtra("calculator_index", -1)
                 val delta = intent.getIntExtra("calculator_delta", 0)
-                if (chosen >= 0) prefs.edit().putInt(INDEX_PREFIX + widgetId, chosen).apply()
-                if (delta != 0) prefs.edit().putInt("step_$widgetId", delta).apply()
-                refreshOne(context, widgetId, force = false)
+                // السهم يغير الفهرس الآن، لا يخزن خطوة تنتظر زر التحديث.
+                // نقرأ آخر أسعار القرص فوراً حتى يعمل الودجت والتطبيق مغلق.
+                val items = cachedItems ?: cachedItemsFromDisk(context)
+                if (items.isNotEmpty()) {
+                    val old = prefs.getInt(INDEX_PREFIX + widgetId, 0)
+                    val next = if (chosen >= 0) {
+                        chosen.coerceIn(0, items.lastIndex)
+                    } else {
+                        ((old + delta) % items.size + items.size) % items.size
+                    }
+                    prefs.edit()
+                        .putInt(INDEX_PREFIX + widgetId, next)
+                        .putInt("step_$widgetId", 0)
+                        .apply()
+                }
+                renderWithItems(context, AppWidgetManager.getInstance(context), widgetId, items)
+                finishAsync()
             }
             ACTION_REFRESH -> {
+                // تحديث مستقل للحاسبة؛ لا ننتظر تحديث ويدجت المفضلات ولا نقفل زره.
+                renderWithItems(context, AppWidgetManager.getInstance(context), widgetId,
+                    cachedItems ?: cachedItemsFromDisk(context))
                 TelegramScraperRepository.invalidateSharedMessages()
-                FavoriteWidgetProvider.refreshAsync(this, context, animate = false, forceFresh = true) {
-                    refreshOne(context, widgetId, force = true)
-                }
+                refreshOne(context, widgetId, force = true, onDone = {
+                    val sharedTime = LastUpdateStore.loadCalculator(context)
+                        ?: System.currentTimeMillis()
+                    syncAllWidgetsAt(context, sharedTime)
+                    finishAsync()
+                })
             }
+            else -> finishAsync()
         }
     }
 
@@ -90,10 +153,19 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         loadItems(context, force = false) { items -> ids.forEach { renderWithItems(context, manager, it, items) } }
     }
 
-    private fun refreshOne(context: Context, widgetId: Int, force: Boolean) {
+    private fun renderAllFromDiskCache(context: Context) {
+        val manager = AppWidgetManager.getInstance(context)
+        val ids = manager.getAppWidgetIds(android.content.ComponentName(context, CalculatorWidgetProvider::class.java))
+        if (ids.isEmpty()) return
+        val items = cachedItemsFromDisk(context)
+        cachedItems = items
+        ids.forEach { renderWithItems(context, manager, it, items) }
+    }
+
+    private fun refreshOne(context: Context, widgetId: Int, force: Boolean, onDone: () -> Unit = {}) {
         val manager = AppWidgetManager.getInstance(context)
         loadItems(context, force) { items ->
-            if (force) LastUpdateStore.save(context, System.currentTimeMillis())
+            if (force) LastUpdateStore.saveCalculator(context, System.currentTimeMillis())
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val step = prefs.getInt("step_$widgetId", 0)
             if (step != 0 && items.isNotEmpty()) {
@@ -105,6 +177,7 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
                     .apply()
             }
             renderWithItems(context, manager, widgetId, items)
+            animateResult(context, manager, widgetId, items, onDone)
         }
     }
 
@@ -121,11 +194,11 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         )
         views.setContentDescription(R.id.calculatorWidgetTitle, context.getString(R.string.app_name))
 
-        val last = LastUpdateStore.load(context)
-        views.setTextViewText(R.id.calculatorWidgetUpdateLabel, context.getString(R.string.last_update_label))
+        val last = LastUpdateStore.loadCalculator(context)
+        views.setViewVisibility(R.id.calculatorWidgetUpdateLabel, View.GONE)
         views.setTextViewText(
             R.id.calculatorWidgetUpdateTime,
-            if (last != null) UpdateTimeFormat.timeAndDate(context, last) else "—"
+            if (last != null) UpdateTimeFormat.timeAboveDate(context, last) else "—"
         )
 
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -154,7 +227,7 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
             } else null
             views.setTextViewText(
                 R.id.calculatorWidgetResult,
-                if (result != null && result.isFinite()) DecimalFormat("#,##0.##", DecimalFormatSymbols(Locale.US)).format(result) else "—"
+                resultText(result)
             )
             views.setImageViewBitmap(
                 R.id.calculatorWidgetUnit,
@@ -162,28 +235,88 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
             )
         }
 
-        keyIds.forEach { (key, viewId) ->
+        keyIds.entries.forEachIndexed { index, (key, viewId) ->
             val intent = Intent(context, CalculatorWidgetProvider::class.java).apply {
                 action = ACTION_KEY
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
                 putExtra(EXTRA_KEY, key)
             }
-            views.setOnClickPendingIntent(viewId, broadcast(context, intent, widgetId * 31 + key.hashCode()))
+            views.setOnClickPendingIntent(viewId, broadcast(context, intent, widgetRequestCode(widgetId, index + 1)))
         }
         views.setOnClickPendingIntent(R.id.calculatorWidgetExchangeArrowUp,
             selectPending(context, widgetId, -1))
         views.setOnClickPendingIntent(R.id.calculatorWidgetExchangeArrowDown,
             selectPending(context, widgetId, 1))
+        // الضغط على جسم خانة البورصة يبقى داخل الويدجت ولا يفتح التطبيق.
+        views.setOnClickPendingIntent(R.id.calculatorWidgetExchange,
+            selectPending(context, widgetId, 0))
 
         val refreshIntent = Intent(context, CalculatorWidgetProvider::class.java).apply {
             action = ACTION_REFRESH
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
         }
-        views.setOnClickPendingIntent(R.id.calculatorWidgetRefresh, broadcast(context, refreshIntent, widgetId + 8000))
-        views.setOnClickPendingIntent(R.id.calculatorWidgetUpdateArea, broadcast(context, refreshIntent, widgetId + 8003))
-        views.setOnClickPendingIntent(R.id.calculatorWidgetUpdateLabel, broadcast(context, refreshIntent, widgetId + 8001))
-        views.setOnClickPendingIntent(R.id.calculatorWidgetUpdateTime, broadcast(context, refreshIntent, widgetId + 8002))
+        views.setOnClickPendingIntent(R.id.calculatorWidgetRefresh, broadcast(context, refreshIntent, widgetRequestCode(widgetId, 30)))
+        views.setOnClickPendingIntent(R.id.calculatorWidgetUpdateArea, broadcast(context, refreshIntent, widgetRequestCode(widgetId, 31)))
+        views.setOnClickPendingIntent(R.id.calculatorWidgetUpdateLabel, broadcast(context, refreshIntent, widgetRequestCode(widgetId, 32)))
+        views.setOnClickPendingIntent(R.id.calculatorWidgetUpdateTime, broadcast(context, refreshIntent, widgetRequestCode(widgetId, 33)))
         manager.updateAppWidget(widgetId, views)
+    }
+
+    /** يعيد نتيجة الحاسبة كنص نهائي حتى تستخدمه واجهة الرسم والأنيميشن معاً. */
+    private fun resultTextForWidget(context: Context, widgetId: Int, items: List<PriceItem>): String {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val value = prefs.getString(VALUE_PREFIX + widgetId, "") ?: ""
+        val item = items.getOrNull(prefs.getInt(INDEX_PREFIX + widgetId, 0)) ?: return "—"
+        val amount = value.toDoubleOrNull()
+        val price = extractNumber(item.price)
+        val result = if (amount != null && price != null && price != 0.0) {
+            if (item.cityKey == "FX_EUR" || item.cityKey == "FX_GBP") amount * 100.0 / price
+            else amount * price / 100.0
+        } else null
+        return resultText(result)
+    }
+
+    private fun resultText(result: Double?): String =
+        if (result != null && result.isFinite()) {
+            DecimalFormat("#,##0.##", DecimalFormatSymbols(Locale.US)).format(result)
+        } else "—"
+
+    /** حركة Matrix خفيفة لرقم الناتج بعد الضغط على تحديث الحاسبة. */
+    private fun animateResult(
+        context: Context,
+        manager: AppWidgetManager,
+        widgetId: Int,
+        items: List<PriceItem>,
+        onDone: () -> Unit
+    ) {
+        val finalText = resultTextForWidget(context, widgetId, items)
+        val plan = DigitRevealAnimator.plan(finalText)
+        if (plan == null) {
+            onDone()
+            return
+        }
+        val handler = Handler(Looper.getMainLooper())
+        val totalSteps = 12
+        val frameMs = 65L
+        var step = 0
+        fun nextFrame() {
+            step++
+            try {
+                val frame = if (step >= totalSteps) finalText
+                else DigitRevealAnimator.frameText(finalText, plan, step, totalSteps)
+                manager.partiallyUpdateAppWidget(
+                    widgetId,
+                    RemoteViews(context.packageName, R.layout.widget_calculator).apply {
+                        setTextViewText(R.id.calculatorWidgetResult, frame)
+                    }
+                )
+            } catch (_: Exception) {
+                onDone()
+                return
+            }
+            if (step < totalSteps) handler.postDelayed({ nextFrame() }, frameMs) else onDone()
+        }
+        handler.post(::nextFrame)
     }
 
     private fun broadcast(context: Context, intent: Intent, requestCode: Int): PendingIntent =
@@ -198,8 +331,11 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
             putExtra("calculator_delta", delta)
         }
-        return broadcast(context, intent, widgetId * 101 + delta)
+        val slot = when (delta) { -1 -> 20; 1 -> 21; else -> 22 }
+        return broadcast(context, intent, widgetRequestCode(widgetId, slot))
     }
+
+    private fun widgetRequestCode(widgetId: Int, slot: Int): Int = widgetId * 1000 + slot
 
     private fun loadItems(context: Context, force: Boolean, callback: (List<PriceItem>) -> Unit) {
         if (!force) {
@@ -221,6 +357,16 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         }
         TelegramScraperRepository.fetch(context) { cities = it; finishIfReady() }
         CurrenciesRepository.fetch(context) { currencies = it; finishIfReady() }
+    }
+
+    /** قائمة فورية من الكاش الدائم، لا تبدأ اتصال شبكة عند لمس السهم أو الأرقام. */
+    private fun cachedItemsFromDisk(context: Context): List<PriceItem> {
+        val favorites = FavoriteCityStore.getAll(context)
+        return calculatorKeys.mapNotNull { WidgetPriceProvider.buildCachedItem(context, it) }
+            .sortedWith(compareBy<PriceItem> {
+                val index = favorites.indexOf(it.cityKey ?: "")
+                if (index >= 0) index else Int.MAX_VALUE
+            }.thenBy { it.name })
     }
 
     private fun appendDigit(current: String, digit: String): String {

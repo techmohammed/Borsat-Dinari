@@ -19,6 +19,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:launchMode="singleTop"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,6 +30,15 @@
         <activity android:name=".AboutActivity" android:exported="false" />
         <activity android:name=".HistoryActivity" android:exported="false" />
         <activity android:name=".CalculatorActivity" android:exported="false" />
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         <activity
             android:name=".CalculatorWidgetPickerActivity"
             android:exported="false"
@@ -38,7 +48,7 @@
              وتحديث تلقائي ساعي (WidgetRefreshScheduler + AlarmManager). -->
         <receiver
             android:name=".FavoriteWidgetProvider"
-            android:label="بورصة ديناري"
+            android:label="@string/widget_name_1"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -53,7 +63,7 @@
         <!-- ودجت إضافي 4×1: أول مفضلة فقط. -->
         <receiver
             android:name=".FavoriteWidgetSmallProvider"
-            android:label="بورصة ديناري - مفضلة واحدة"
+            android:label="@string/widget_name_2"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -66,7 +76,7 @@
 
         <receiver
             android:name=".CalculatorWidgetProvider"
-            android:label="@string/app_name"
+            android:label="@string/widget_name_3"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

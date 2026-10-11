@@ -73,7 +73,14 @@ class CalculatorWidgetPickerActivity : Activity() {
         var currencies: List<PriceItem>? = null
         fun done() {
             if (cities == null || currencies == null) return
-            callback((cities!! + currencies!!).distinctBy { it.cityKey ?: "${it.flagDrawable}:${it.name}" })
+            val favorites = FavoriteCityStore.getAll(this)
+            val items = (cities!! + currencies!!).distinctBy {
+                it.cityKey ?: "${it.flagDrawable}:${it.name}:${it.unit}"
+            }.sortedWith(compareBy<PriceItem> {
+                val index = favorites.indexOf(it.cityKey ?: "")
+                if (index >= 0) index else Int.MAX_VALUE
+            }.thenBy { it.name })
+            callback(items)
         }
         TelegramScraperRepository.fetch(this) { cities = it; done() }
         CurrenciesRepository.fetch(this) { currencies = it; done() }
