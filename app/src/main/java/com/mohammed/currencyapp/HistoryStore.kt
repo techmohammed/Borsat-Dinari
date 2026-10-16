@@ -69,6 +69,11 @@ object HistoryStore {
         record(context, key, price, trend, System.currentTimeMillis())
     }
 
+    /** يسجل السعر بتوقيت نشره الحقيقي في القناة، لا بتوقيت ضغط زر التحديث. */
+    fun recordAt(context: Context, key: String, price: String, trend: Trend, timestampMillis: Long) {
+        record(context, key, price, trend, timestampMillis)
+    }
+
     private fun record(context: Context, key: String, price: String, trend: Trend, timestampMillis: Long) {
         val db = db(context)
         val values = ContentValues().apply {

@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private var exchangesLoadedGeneration = -1
     private var currenciesLoadedGeneration = -1
     private var updateTimeRecordedGeneration = -1
+    private var announcementStartedGeneration = -1
 
     // تحديث الأسعار كل 15 دقيقة طالما التطبيق مفتوح بالمقدمة
     private val refreshHandler = Handler(Looper.getMainLooper())
@@ -85,9 +86,19 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
 
+        // نبقي السحب للأسفل كتحديث، لكن نخفي دائرة SwipeRefreshLayout؛
+        // شريط mainProgress الرفيع أسفل الهيدر هو مؤشر التحديث الجديد.
+        binding.swipeRefresh.setColorSchemeColors(android.graphics.Color.TRANSPARENT)
+        binding.swipeRefresh.setProgressBackgroundColorSchemeColor(android.graphics.Color.TRANSPARENT)
+        // نخفي CircleImageView الداخلي نفسه؛ السحب يبقى فعالاً لكن لا يظهر
+        // أي سهم/دائرة، ويكون mainProgress الرفيع هو المؤشر الوحيد.
+        for (index in 0 until binding.swipeRefresh.childCount) {
+            val child = binding.swipeRefresh.getChildAt(index)
+            if (child !is androidx.recyclerview.widget.RecyclerView) child.alpha = 0f
+        }
         binding.swipeRefresh.setOnRefreshListener {
-            // تحديث يدوي: نتجاوز الكاش المشترك حتى يجيب بيانات حية فعلاً.
             startDataRefresh(invalidateNetworkCache = true)
+            binding.swipeRefresh.post { binding.swipeRefresh.isRefreshing = false }
         }
 
         binding.btnAbout.setOnClickListener { openAbout() }
@@ -122,6 +133,13 @@ class MainActivity : AppCompatActivity() {
         // فتحنا من اختصار الشاشة الرئيسية (ضغطة مطولة على أيقونة التطبيق)؟
         // نفتح هيستوري المدينة المطلوبة مباشرة فوق الشاشة الرئيسية.
         openShortcutHistory(intent)
+
+        // اعرض آخر أسعار محفوظة فوراً قبل بدء جلب الشبكة حتى لا تبدأ
+        // الصفحة فارغة. عند وصول سعر جديد يعيد التحديث بناء القائمة
+        // وتشغيل Matrix/ألوان التغيير كالمعتاد.
+        latestExchanges = TelegramScraperRepository.buildCachedItems(this)
+        latestCurrencies = CurrenciesRepository.buildCachedItems(this)
+        rebuildRows()
 
         startDataRefresh()
     }
@@ -205,13 +223,12 @@ class MainActivity : AppCompatActivity() {
         currenciesLoadedGeneration = -1
         updateTimeRecordedGeneration = -1
         val generation = refreshGeneration
+        binding.mainProgress.visibility = View.VISIBLE
         loadExchanges(generation)
         loadCurrencies(generation)
     }
 
     private fun loadExchanges(generation: Int) {
-        binding.swipeRefresh.isRefreshing = true
-        loadLatestAnnouncement()
         TelegramScraperRepository.fetch(this) { items ->
             if (generation != refreshGeneration) return@fetch
             latestExchanges = FavoriteCityStore.sortWithFavoriteFirst(this, items)
@@ -350,7 +367,12 @@ class MainActivity : AppCompatActivity() {
             CalculatorWidgetProvider.syncFromMainRefresh(this, now)
         }
         if (exchangesLoadedGeneration == refreshGeneration && currenciesLoadedGeneration == refreshGeneration) {
-            binding.swipeRefresh.isRefreshing = false
+            binding.mainProgress.visibility = View.INVISIBLE
+            if (announcementStartedGeneration != refreshGeneration) {
+                announcementStartedGeneration = refreshGeneration
+                // التنويه مهمة ثانوية؛ لا يؤخر عرض أسعار المدن والعملات.
+                loadLatestAnnouncement()
+            }
         }
 
         // التطبيق أصلاً يحدّث كل 15 دقيقة وهو مفتوح، فنفس الفرصة نحدث الودجت

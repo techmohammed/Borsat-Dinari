@@ -94,8 +94,18 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:layout_marginTop="-18dp"
-        android:background="@drawable/bg_panel_top"
+            android:background="@color/background"
         android:orientation="vertical">
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/mainProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="invisible"
+            app:indicatorColor="@color/accentBlue"
+            app:trackColor="@android:color/transparent"
+            app:trackThickness="3dp" />
 
         <!-- شريط التنويه: يظهر فقط عند وجود منشور يبدأ بكلمة "تنويه" -->
         <LinearLayout
@@ -160,8 +170,8 @@
             android:layout_width="wrap_content"
             android:layout_height="38dp"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="14dp"
-            android:layout_marginBottom="6dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="2dp"
             android:background="@drawable/bg_update_pill"
             android:clickable="true"
             android:focusable="true"
@@ -201,7 +211,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:paddingVertical="3dp" />
+                android:paddingVertical="0dp" />
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

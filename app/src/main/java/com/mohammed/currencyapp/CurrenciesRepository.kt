@@ -53,15 +53,16 @@ object CurrenciesRepository {
             val tryItem = fetchTryFromBorsatDinari(context, borsatDinariMessages)
             items.add(tryItem ?: sample(context)[3])
 
-            val telegramRates = TelegramScraperRepository.fetchCurrencyRatesBlocking()
+            val telegramToman = TelegramScraperRepository.extractTomanFromMessages(borsatDinariMessages)
             val tomanItem = buildTelegramCurrencyItem(
                 context = context,
                 cacheKey = "IRR_TELEGRAM",
                 name = context.getString(R.string.cur_irr),
                 flag = "ir",
-                value = telegramRates.irrPer100Usd,
+                value = telegramToman,
                 unit = "100$",
-                suffix = ""
+                suffix = "",
+                publishedAtMillis = TelegramScraperRepository.latestTomanTimestamp(borsatDinariMessages)
             )
             items.add(tomanItem ?: sample(context)[4])
 
@@ -161,6 +162,15 @@ object CurrenciesRepository {
         }
     }
 
+    /** يبني كل العملات من الكاش المحلي فوراً، بدون أي اتصال شبكة. */
+    fun buildCachedItems(context: Context): List<PriceItem> = listOf(
+        "USD_OFFICIAL",
+        "FX_EUR",
+        "FX_GBP",
+        "TRY_INVESTING",
+        "IRR_TELEGRAM"
+    ).mapNotNull { buildCachedItem(context, it) }
+
     /** أحدث سعر رسمي للدولار لكل 100$ من آخر منشور بقناة بورصة ديناري. */
     private fun fetchOfficialUsd(context: Context, messages: List<Pair<String, String>>): PriceItem? {
         val cache = FxTextCache(context)
@@ -174,6 +184,7 @@ object CurrenciesRepository {
             bestTimestamp = ts
             current = value
         }
+        val publishedAtMillis = bestTimestamp?.let { TelegramScraperRepository.telegramTimestampToMillis(it) }
 
         val previous = cache.load(cacheKey)
         val effective = current ?: previous ?: return null
@@ -187,8 +198,9 @@ object CurrenciesRepository {
         val now = System.currentTimeMillis()
         val valueChanged = current != null && current != previous
         if (valueChanged) {
-            cache.saveUpdateTime(cacheKey, now)
-            HistoryStore.record(context, cacheKey, "${formatLong(current!!)} د.ع", trend)
+            val priceTime = publishedAtMillis ?: now
+            cache.saveUpdateTime(cacheKey, priceTime)
+            HistoryStore.recordAt(context, cacheKey, "${formatLong(current!!)} د.ع", trend, priceTime)
         }
         if (current != null) cache.save(cacheKey, current)
 
@@ -214,6 +226,7 @@ object CurrenciesRepository {
             bestTimestamp = ts
             current = value
         }
+        val publishedAtMillis = bestTimestamp?.let { TelegramScraperRepository.telegramTimestampToMillis(it) }
 
         val previous = cache.load(cacheKey)
         val effective = current ?: previous ?: return null
@@ -228,8 +241,9 @@ object CurrenciesRepository {
         val now = System.currentTimeMillis()
         val valueChanged = current != null && current != previous
         if (valueChanged) {
-            cache.saveUpdateTime(cacheKey, now)
-            HistoryStore.record(context, cacheKey, formatLong(current!!), trend)
+            val priceTime = publishedAtMillis ?: now
+            cache.saveUpdateTime(cacheKey, priceTime)
+            HistoryStore.recordAt(context, cacheKey, formatLong(current!!), trend, priceTime)
         }
         val lastChangeTime = cache.loadUpdateTime(cacheKey)
         val isStale = lastChangeTime == null || (now - lastChangeTime) > STALE_THRESHOLD_MS
@@ -264,6 +278,7 @@ object CurrenciesRepository {
                 bestTimestamp = ts
                 current = value
             }
+            val publishedAtMillis = bestTimestamp?.let { TelegramScraperRepository.telegramTimestampToMillis(it) }
 
             val previous = cache.load(def.code)
             // لو ما لكينا سعر بآخر منشور، نرجع لآخر قيمة محفوظة بدل ما نسقط
@@ -286,7 +301,7 @@ object CurrenciesRepository {
             // عشرية (Double) وقد تختلف بجزء تافه بدون أي تغيير فعلي بالسعر المعروض.
             val valueChanged = current != null && (previous == null || kotlin.math.abs(current - previous) > 0.0001)
             if (valueChanged) {
-                cache.saveUpdateTime(def.code, now)
+                cache.saveUpdateTime(def.code, publishedAtMillis ?: now)
             }
             val lastChangeTime = cache.loadUpdateTime(def.code)
             val isStale = lastChangeTime == null || (now - lastChangeTime) > STALE_THRESHOLD_MS
@@ -299,7 +314,7 @@ object CurrenciesRepository {
                 "${def.label} ${String.format(Locale.US, "%.2f", effective)}"
             }
             if (valueChanged) {
-                HistoryStore.record(context, "FX_${def.code}", priceText, trend)
+                HistoryStore.recordAt(context, "FX_${def.code}", priceText, trend, publishedAtMillis ?: now)
             }
             val historyKey = "FX_${def.code}"
             items.add(PriceItem(context.getString(def.nameRes), def.flag, priceText, def.unit, finalTrend, historyKey, HistoryStore.latestTimestamp(context, historyKey) ?: cache.loadUpdateTime(def.code)))
@@ -314,7 +329,8 @@ object CurrenciesRepository {
         flag: String,
         value: Long?,
         unit: String,
-        suffix: String
+        suffix: String,
+        publishedAtMillis: Long? = null
     ): PriceItem? {
         val cache = FxTextCache(context)
         val current = value?.takeIf { it > 0 }
@@ -332,9 +348,10 @@ object CurrenciesRepository {
         val now = System.currentTimeMillis()
         val valueChanged = current != null && current != previous
         if (valueChanged) {
-            cache.saveUpdateTime(cacheKey, now)
+            val priceTime = publishedAtMillis ?: now
+            cache.saveUpdateTime(cacheKey, priceTime)
             val priceForHistory = if (suffix.isBlank()) formatLong(current!!) else "${formatLong(current!!)} $suffix"
-            HistoryStore.record(context, cacheKey, priceForHistory, trend)
+            HistoryStore.recordAt(context, cacheKey, priceForHistory, trend, priceTime)
         }
         val lastChangeTime = cache.loadUpdateTime(cacheKey)
         val isStale = lastChangeTime == null || (now - lastChangeTime) > STALE_THRESHOLD_MS

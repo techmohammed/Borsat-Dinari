@@ -52,9 +52,9 @@ class PriceListAdapter(
         is ListRow.Header -> TYPE_HEADER
         is ListRow.Row -> {
             val item = (rows[position] as ListRow.Row).item
-            // أول مفضلة فقط لها تصميم أكبر وأبرز؛ الثانية والثالثة صفوف عادية
-            // (بس تجي فوق باقي الصفوف).
-            if ((item.cityKey ?: item.name) == favoriteKeys.firstOrNull()) TYPE_FAVORITE else TYPE_ROW
+            // أول ثلاث مفضلات تستخدم نفس البطاقة الكبيرة ذات الشارة الثابتة.
+            val key = item.cityKey ?: item.name
+            if (favoriteKeys.indexOf(key) in 0..2) TYPE_FAVORITE else TYPE_ROW
         }
     }
 
@@ -125,6 +125,22 @@ class PriceListAdapter(
             tvUpdateTime.text = item.updateTimeMillis?.let { UpdateTimeFormat.cardTimeAndDate(context, it) } ?: ""
             tvUpdateTime.visibility = if (item.updateTimeMillis != null) View.VISIBLE else View.GONE
             tvName.text = item.name
+            val key = item.cityKey ?: item.name
+
+            // أول ثلاث مفضلات لها نفس بطاقة المفضل الأول، بما فيها الشارة
+            // الثابتة والإطار والظل.
+            val favoriteRank = favoriteKeys.indexOf(key)
+            if (favoriteRank in 0..2) {
+                itemView.background = ContextCompat.getDrawable(
+                    context, R.drawable.bg_row_card_fav_host
+                )?.mutate()
+                itemView.elevation = 6f
+            } else if (favoriteRank < 0) {
+                itemView.background = ContextCompat.getDrawable(
+                    context, R.drawable.bg_row_card
+                )?.mutate()
+                itemView.elevation = 0f
+            }
 
             // خلفية الصف كاملة: أخضر فاتح = صعود، أحمر فاتح = نزول.
             // FLAT رصاصي فاتح: السعر مستقر (ما تغيّر)، أو ما صار تحديث فعلي
@@ -134,8 +150,19 @@ class PriceListAdapter(
                 Trend.DOWN -> R.color.rowDownBg
                 Trend.FLAT -> R.color.rowFlatBg
             }
-            (itemView.background.mutate() as android.graphics.drawable.GradientDrawable)
-                .setColor(ContextCompat.getColor(context, bgColorRes))
+            // بطاقة المفضل الأول تستخدم LayerDrawable حتى تمتد الشارة فوق الحد
+            // العلوي، بينما بقية الصفوف تستخدم GradientDrawable مباشرة.
+            val rowBackground = itemView.background.mutate()
+            val fillDrawable = when (rowBackground) {
+                is android.graphics.drawable.GradientDrawable -> rowBackground
+                is android.graphics.drawable.LayerDrawable -> (0 until rowBackground.numberOfLayers)
+                    .asSequence()
+                    .map { rowBackground.getDrawable(it) }
+                    .filterIsInstance<android.graphics.drawable.GradientDrawable>()
+                    .firstOrNull()
+                else -> null
+            }
+            fillDrawable?.setColor(ContextCompat.getColor(context, bgColorRes))
 
             // علم صغير بدائرة بجانب الاسم.
             val flagResId = context.resources.getIdentifier(
@@ -145,7 +172,6 @@ class PriceListAdapter(
             else ivFlag.setImageDrawable(null)
 
             // مقدار التغيير أسفل السعر: مثلث أخضر + "+500" أو مثلث أحمر + "-300".
-            val key = item.cityKey ?: item.name
             if (item.price == "—") {
                 deltaRow.visibility = View.INVISIBLE
             } else if (item.trend == Trend.FLAT) {

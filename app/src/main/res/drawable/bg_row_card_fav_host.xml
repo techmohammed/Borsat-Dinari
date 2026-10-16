@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- مساحة شفافة أعلى الصف حتى تظهر شارة الاسم كاملة، والبطاقة تبدأ أسفلها. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:top="30dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <stroke android:width="2dp" android:color="@color/accentBlue" />
+            <corners android:radius="22dp" />
+        </shape>
+    </item>
+</layer-list>

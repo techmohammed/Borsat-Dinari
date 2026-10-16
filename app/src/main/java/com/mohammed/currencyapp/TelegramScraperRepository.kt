@@ -100,6 +100,16 @@ object TelegramScraperRepository {
         return bestValue
     }
 
+    internal fun latestTomanTimestamp(messages: List<Pair<String, String>>): Long? {
+        var bestTimestamp: String? = null
+        for ((ts, chunk) in messages) {
+            if (extractBorsatDinariTomanRate(chunk) != null && (bestTimestamp == null || ts > bestTimestamp)) {
+                bestTimestamp = ts
+            }
+        }
+        return bestTimestamp?.let { telegramTimestampToMillis(it) }
+    }
+
     /** يرجع كل رسائل قناة بورصة ديناري بدون أي فلترة — تُستخدم هنا لأسعار
      * المدن والتومان، ومن CurrenciesRepository لليورو والپاوند والليرة
      * والسعر الرسمي للدولار. */
@@ -164,6 +174,14 @@ object TelegramScraperRepository {
     private var sharedMessages: List<Pair<String, String>> = emptyList()
     private var sharedMessagesAt = 0L
     private const val SHARED_TTL_MS = 120_000L
+    private const val ANNOUNCEMENT_TTL_MS = 15 * 60 * 1000L
+    private const val RELEASE_TTL_MS = 6 * 60 * 60 * 1000L
+    private var announcementCacheAt = 0L
+    private var announcementCacheReady = false
+    private var announcementCache: Announcement? = null
+    private var releaseCacheAt = 0L
+    private var releaseCacheReady = false
+    private var releaseCache: AppRelease? = null
 
     @Synchronized
     fun fetchTrustedMessagesShared(): List<Pair<String, String>> {
@@ -195,6 +213,10 @@ object TelegramScraperRepository {
         return PriceItem(context.getString(cp.nameRes), cp.flag, formatIqd(digitsOnly), "100\$", trend, cp.key, HistoryStore.latestTimestamp(context, cp.key) ?: cache.loadUpdateTime(cp.key))
     }
 
+    /** يبني كل أسعار المدن من الكاش المحلي فوراً، بدون انتظار الشبكة. */
+    fun buildCachedItems(context: Context): List<PriceItem> =
+        cityPatterns.mapNotNull { buildCachedItem(context, it.key) }
+
     /** يحل سعر مدينة وحدة من رسائل القناة الجاهزة — بدون أي طلب شبكة هنا
      * (الصفحة تجلب مرة وحدة خارجياً ويُمرر نصها لكل المفاتيح). يحفظ بالكاش
      * المشترك ويسجل هيستوري إذا تغيّر السعر، نفس resolveCityItem بالضبط.
@@ -222,6 +244,7 @@ object TelegramScraperRepository {
             bestTimestamp = ts
             bestValue = value
         }
+        val publishedAtMillis = bestTimestamp?.let { telegramTimestampToMillis(it) }
 
         val extracted = bestValue
         val previous = cache.load(cp.key)
@@ -247,8 +270,9 @@ object TelegramScraperRepository {
         val now = System.currentTimeMillis()
         val valueChanged = extracted != null && extracted != previous
         if (valueChanged) {
-            cache.saveUpdateTime(cp.key, now)
-            HistoryStore.record(context, cp.key, formatIqd(extracted!!), trend)
+            val priceTime = publishedAtMillis ?: now
+            cache.saveUpdateTime(cp.key, priceTime)
+            HistoryStore.recordAt(context, cp.key, formatIqd(extracted!!), trend, priceTime)
         }
         val lastChangeTime = cache.loadUpdateTime(cp.key)
         val isStale = lastChangeTime == null || (now - lastChangeTime) > STALE_THRESHOLD_MS
@@ -312,11 +336,23 @@ object TelegramScraperRepository {
      * fetchTrustedMessagesShared() يعيد نفس نتيجة الكاش لمدة دقيقتين.
      */
     fun fetchLatestAnnouncement(onResult: (Announcement?) -> Unit) {
+        synchronized(this) {
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (announcementCacheReady && now - announcementCacheAt < ANNOUNCEMENT_TTL_MS) {
+                mainHandler.post { onResult(announcementCache) }
+                return
+            }
+        }
         executor.execute {
             val announcement = try {
                 parseLatestAnnouncement(fetchTrustedMessagesShared())
             } catch (_: Exception) {
                 null
+            }
+            synchronized(this) {
+                announcementCache = announcement
+                announcementCacheAt = android.os.SystemClock.elapsedRealtime()
+                announcementCacheReady = true
             }
             mainHandler.post { onResult(announcement) }
         }
@@ -367,6 +403,13 @@ object TelegramScraperRepository {
      * (نت/تغيير صيغة) يرجع null بصمت.
      */
     fun fetchLatestAppRelease(onResult: (AppRelease?) -> Unit) {
+        synchronized(this) {
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (releaseCacheReady && now - releaseCacheAt < RELEASE_TTL_MS) {
+                mainHandler.post { onResult(releaseCache) }
+                return
+            }
+        }
         executor.execute {
             val release = try {
                 val fromSearch = parseAppRelease(
@@ -375,6 +418,11 @@ object TelegramScraperRepository {
                 fromSearch ?: parseAppRelease(fetchChannelHtml(BORSAT_DINARI_CHANNEL))
             } catch (_: Exception) {
                 null
+            }
+            synchronized(this) {
+                releaseCache = release
+                releaseCacheAt = android.os.SystemClock.elapsedRealtime()
+                releaseCacheReady = true
             }
             mainHandler.post { onResult(release) }
         }
@@ -428,6 +476,8 @@ object TelegramScraperRepository {
             ChannelMessage(id, millis, chunk)
         }
     }
+
+    internal fun telegramTimestampToMillis(iso: String): Long? = parseIsoToMillis(iso)
 
     private fun parseIsoToMillis(iso: String): Long? {
         return try {
