@@ -75,60 +75,80 @@
                 android:textStyle="bold"
                 tools:text="+500"
                 tools:textColor="@color/deltaUp" />
-            </LinearLayout>
-
         </LinearLayout>
+    </LinearLayout>
 
-    <!-- اسم المدينة/العملة وتحته الوحدة (100$) -->
-    <LinearLayout
+    <!-- الاسم أعلى الصف، 100$ بمحاذاة مركز العلم، والتاريخ مثبت أسفل الصف. -->
+    <FrameLayout
+        android:id="@+id/rightInfo"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="8dp"
-        android:gravity="right"
-        android:orientation="vertical">
+        android:layout_height="match_parent"
+        android:layout_marginHorizontal="8dp">
 
         <TextView
             android:id="@+id/tvName"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="26dp"
+            android:layout_gravity="right|top"
+            android:gravity="right|center_vertical"
             android:ellipsize="end"
             android:fontFamily="@font/cairo_bold"
             android:includeFontPadding="false"
+            android:maxHeight="26dp"
             android:maxLines="1"
             android:maxWidth="130dp"
             android:textColor="@color/textPrimary"
             android:textSize="18sp"
             android:textStyle="bold"
+            app:autoSizeMaxTextSize="18sp"
+            app:autoSizeMinTextSize="12sp"
+            app:autoSizeStepGranularity="1sp"
+            app:autoSizeTextType="uniform"
             tools:text="بغداد" />
 
         <TextView
             android:id="@+id/tvUnit"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
+            android:layout_height="24dp"
+            android:layout_gravity="right|center_vertical"
+            android:gravity="right|center_vertical"
             android:includeFontPadding="false"
+            android:maxHeight="24dp"
             android:maxLines="1"
+            android:maxWidth="48dp"
             android:textColor="@color/textSecondary"
             android:fontFamily="@font/cairo_bold"
             android:textSize="12sp"
             android:textStyle="bold"
+            app:autoSizeMaxTextSize="12sp"
+            app:autoSizeMinTextSize="9sp"
+            app:autoSizeStepGranularity="1sp"
+            app:autoSizeTextType="uniform"
             tools:text="100$" />
 
         <TextView
             android:id="@+id/tvUpdateTime"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
+            android:layout_height="14dp"
+            android:layout_gravity="right|bottom"
+            android:layout_marginBottom="1dp"
+            android:ellipsize="end"
             android:fontFamily="@font/cairo_regular"
+            android:gravity="right|center_vertical"
             android:includeFontPadding="false"
-            android:gravity="right"
+            android:maxHeight="14dp"
             android:maxLines="1"
+            android:maxWidth="130dp"
             android:textColor="@color/textSecondary"
             android:textSize="8sp"
+            app:autoSizeMaxTextSize="8sp"
+            app:autoSizeMinTextSize="6sp"
+            app:autoSizeStepGranularity="1sp"
+            app:autoSizeTextType="uniform"
             tools:text="◷ 13:45  ▦ 30/10/2026" />
-    </LinearLayout>
+    </FrameLayout>
 
-    <!-- علم صغير بدائرة -->
+    <!-- علم صغير بدائرة، في منتصف ارتفاع الصف -->
     <ImageView
         android:id="@+id/ivFlag"
         android:layout_width="40dp"

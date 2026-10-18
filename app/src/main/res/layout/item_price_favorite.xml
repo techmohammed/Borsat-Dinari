@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- بطاقة المفضل الأول: الشارة تتداخل مع الحد العلوي، والسعر يبقى يساراً بجانب النجمة. -->
+<!-- بطاقة المفضل الأول: أبعاد الشارة والبطاقة ثابتة، والنص يتأقلم داخلها. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -27,6 +27,7 @@
         android:padding="4dp"
         android:src="@drawable/ic_star_filled" />
 
+    <!-- الشارة ثابتة 210x40dp؛ حجم العنوان فقط يختار حسب عرض الشاشة ويصغر عند الحاجة. -->
     <TextView
         android:id="@+id/tvName"
         android:layout_width="210dp"
@@ -44,8 +45,12 @@
         android:paddingBottom="8dp"
         android:background="@drawable/bg_fav_badge"
         android:textColor="@color/white"
-        android:textSize="22sp"
+        android:textSize="@dimen/favorite_badge_name_size"
         android:textStyle="bold"
+        app:autoSizeMaxTextSize="@dimen/favorite_badge_name_size"
+        app:autoSizeMinTextSize="14sp"
+        app:autoSizeStepGranularity="1sp"
+        app:autoSizeTextType="uniform"
         tools:text="السليمانية" />
 
     <TextView
@@ -111,34 +116,49 @@
         android:scaleType="centerCrop"
         tools:src="@drawable/flag_iq" />
 
+    <!-- مساحة الوحدة تطابق ارتفاع العلم، فيتوسط 100$ العلم عموديًا بدقة. -->
     <TextView
         android:id="@+id/tvUnit"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_gravity="right|top"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="49dp"
         android:layout_marginRight="78dp"
+        android:gravity="right|center_vertical"
         android:includeFontPadding="false"
         android:maxLines="1"
+        android:maxWidth="64dp"
         android:textColor="@color/textSecondary"
         android:fontFamily="@font/cairo_bold"
         android:textSize="13sp"
         android:textStyle="bold"
+        app:autoSizeMaxTextSize="13sp"
+        app:autoSizeMinTextSize="9sp"
+        app:autoSizeStepGranularity="1sp"
+        app:autoSizeTextType="uniform"
         tools:text="100$" />
 
+    <!-- الوقت والتاريخ في مساحة ثابتة أسفل البطاقة؛ الخط يصغر عند ضيق العرض أو تكبير النظام. -->
     <TextView
         android:id="@+id/tvUpdateTime"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right|top"
-        android:layout_marginTop="101dp"
+        android:layout_height="14dp"
+        android:layout_gravity="right|bottom"
+        android:layout_marginBottom="5dp"
         android:layout_marginRight="72dp"
+        android:ellipsize="end"
         android:fontFamily="@font/cairo_regular"
+        android:gravity="right|center_vertical"
         android:includeFontPadding="false"
-        android:gravity="right"
+        android:maxHeight="14dp"
         android:maxLines="1"
+        android:maxWidth="150dp"
         android:textColor="@color/textSecondary"
         android:textSize="9sp"
+        app:autoSizeMaxTextSize="9sp"
+        app:autoSizeMinTextSize="6sp"
+        app:autoSizeStepGranularity="1sp"
+        app:autoSizeTextType="uniform"
         tools:text="18:45 - 13/10/2026" />
 
 </FrameLayout>

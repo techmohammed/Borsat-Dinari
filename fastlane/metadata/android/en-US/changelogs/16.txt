@@ -1,0 +1,3 @@
+Improved price-card layout across screen sizes.
+- The blue favorite badge keeps fixed dimensions while its title adapts slightly to screen width.
+- The 100$ label is centered with the flag, and update time/date remain visible without increasing row height.

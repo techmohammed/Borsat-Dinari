@@ -2,4 +2,6 @@
 <resources>
     <!-- شفافية صورة خلفية الاقتباس بصفحة "حول التطبيق" (الصورة أصلاً باهتة) -->
     <item name="quote_bg_alpha" format="float" type="dimen">1.0</item>
+    <!-- حجم ابتدائي متأقلم لعنوان المفضلة؛ أبعاد الشارة تبقى 210x40dp. -->
+    <dimen name="favorite_badge_name_size">20sp</dimen>
 </resources>
