@@ -21,6 +21,12 @@ object WidgetPriceProvider {
         return when (key) {
             "FX_EUR" -> TelegramScraperRepository.CityMeta(key, R.string.cur_eur, "eu")
             "FX_GBP" -> TelegramScraperRepository.CityMeta(key, R.string.cur_gbp, "gb")
+            "FX_JOD" -> TelegramScraperRepository.CityMeta(key, R.string.cur_jod, "jo")
+            "FX_AED" -> TelegramScraperRepository.CityMeta(key, R.string.cur_aed, "ae")
+            "FX_KWD" -> TelegramScraperRepository.CityMeta(key, R.string.cur_kwd, "kw")
+            "FX_EGP" -> TelegramScraperRepository.CityMeta(key, R.string.cur_egp, "eg")
+            "FX_SAR" -> TelegramScraperRepository.CityMeta(key, R.string.cur_sar, "sa")
+            "FX_SYP" -> TelegramScraperRepository.CityMeta(key, R.string.cur_syp, "sy")
             "TRY_INVESTING" -> TelegramScraperRepository.CityMeta(key, R.string.cur_try, "tr")
             "IRR_TELEGRAM" -> TelegramScraperRepository.CityMeta(key, R.string.cur_irr, "ir")
             "USD_OFFICIAL" -> TelegramScraperRepository.CityMeta(key, R.string.cur_usd_official, "us")

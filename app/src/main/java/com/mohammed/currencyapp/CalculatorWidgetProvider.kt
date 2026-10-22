@@ -18,17 +18,20 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
     companion object {
         private const val ACTION_KEY = "com.mohammed.currencyapp.ACTION_CALCULATOR_KEY"
         private const val ACTION_SELECT = "com.mohammed.currencyapp.ACTION_CALCULATOR_SELECT"
+        private const val ACTION_SWAP = "com.mohammed.currencyapp.ACTION_CALCULATOR_SWAP"
         private const val ACTION_REFRESH = "com.mohammed.currencyapp.ACTION_CALCULATOR_REFRESH"
         private const val EXTRA_KEY = "calculator_key"
         private const val PREFS = "calculator_widget_values"
         private const val VALUE_PREFIX = "value_"
-        private const val INDEX_PREFIX = "index_"
+        private const val SOURCE_INDEX_PREFIX = "source_index_"
+        private const val DESTINATION_INDEX_PREFIX = "destination_index_"
         private var cachedItems: List<PriceItem>? = null
         private val calculatorKeys = listOf(
             "baghdad", "basra", "erbil", "kirkuk", "sulaymaniyah", "duhok", "mosul",
             "karbala", "najaf", "wasit", "muthanna", "salahaldin", "diyala", "dhiqar",
             "qadisiyyah", "babil", "maysan", "anbar", "USD_OFFICIAL", "USD_BAGHDAD",
-            "FX_EUR", "FX_GBP", "TRY_INVESTING", "IRR_TELEGRAM"
+            "FX_EUR", "FX_GBP", "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP",
+            "TRY_INVESTING", "FX_SAR", "FX_SYP", "IRR_TELEGRAM"
         )
 
         private val keyIds = mapOf(
@@ -110,24 +113,29 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
                 finishAsync()
             }
             ACTION_SELECT -> {
-                val chosen = intent.getIntExtra("calculator_index", -1)
-                val delta = intent.getIntExtra("calculator_delta", 0)
-                // السهم يغير الفهرس الآن، لا يخزن خطوة تنتظر زر التحديث.
-                // نقرأ آخر أسعار القرص فوراً حتى يعمل الودجت والتطبيق مغلق.
+                val isSource = intent.getBooleanExtra("calculator_source", false)
+                val delta = intent.getIntExtra("calculator_delta", 1)
                 val items = cachedItems ?: cachedItemsFromDisk(context)
                 if (items.isNotEmpty()) {
-                    val old = prefs.getInt(INDEX_PREFIX + widgetId, 0)
-                    val next = if (chosen >= 0) {
-                        chosen.coerceIn(0, items.lastIndex)
-                    } else {
-                        ((old + delta) % items.size + items.size) % items.size
-                    }
-                    prefs.edit()
-                        .putInt(INDEX_PREFIX + widgetId, next)
-                        .putInt("step_$widgetId", 0)
-                        .apply()
+                    val options = calculatorOptions(context, items)
+                    val indexKey = (if (isSource) SOURCE_INDEX_PREFIX else DESTINATION_INDEX_PREFIX) + widgetId
+                    val old = prefs.getInt(indexKey, if (isSource) 0 else 1.coerceAtMost(options.lastIndex))
+                    val next = ((old + delta) % options.size + options.size) % options.size
+                    prefs.edit().putInt(indexKey, next).apply()
                 }
                 renderWithItems(context, AppWidgetManager.getInstance(context), widgetId, items)
+                finishAsync()
+            }
+            ACTION_SWAP -> {
+                val source = prefs.getInt(SOURCE_INDEX_PREFIX + widgetId, 0)
+                val options = calculatorOptions(context, cachedItems ?: cachedItemsFromDisk(context))
+                val destination = prefs.getInt(DESTINATION_INDEX_PREFIX + widgetId, 1.coerceAtMost(options.lastIndex))
+                prefs.edit()
+                    .putInt(SOURCE_INDEX_PREFIX + widgetId, destination)
+                    .putInt(DESTINATION_INDEX_PREFIX + widgetId, source)
+                    .apply()
+                renderWithItems(context, AppWidgetManager.getInstance(context), widgetId,
+                    cachedItems ?: cachedItemsFromDisk(context))
                 finishAsync()
             }
             ACTION_REFRESH -> {
@@ -166,16 +174,6 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         val manager = AppWidgetManager.getInstance(context)
         loadItems(context, force) { items ->
             if (force) LastUpdateStore.saveCalculator(context, System.currentTimeMillis())
-            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            val step = prefs.getInt("step_$widgetId", 0)
-            if (step != 0 && items.isNotEmpty()) {
-                val old = prefs.getInt(INDEX_PREFIX + widgetId, 0)
-                val next = ((old + step) % items.size + items.size) % items.size
-                prefs.edit()
-                    .putInt(INDEX_PREFIX + widgetId, next)
-                    .putInt("step_$widgetId", 0)
-                    .apply()
-            }
             renderWithItems(context, manager, widgetId, items)
             animateResult(context, manager, widgetId, items, onDone)
         }
@@ -205,35 +203,30 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         val value = prefs.getString(VALUE_PREFIX + widgetId, "") ?: ""
         views.setTextViewText(R.id.calculatorWidgetAmount, format(value))
 
-        val item = items.getOrNull(prefs.getInt(INDEX_PREFIX + widgetId, 0))
-        if (item == null) {
-            views.setImageViewResource(R.id.calculatorWidgetExchangeFlag, R.drawable.flag_iq)
-            views.setImageViewBitmap(R.id.calculatorWidgetExchangeName,
-                WidgetText.render(context, context.getString(R.string.calculator_exchange_label), 14f, Color.DKGRAY))
-            views.setTextViewText(R.id.calculatorWidgetResult, "—")
-            views.setImageViewBitmap(
-                R.id.calculatorWidgetUnit,
-                WidgetText.render(context, "", 14f, Color.DKGRAY)
-            )
-        } else {
-            views.setImageViewResource(R.id.calculatorWidgetExchangeFlag, flagResource(context, item.flagDrawable))
-            views.setImageViewBitmap(R.id.calculatorWidgetExchangeName,
-                WidgetText.render(context, item.name, 15f, Color.DKGRAY))
-            val amount = value.toDoubleOrNull()
-            val price = extractNumber(item.price)
-            val result = if (amount != null && price != null && price != 0.0) {
-                if (item.cityKey == "FX_EUR" || item.cityKey == "FX_GBP") amount * 100.0 / price
-                else amount * price / 100.0
-            } else null
-            views.setTextViewText(
-                R.id.calculatorWidgetResult,
-                resultText(result)
-            )
-            views.setImageViewBitmap(
-                R.id.calculatorWidgetUnit,
-                WidgetText.render(context, outputUnit(context, item), 14f, Color.DKGRAY)
-            )
-        }
+        val options = calculatorOptions(context, items)
+        val sourceIndex = prefs.getInt(SOURCE_INDEX_PREFIX + widgetId, 0).coerceIn(0, options.lastIndex)
+        val destinationIndex = prefs.getInt(DESTINATION_INDEX_PREFIX + widgetId, 1.coerceAtMost(options.lastIndex))
+            .coerceIn(0, options.lastIndex)
+        val source = options[sourceIndex]
+        val destination = options[destinationIndex]
+        // أسماء البورصات بنفس حجم وحدة العملة، ثابتة وغير متكيفة مع عرض الحقل.
+        views.setImageViewResource(R.id.calculatorWidgetSourceFlag, flagResource(context, source.flagDrawable))
+        views.setImageViewBitmap(R.id.calculatorWidgetSourceName,
+            WidgetText.render(context, source.name, 14f, Color.DKGRAY))
+        views.setContentDescription(R.id.calculatorWidgetSource, source.name)
+        views.setImageViewResource(R.id.calculatorWidgetExchangeFlag, flagResource(context, destination.flagDrawable))
+        views.setImageViewBitmap(R.id.calculatorWidgetExchangeName,
+            WidgetText.render(context, destination.name, 14f, Color.DKGRAY))
+        views.setContentDescription(R.id.calculatorWidgetExchange, destination.name)
+        val amount = value.toDoubleOrNull()
+        val sourceRate = ratePer100Usd(source)
+        val destinationRate = ratePer100Usd(destination)
+        val result = if (amount != null && sourceRate != null && destinationRate != null && sourceRate > 0.0) {
+            amount * destinationRate / sourceRate
+        } else null
+        views.setTextViewText(R.id.calculatorWidgetResult, resultText(result))
+        views.setImageViewBitmap(R.id.calculatorWidgetUnit,
+            WidgetText.render(context, outputUnit(context, destination), 14f, Color.DKGRAY))
 
         keyIds.entries.forEachIndexed { index, (key, viewId) ->
             val intent = Intent(context, CalculatorWidgetProvider::class.java).apply {
@@ -243,13 +236,20 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
             }
             views.setOnClickPendingIntent(viewId, broadcast(context, intent, widgetRequestCode(widgetId, index + 1)))
         }
+        views.setOnClickPendingIntent(R.id.calculatorWidgetSourceArrowUp,
+            selectPending(context, widgetId, true, -1))
+        views.setOnClickPendingIntent(R.id.calculatorWidgetSourceArrowDown,
+            selectPending(context, widgetId, true, 1))
         views.setOnClickPendingIntent(R.id.calculatorWidgetExchangeArrowUp,
-            selectPending(context, widgetId, -1))
+            selectPending(context, widgetId, false, -1))
         views.setOnClickPendingIntent(R.id.calculatorWidgetExchangeArrowDown,
-            selectPending(context, widgetId, 1))
-        // الضغط على جسم خانة البورصة يبقى داخل الويدجت ولا يفتح التطبيق.
-        views.setOnClickPendingIntent(R.id.calculatorWidgetExchange,
-            selectPending(context, widgetId, 0))
+            selectPending(context, widgetId, false, 1))
+        val swapIntent = Intent(context, CalculatorWidgetProvider::class.java).apply {
+            action = ACTION_SWAP
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+        }
+        views.setOnClickPendingIntent(R.id.calculatorWidgetSwap,
+            broadcast(context, swapIntent, widgetRequestCode(widgetId, 24)))
 
         val refreshIntent = Intent(context, CalculatorWidgetProvider::class.java).apply {
             action = ACTION_REFRESH
@@ -266,12 +266,16 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
     private fun resultTextForWidget(context: Context, widgetId: Int, items: List<PriceItem>): String {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val value = prefs.getString(VALUE_PREFIX + widgetId, "") ?: ""
-        val item = items.getOrNull(prefs.getInt(INDEX_PREFIX + widgetId, 0)) ?: return "—"
+        val options = calculatorOptions(context, items)
+        val source = options.getOrNull(prefs.getInt(SOURCE_INDEX_PREFIX + widgetId, 0)) ?: return "—"
+        val destination = options.getOrNull(
+            prefs.getInt(DESTINATION_INDEX_PREFIX + widgetId, 1.coerceAtMost(options.lastIndex))
+        ) ?: return "—"
         val amount = value.toDoubleOrNull()
-        val price = extractNumber(item.price)
-        val result = if (amount != null && price != null && price != 0.0) {
-            if (item.cityKey == "FX_EUR" || item.cityKey == "FX_GBP") amount * 100.0 / price
-            else amount * price / 100.0
+        val sourceRate = ratePer100Usd(source)
+        val destinationRate = ratePer100Usd(destination)
+        val result = if (amount != null && sourceRate != null && destinationRate != null && sourceRate > 0.0) {
+            amount * destinationRate / sourceRate
         } else null
         return resultText(result)
     }
@@ -325,13 +329,19 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-    private fun selectPending(context: Context, widgetId: Int, delta: Int): PendingIntent {
+    private fun selectPending(context: Context, widgetId: Int, isSource: Boolean, delta: Int): PendingIntent {
         val intent = Intent(context, CalculatorWidgetProvider::class.java).apply {
             action = ACTION_SELECT
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+            putExtra("calculator_source", isSource)
             putExtra("calculator_delta", delta)
         }
-        val slot = when (delta) { -1 -> 20; 1 -> 21; else -> 22 }
+        val slot = when {
+            isSource && delta < 0 -> 20
+            isSource -> 21
+            delta < 0 -> 22
+            else -> 23
+        }
         return broadcast(context, intent, widgetRequestCode(widgetId, slot))
     }
 
@@ -351,7 +361,7 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
             }.sortedWith(compareBy<PriceItem> {
                 val index = favorites.indexOf(it.cityKey ?: "")
                 if (index >= 0) index else Int.MAX_VALUE
-            }.thenBy { it.name })
+            })
             cachedItems = all
             callback(all)
         }
@@ -366,7 +376,7 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
             .sortedWith(compareBy<PriceItem> {
                 val index = favorites.indexOf(it.cityKey ?: "")
                 if (index >= 0) index else Int.MAX_VALUE
-            }.thenBy { it.name })
+            })
     }
 
     private fun appendDigit(current: String, digit: String): String {
@@ -380,16 +390,42 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
     ).takeIf { it != 0 } ?: R.drawable.flag_iq
 
     private fun outputUnit(context: Context, item: PriceItem): String = when (item.cityKey) {
+        "CALC_USD" -> context.getString(R.string.currency_us_dollar)
         "TRY_INVESTING" -> context.getString(R.string.currency_try_unit)
         "IRR_TELEGRAM" -> context.getString(R.string.currency_irr_unit)
         "FX_EUR" -> context.getString(R.string.currency_eur_unit)
         "FX_GBP" -> context.getString(R.string.currency_gbp_unit)
+        "FX_JOD" -> context.getString(R.string.currency_jod_unit)
+        "FX_AED" -> context.getString(R.string.currency_aed_unit)
+        "FX_KWD" -> context.getString(R.string.currency_kwd_unit)
+        "FX_EGP" -> context.getString(R.string.currency_egp_unit)
+        "FX_SAR" -> context.getString(R.string.currency_sar_unit)
+        "FX_SYP" -> context.getString(R.string.currency_syp_unit)
         else -> context.getString(R.string.currency_iqd_unit)
     }
 
     private fun extractNumber(value: String): Double? {
         val match = Regex("[0-9]+(?:[,.][0-9]+)*").find(normalizeDigits(value)) ?: return null
         return match.value.replace(",", "").toDoubleOrNull()
+    }
+
+    private fun calculatorOptions(context: Context, items: List<PriceItem>): List<PriceItem> {
+        val usd = PriceItem(
+            name = context.getString(R.string.currency_us_dollar),
+            flagDrawable = "us",
+            price = "100",
+            unit = "100$",
+            cityKey = "CALC_USD"
+        )
+        return listOf(usd) + items
+    }
+
+    private fun ratePer100Usd(item: PriceItem): Double? {
+        if (item.cityKey == "CALC_USD") return 100.0
+        val price = extractNumber(item.price) ?: return null
+        return if (item.cityKey == "FX_EUR" || item.cityKey == "FX_GBP") {
+            if (price == 0.0) null else 10_000.0 / price
+        } else price
     }
 
     private fun normalizeDigits(value: String): String = buildString {

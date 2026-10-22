@@ -22,6 +22,7 @@
     <string name="currency_us_dollar">US dollar</string>
     <string name="calculator_amount_label">Amount in dollars</string>
     <string name="calculator_exchange_label">Choose exchange</string>
+    <string name="calculator_swap">Swap exchanges</string>
     <string name="calculator_result_label">Result in Iraqi dinars</string>
     <string name="iqd_short">IQD</string>
     <string name="currency_iqd_unit">Iraqi dinar</string>
@@ -29,6 +30,12 @@
     <string name="currency_irr_unit">Iranian toman</string>
     <string name="currency_eur_unit">Euro</string>
     <string name="currency_gbp_unit">Pound</string>
+    <string name="currency_jod_unit">Jordanian dinar</string>
+    <string name="currency_aed_unit">UAE dirham</string>
+    <string name="currency_kwd_unit">Kuwaiti dinar</string>
+    <string name="currency_egp_unit">Egyptian pound</string>
+    <string name="currency_sar_unit">Saudi riyal</string>
+    <string name="currency_syp_unit">Syrian pound</string>
     <string name="cd_refresh_now">Refresh now</string>
     <string name="cd_favorite">Favorite</string>
     <string name="city_baghdad">Baghdad</string>
@@ -54,7 +61,13 @@
     <string name="cur_eur">Euro</string>
     <string name="cur_gbp">Pound</string>
     <string name="cur_try">Turkish Lira</string>
+    <string name="cur_sar">Saudi Riyal</string>
+    <string name="cur_syp">Syrian Pound</string>
     <string name="cur_irr">Toman</string>
+    <string name="cur_jod">Jordanian Dinar</string>
+    <string name="cur_aed">UAE Dirham</string>
+    <string name="cur_kwd">Kuwaiti Dinar</string>
+    <string name="cur_egp">Egyptian Pound</string>
     <string name="widget_description">Shows your favorite exchange rates (up to 3) on the home screen, with a manual refresh button and automatic refresh every 15 minutes</string>
     <string name="widget_description_small">Shows your top favorite rate on the home screen, with a refresh button and automatic refresh every 15 minutes</string>
     <string name="widget_pick_favorite">Pick a favorite</string>

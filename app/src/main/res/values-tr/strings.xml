@@ -22,6 +22,7 @@
     <string name="currency_us_dollar">ABD doları</string>
     <string name="calculator_amount_label">Dolar miktarı</string>
     <string name="calculator_exchange_label">Borsayı seçin</string>
+    <string name="calculator_swap">İki borsayı değiştir</string>
     <string name="calculator_result_label">Irak dinarı sonucu</string>
     <string name="iqd_short">IQD</string>
     <string name="currency_iqd_unit">Irak dinarı</string>
@@ -29,6 +30,12 @@
     <string name="currency_irr_unit">İran tümeni</string>
     <string name="currency_eur_unit">Euro</string>
     <string name="currency_gbp_unit">Sterlin</string>
+    <string name="currency_jod_unit">Ürdün dinarı</string>
+    <string name="currency_aed_unit">BAE dirhemi</string>
+    <string name="currency_kwd_unit">Kuveyt dinarı</string>
+    <string name="currency_egp_unit">Mısır poundu</string>
+    <string name="currency_sar_unit">Suudi Arabistan riyali</string>
+    <string name="currency_syp_unit">Suriye lirası</string>
     <string name="cd_refresh_now">Şimdi yenile</string>
     <string name="cd_favorite">Favori</string>
     <string name="city_baghdad">Bağdat</string>
@@ -54,7 +61,13 @@
     <string name="cur_eur">Euro</string>
     <string name="cur_gbp">Sterlin</string>
     <string name="cur_try">Lira</string>
+    <string name="cur_sar">Suudi Arabistan Riyali</string>
+    <string name="cur_syp">Suriye Lirası</string>
     <string name="cur_irr">Tomen</string>
+    <string name="cur_jod">Ürdün Dinarı</string>
+    <string name="cur_aed">BAE Dirhemi</string>
+    <string name="cur_kwd">Kuveyt Dinarı</string>
+    <string name="cur_egp">Mısır Poundu</string>
     <string name="widget_description">Favori borsa fiyatlarınızı (3 adede kadar) ana ekranda gösterir; manuel yenileme düğmesi ve 15 dakikada bir otomatik yenileme içerir</string>
     <string name="widget_description_small">En üstteki favori fiyatınızı ana ekranda gösterir; yenileme düğmesi ve 15 dakikada bir otomatik yenileme içerir</string>
     <string name="widget_pick_favorite">Favori seç</string>

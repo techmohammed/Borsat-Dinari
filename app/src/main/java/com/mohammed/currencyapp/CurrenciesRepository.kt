@@ -8,8 +8,7 @@ import java.util.Locale
 import java.util.concurrent.Executors
 
 /**
- * كل العملات العالمية (الدولار الرسمي، اليورو، الپاوند، الليرة التركية،
- * التومان الإيراني) تُقرأ حصراً من آخر منشور بقناتنا الخاصة "بورصة ديناري"
+ * كل العملات العالمية تُقرأ حصراً من آخر منشور بقناتنا الخاصة "بورصة ديناري"
  * عبر TelegramScraperRepository، بنفس مبدأ أسعار المدن.
  */
 object CurrenciesRepository {
@@ -26,12 +25,20 @@ object CurrenciesRepository {
         val flag: String,
         val label: String,
         val dollarBase: Boolean,
-        val unit: String
+        val unit: String,
+        val fractionDigits: Int = 2,
+        val sourceNames: List<String> = emptyList()
     )
 
     private val defs = listOf(
-        CurrencyDef("EUR", R.string.cur_eur, "eu", "$", false, "100€"),
-        CurrencyDef("GBP", R.string.cur_gbp, "gb", "$", false, "100£")
+        CurrencyDef("EUR", R.string.cur_eur, "eu", "$", false, "100€", 2, listOf("يورو")),
+        CurrencyDef("GBP", R.string.cur_gbp, "gb", "$", false, "100£", 2, listOf("پاوند")),
+        CurrencyDef("JOD", R.string.cur_jod, "jo", "", true, "100$", 2, listOf("دينار أردني", "دينار اردني")),
+        CurrencyDef("AED", R.string.cur_aed, "ae", "", true, "100$", 2, listOf("درهم إماراتي", "درهم اماراتي")),
+        CurrencyDef("KWD", R.string.cur_kwd, "kw", "", true, "100$", 2, listOf("دينار كويتي")),
+        CurrencyDef("EGP", R.string.cur_egp, "eg", "", true, "100$", 0, listOf("جنيه مصري")),
+        CurrencyDef("SAR", R.string.cur_sar, "sa", "", true, "100$", 2, listOf("ريال سعودي", "ريال سعودى")),
+        CurrencyDef("SYP", R.string.cur_syp, "sy", "", true, "100$", 0, listOf("ليرة سورية", "ليرة سوريه", "ليرة سوريّة"))
     )
 
     private fun sample(context: Context) = listOf(
@@ -40,6 +47,12 @@ object CurrenciesRepository {
         PriceItem(context.getString(R.string.cur_gbp), "gb", "\$ 134.00", "100£", Trend.FLAT),
         PriceItem(context.getString(R.string.cur_try), "tr", "—", "100$", Trend.FLAT),
         PriceItem(context.getString(R.string.cur_irr), "ir", "—", "100$", Trend.FLAT),
+        PriceItem(context.getString(R.string.cur_jod), "jo", "—", "100$", Trend.FLAT, "FX_JOD"),
+        PriceItem(context.getString(R.string.cur_aed), "ae", "—", "100$", Trend.FLAT, "FX_AED"),
+        PriceItem(context.getString(R.string.cur_kwd), "kw", "—", "100$", Trend.FLAT, "FX_KWD"),
+        PriceItem(context.getString(R.string.cur_egp), "eg", "—", "100$", Trend.FLAT, "FX_EGP"),
+        PriceItem(context.getString(R.string.cur_sar), "sa", "—", "100$", Trend.FLAT, "FX_SAR"),
+        PriceItem(context.getString(R.string.cur_syp), "sy", "—", "100$", Trend.FLAT, "FX_SYP"),
     )
 
     fun fetch(context: Context, onResult: (List<PriceItem>) -> Unit) {
@@ -48,10 +61,19 @@ object CurrenciesRepository {
 
             val items = mutableListOf<PriceItem>()
             fetchOfficialUsd(context, borsatDinariMessages)?.let { items.add(it) }
-            items.addAll(fetchEuroAndPound(context, borsatDinariMessages))
+            val parsedCurrencies = fetchCurrencyItems(context, borsatDinariMessages)
+            val lateCurrencyKeys = setOf("FX_SAR", "FX_SYP")
+            val alwaysListedKeys = setOf("FX_JOD", "FX_AED", "FX_KWD", "FX_EGP", "FX_SAR", "FX_SYP")
+            val fallbackCurrencies = sample(context).filter {
+                it.cityKey in alwaysListedKeys && parsedCurrencies.none { parsed -> parsed.cityKey == it.cityKey }
+            }
+            items.addAll(parsedCurrencies.filterNot { it.cityKey in lateCurrencyKeys })
+            items.addAll(fallbackCurrencies.filterNot { it.cityKey in lateCurrencyKeys })
 
             val tryItem = fetchTryFromBorsatDinari(context, borsatDinariMessages)
             items.add(tryItem ?: sample(context)[3])
+            items.addAll(parsedCurrencies.filter { it.cityKey in lateCurrencyKeys })
+            items.addAll(fallbackCurrencies.filter { it.cityKey in lateCurrencyKeys })
 
             val telegramToman = TelegramScraperRepository.extractTomanFromMessages(borsatDinariMessages)
             val tomanItem = buildTelegramCurrencyItem(
@@ -72,7 +94,7 @@ object CurrenciesRepository {
 
     /**
      * نفس مبدأ TelegramScraperRepository.fetchOne — تحديث مستهدف لعملة وحدة
-     * بس (يورو، پاوند، ليرة، أو تومان)، تُستخدم من ودجت الشاشة الرئيسية.
+     * بس لعملة واحدة، تُستخدم من ودجت الشاشة الرئيسية.
      */
     fun fetchOne(context: Context, key: String, onResult: (PriceItem?) -> Unit) {
         executor.execute {
@@ -81,9 +103,9 @@ object CurrenciesRepository {
                     val messages = TelegramScraperRepository.fetchTrustedMessagesShared()
                     fetchOfficialUsd(context, messages)
                 }
-                key == "FX_EUR" || key == "FX_GBP" -> {
+                key.startsWith("FX_") -> {
                     val messages = TelegramScraperRepository.fetchTrustedMessagesShared()
-                    fetchEuroAndPound(context, messages).find { it.cityKey == key }
+                    fetchCurrencyItems(context, messages).find { it.cityKey == key }
                 }
                 key == "TRY_INVESTING" -> {
                     val messages = TelegramScraperRepository.fetchTrustedMessagesShared()
@@ -109,7 +131,7 @@ object CurrenciesRepository {
         messages: List<Pair<String, String>>
     ): PriceItem? = when (key) {
         "USD_OFFICIAL" -> fetchOfficialUsd(context, messages)
-        "FX_EUR", "FX_GBP" -> fetchEuroAndPound(context, messages).find { it.cityKey == key }
+        "FX_EUR", "FX_GBP", "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP", "FX_SAR", "FX_SYP" -> fetchCurrencyItems(context, messages).find { it.cityKey == key }
         "TRY_INVESTING" -> fetchTryFromBorsatDinari(context, messages)
         "IRR_TELEGRAM" -> buildTelegramCurrencyItem(
             context, "IRR_TELEGRAM", context.getString(R.string.cur_irr), "ir",
@@ -127,14 +149,14 @@ object CurrenciesRepository {
                 val trend = cache.loadTrend(key) ?: Trend.UP
                 PriceItem(context.getString(R.string.cur_usd_official), "us", "${formatLong(value)} د.ع", "100$", trend, key, HistoryStore.latestTimestamp(context, key) ?: cache.loadUpdateTime(key))
             }
-            key == "FX_EUR" || key == "FX_GBP" -> {
+            key.startsWith("FX_") -> {
                 val code = key.removePrefix("FX_")
                 val def = defs.find { it.code == code } ?: return null
                 val cache = FxCache(context)
                 val value = cache.load(code) ?: return null
                 val trend = cache.loadTrend(code) ?: Trend.UP
                 val priceText = if (def.dollarBase) {
-                    "${formatNumber(value)} ${def.label}"
+                    formatFxAmount(value, def.fractionDigits)
                 } else {
                     "${def.label} ${String.format(Locale.US, "%.2f", value)}"
                 }
@@ -167,7 +189,9 @@ object CurrenciesRepository {
         "USD_OFFICIAL",
         "FX_EUR",
         "FX_GBP",
+        "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP",
         "TRY_INVESTING",
+        "FX_SAR", "FX_SYP",
         "IRR_TELEGRAM"
     ).mapNotNull { buildCachedItem(context, it) }
 
@@ -261,8 +285,8 @@ object CurrenciesRepository {
         )
     }
 
-    /** يستخرج اليورو والپاوند من آخر منشور بقناة بورصة ديناري. */
-    private fun fetchEuroAndPound(context: Context, messages: List<Pair<String, String>>): List<PriceItem> {
+    /** يستخرج أسعار العملات ذات التسعير مقابل الدولار من منشور بورصة ديناري. */
+    private fun fetchCurrencyItems(context: Context, messages: List<Pair<String, String>>): List<PriceItem> {
         val cache = FxCache(context)
         val items = mutableListOf<PriceItem>()
 
@@ -271,10 +295,12 @@ object CurrenciesRepository {
             var current: Double? = null
             for ((ts, chunk) in messages) {
                 if (bestTimestamp != null && ts <= bestTimestamp) continue
-                // اسم المطابقة لازم يبقى عربي دائماً — يُستخدم Regex على نص
-                // القناة، مو للعرض. الاسم المعروض localized من nameRes فوق.
-                val matchName = if (def.code == "EUR") "يورو" else "پاوند"
-                val value = TelegramScraperRepository.extractBorsatDinariDollarBased(chunk, matchName) ?: continue
+                // أسماء المطابقة عربية لأنها تخص نص القناة؛ الاسم المعروض مترجم من nameRes.
+                val value = if (def.code == "EUR" || def.code == "GBP") {
+                    TelegramScraperRepository.extractBorsatDinariDollarBased(chunk, def.sourceNames.first())
+                } else {
+                    TelegramScraperRepository.extractBorsatDinariDollarToCurrency(chunk, def.sourceNames)
+                } ?: continue
                 bestTimestamp = ts
                 current = value
             }
@@ -309,7 +335,7 @@ object CurrenciesRepository {
             cache.saveTrend(def.code, finalTrend)
 
             val priceText = if (def.dollarBase) {
-                "${formatNumber(effective)} ${def.label}"
+                formatFxAmount(effective, def.fractionDigits)
             } else {
                 "${def.label} ${String.format(Locale.US, "%.2f", effective)}"
             }
@@ -369,11 +395,11 @@ object CurrenciesRepository {
         )
     }
 
-    private fun formatNumber(value: Double): String {
-        val nf = NumberFormat.getNumberInstance(Locale.US)
-        nf.maximumFractionDigits = 0
-        return nf.format(value)
-    }
+    private fun formatFxAmount(value: Double, fractionDigits: Int): String =
+        NumberFormat.getNumberInstance(Locale.US).apply {
+            minimumFractionDigits = fractionDigits
+            maximumFractionDigits = fractionDigits
+        }.format(value)
 
     private fun formatLong(value: Long): String = NumberFormat.getIntegerInstance(Locale.US).format(value)
 }

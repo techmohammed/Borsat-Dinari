@@ -38,19 +38,14 @@
             android:padding="18dp">
 
             <LinearLayout
+                android:id="@+id/amountInputCard"
                 android:layout_width="match_parent"
-                android:layout_height="82dp"
+                android:layout_height="70dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_calculator_input"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="14dp">
-
-                <ImageView
-                    android:layout_width="42dp"
-                    android:layout_height="42dp"
-                    android:contentDescription="@string/currency_us_dollar"
-                    android:src="@drawable/flag_us" />
+                android:paddingHorizontal="16dp">
 
                 <EditText
                     android:id="@+id/amountInput"
@@ -58,75 +53,112 @@
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:background="@android:color/transparent"
+                    android:clickable="false"
+                    android:cursorVisible="false"
+                    android:focusable="false"
                     android:fontFamily="@font/cairo_bold"
                     android:gravity="center"
                     android:hint="0"
                     android:inputType="none"
-                    android:padding="8dp"
-                    android:focusable="false"
-                    android:clickable="false"
-                    android:cursorVisible="false"
+                    android:padding="4dp"
                     android:textColor="@color/rowPriceText"
                     android:textColorHint="@color/textSecondary"
-                    android:textSize="34sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/cairo_bold"
-                    android:text="$"
-                    android:textColor="@color/brandBlue"
-                    android:textSize="25sp" />
+                    android:textSize="30sp" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/exchangeSelector"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="82dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_calculator_input"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="14dp">
+                android:layout_height="146dp"
+                android:layout_marginTop="8dp">
 
-                <ImageView
-                    android:id="@+id/exchangeFlag"
-                    android:layout_width="38dp"
-                    android:layout_height="48dp"
-                    android:contentDescription="@string/calculator_exchange_label"
-                    android:src="@drawable/flag_iq" />
+                <LinearLayout
+                    android:id="@+id/sourceSelector"
+                    android:layout_width="match_parent"
+                    android:layout_height="70dp"
+                    android:layout_gravity="top"
+                    android:background="@drawable/bg_calculator_input"
+                    android:layoutDirection="rtl"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="14dp">
 
-                <TextView
-                    android:id="@+id/exchangeName"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginHorizontal="12dp"
-                    android:fontFamily="@font/cairo_semibold"
-                    android:textColor="@color/textPrimary"
-                    android:textSize="19sp" />
+                    <ImageView
+                        android:id="@+id/sourceFlag"
+                        android:layout_width="38dp"
+                        android:layout_height="48dp"
+                        android:contentDescription="@string/calculator_exchange_label"
+                        android:src="@drawable/flag_us" />
 
-                <ImageView
-                    android:id="@+id/exchangeArrow"
-                    android:layout_width="42dp"
-                    android:layout_height="36dp"
-                    android:background="@drawable/bg_calculator_arrow"
+                    <TextView
+                        android:id="@+id/sourceName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="12dp"
+                        android:fontFamily="@font/cairo_semibold"
+                        android:textColor="@color/textPrimary"
+                        android:gravity="right|center_vertical"
+                        android:textSize="19sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/exchangeSelector"
+                    android:layout_width="match_parent"
+                    android:layout_height="70dp"
+                    android:layout_gravity="bottom"
+                    android:background="@drawable/bg_calculator_input"
+                    android:layoutDirection="rtl"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="14dp">
+
+                    <ImageView
+                        android:id="@+id/exchangeFlag"
+                        android:layout_width="38dp"
+                        android:layout_height="48dp"
+                        android:contentDescription="@string/calculator_exchange_label"
+                        android:src="@drawable/flag_iq" />
+
+                    <TextView
+                        android:id="@+id/exchangeName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="12dp"
+                        android:fontFamily="@font/cairo_semibold"
+                        android:textColor="@color/textPrimary"
+                        android:gravity="right|center_vertical"
+                        android:textSize="19sp" />
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/swapButton"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_gravity="top|center_horizontal"
+                    android:layout_marginTop="51dp"
+                    android:translationX="-120dp"
+                    android:background="@drawable/bg_calculator_swap"
+                    android:contentDescription="@string/calculator_swap"
+                    android:elevation="8dp"
                     android:padding="10dp"
-                    android:src="@drawable/ic_arrow_down_white"
-                    android:contentDescription="@string/calculator_exchange_label" />
-            </LinearLayout>
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_swap_vertical_white" />
+            </FrameLayout>
 
             <LinearLayout
                 android:id="@+id/resultNumberPanel"
                 android:layout_width="match_parent"
-                android:layout_height="82dp"
+                android:layout_height="70dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_calculator_result"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:padding="14dp">
+                android:padding="8dp">
 
                 <TextView
                     android:id="@+id/resultNumber"
@@ -143,12 +175,12 @@
             <LinearLayout
                 android:id="@+id/resultUnitPanel"
                 android:layout_width="match_parent"
-                android:layout_height="82dp"
+                android:layout_height="70dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_calculator_result"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:padding="14dp">
+                android:padding="8dp">
                 <TextView
                     android:id="@+id/resultUnit"
                     android:layout_width="match_parent"

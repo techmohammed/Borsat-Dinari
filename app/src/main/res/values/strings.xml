@@ -22,6 +22,7 @@
     <string name="currency_us_dollar">الدولار الأمريكي</string>
     <string name="calculator_amount_label">المبلغ بالدولار</string>
     <string name="calculator_exchange_label">اختر البورصة</string>
+    <string name="calculator_swap">تبديل البورصتين</string>
     <string name="calculator_result_label">الناتج بالدينار العراقي</string>
     <string name="iqd_short">د.ع</string>
     <string name="currency_iqd_unit">دينار عراقي</string>
@@ -29,6 +30,12 @@
     <string name="currency_irr_unit">تومان إيراني</string>
     <string name="currency_eur_unit">يورو</string>
     <string name="currency_gbp_unit">باوند</string>
+    <string name="currency_jod_unit">دينار أردني</string>
+    <string name="currency_aed_unit">درهم إماراتي</string>
+    <string name="currency_kwd_unit">دينار كويتي</string>
+    <string name="currency_egp_unit">جنيه مصري</string>
+    <string name="currency_sar_unit">ريال سعودي</string>
+    <string name="currency_syp_unit">ليرة سورية</string>
     <string name="cd_refresh_now">تحديث الآن</string>
     <string name="cd_favorite">مفضلة</string>
     <string name="city_baghdad">بغداد</string>
@@ -54,7 +61,13 @@
     <string name="cur_eur">يورو</string>
     <string name="cur_gbp">پاوند</string>
     <string name="cur_try">ليرة</string>
+    <string name="cur_sar">ريال سعودي</string>
+    <string name="cur_syp">ليرة سورية</string>
     <string name="cur_irr">تومان</string>
+    <string name="cur_jod">دينار أردني</string>
+    <string name="cur_aed">درهم إماراتي</string>
+    <string name="cur_kwd">دينار كويتي</string>
+    <string name="cur_egp">جنيه مصري</string>
     <string name="widget_description">يعرض أسعار بورصاتك المفضلة (حتى 3) على الشاشة الرئيسية، مع زر تحديث يدوي وتحديث تلقائي كل 15 دقيقة</string>
     <string name="widget_description_small">يعرض سعر أول مفضلة لك على الشاشة الرئيسية، مع زر تحديث وتحديث تلقائي كل 15 دقيقة</string>
     <string name="widget_pick_favorite">اختر مفضلة</string>

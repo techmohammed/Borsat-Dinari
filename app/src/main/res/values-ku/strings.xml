@@ -22,6 +22,7 @@
     <string name="currency_us_dollar">دۆلاری ئەمریکی</string>
     <string name="calculator_amount_label">بڕی دۆلار</string>
     <string name="calculator_exchange_label">بۆرسە هەڵبژێرە</string>
+    <string name="calculator_swap">ئاڵوگۆڕی دوو بۆرسە</string>
     <string name="calculator_result_label">ئەنجام بە دیناری عێراقی</string>
     <string name="iqd_short">د.ع</string>
     <string name="currency_iqd_unit">دیناری عێراقی</string>
@@ -29,6 +30,12 @@
     <string name="currency_irr_unit">تۆمانی ئێرانی</string>
     <string name="currency_eur_unit">یۆرۆ</string>
     <string name="currency_gbp_unit">پاوند</string>
+    <string name="currency_jod_unit">دیناری ئۆردنی</string>
+    <string name="currency_aed_unit">درهەمی ئیماراتی</string>
+    <string name="currency_kwd_unit">دیناری کوەیتی</string>
+    <string name="currency_egp_unit">پاوندی میسری</string>
+    <string name="currency_sar_unit">ڕیاڵی سعودی</string>
+    <string name="currency_syp_unit">لیرەی سوری</string>
     <string name="cd_refresh_now">ئێستا نوێ بکەرەوە</string>
     <string name="cd_favorite">دڵخواز</string>
     <string name="city_baghdad">بەغدا</string>
@@ -54,7 +61,13 @@
     <string name="cur_eur">ئێرۆ</string>
     <string name="cur_gbp">پاوەند</string>
     <string name="cur_try">لیرە</string>
+    <string name="cur_sar">ڕیاڵی سعودی</string>
+    <string name="cur_syp">لیرەی سوری</string>
     <string name="cur_irr">تۆمان</string>
+    <string name="cur_jod">دیناری ئۆردنی</string>
+    <string name="cur_aed">درهەمی ئیماراتی</string>
+    <string name="cur_kwd">دیناری کوەیتی</string>
+    <string name="cur_egp">پاوندی میسری</string>
     <string name="widget_description">نرخەکانی بەڕێوەبەرایەتی ئاڵوگۆڕی دڵخوازەکانت (تا 3) لەسەر شاشەی سەرەکی پیشان دەدات، لەگەڵ دوگمەی نوێکردنەوەی دەستی و نوێکردنەوەی ئۆتۆماتیکی هەر 15 خولەک جارێک</string>
     <string name="widget_description_small">یەکەم نرخی دڵخوازەکانت لەسەر شاشەی سەرەکی پیشان دەدات، لەگەڵ دوگمەی نوێکردنەوە و نوێکردنەوەی ئۆتۆماتیکی هەر 15 خولەک جارێک</string>
     <string name="widget_pick_favorite">دڵخوازێک هەڵبژێرە</string>

@@ -27,6 +27,12 @@ import java.util.concurrent.Executors
  *   🟢 100 پاوند = 126.45 دولار
  *   🟢 100 دولار = 4,859 ليرة تركية
  *   🟢 100 دولار = 23,600,000 تومان
+ *   🟢 100 دولار = 71.00 دينار أردني
+ *   🟢 100 دولار = 367.30 درهم إماراتي
+     *   🟢 100 دولار = 31.09 دينار كويتي
+     *   🟢 100 دولار = 5,391 جنيه مصري
+     *   🟢 100 دولار = 375.00 ريال سعودي
+     *   🟢 100 دولار = 12,188 ليرة سورية
  */
 object TelegramScraperRepository {
 
@@ -521,6 +527,24 @@ object TelegramScraperRepository {
         CurrencyHistoryDef("FX_GBP") { chunk ->
             extractBorsatDinariDollarBased(chunk, "پاوند")
                 ?.let { "$ ${String.format(java.util.Locale.US, "%.2f", it)}" }
+        },
+        CurrencyHistoryDef("FX_JOD") { chunk ->
+            extractBorsatDinariDollarToCurrency(chunk, listOf("دينار أردني", "دينار اردني"))?.let { formatCurrencyRate(it, 2) }
+        },
+        CurrencyHistoryDef("FX_AED") { chunk ->
+            extractBorsatDinariDollarToCurrency(chunk, listOf("درهم إماراتي", "درهم اماراتي"))?.let { formatCurrencyRate(it, 2) }
+        },
+        CurrencyHistoryDef("FX_KWD") { chunk ->
+            extractBorsatDinariDollarToCurrency(chunk, listOf("دينار كويتي"))?.let { formatCurrencyRate(it, 2) }
+        },
+        CurrencyHistoryDef("FX_EGP") { chunk ->
+            extractBorsatDinariDollarToCurrency(chunk, listOf("جنيه مصري"))?.let { formatCurrencyRate(it, 0) }
+        },
+        CurrencyHistoryDef("FX_SAR") { chunk ->
+            extractBorsatDinariDollarToCurrency(chunk, listOf("ريال سعودي", "ريال سعودى"))?.let { formatCurrencyRate(it, 2) }
+        },
+        CurrencyHistoryDef("FX_SYP") { chunk ->
+            extractBorsatDinariDollarToCurrency(chunk, listOf("ليرة سورية", "ليرة سوريه", "ليرة سوريّة"))?.let { formatCurrencyRate(it, 0) }
         }
     )
 
@@ -658,14 +682,31 @@ object TelegramScraperRepository {
         return match.groupValues[1].toDoubleOrNull()
     }
 
+    /** يستخرج قيمة العملة المحلية لكل 100 دولار، مثل
+     * "100 دولار = 71.00 دينار أردني" أو "5,391 جنيه مصري". */
+    fun extractBorsatDinariDollarToCurrency(text: String, currencyNames: List<String>): Double? {
+        if (currencyNames.isEmpty()) return null
+        val t = normalizeArabicText(text)
+        val names = currencyNames.joinToString("|") { Regex.escape(it) }
+        val regex = Regex(
+            """100\s*دولار[^0-9]{0,20}([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)\s*(?:$names)""",
+            RegexOption.IGNORE_CASE
+        )
+        val match = regex.findAll(t).lastOrNull() ?: return null
+        return match.groupValues[1].replace(",", "").toDoubleOrNull()
+    }
+
+    private fun formatCurrencyRate(value: Double, fractionDigits: Int): String =
+        String.format(java.util.Locale.US, "%,.${fractionDigits}f", value)
+
     /**
-     * يستخرج من منشور بورصة ديناري سعر الليرة التركية: "100 دولار = 4,859
-     * ليرة تركية" — رقم مباشر بمقياس "ليرة لكل 100 دولار".
+     * يستخرج من منشور بورصة ديناري سعر الليرة التركية فقط: "100 دولار = 4,859
+     * ليرة تركية". اشتراط كلمة "تركية" يمنع التقاط سعر الليرة السورية.
      */
     fun extractBorsatDinariTry(text: String): Long? {
         val t = normalizeArabicText(text)
         val regex = Regex(
-            """100\s*دولار[^0-9]{0,15}([0-9]{1,3},[0-9]{3})\s*ليرة""",
+            """100\s*دولار[^0-9]{0,15}([0-9]{1,3},[0-9]{3})\s*(?:ليرة\s+تركية|الليرة\s+التركية)""",
             RegexOption.IGNORE_CASE
         )
         val match = regex.findAll(t).lastOrNull() ?: return null

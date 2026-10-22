@@ -253,7 +253,7 @@ object HistoryPdfExporter {
     private fun paint(color: Int, size: Float, typeface: Typeface, align: Paint.Align) = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; textSize = size; this.typeface = typeface; textAlign = align }
     private fun parse(value: String): Double? = Regex("[0-9]+(?:,[0-9]{3})*(?:\\.[0-9]+)?").find(value)?.value?.replace(",", "")?.toDoubleOrNull()
     private fun formatNumber(value: Double): String = String.format(Locale.US, "%,.0f", value)
-    private fun formatValue(value: Double, itemKey: String): String = if (itemKey == "FX_EUR" || itemKey == "FX_GBP") {
+    private fun formatValue(value: Double, itemKey: String): String = if (itemKey in setOf("FX_EUR", "FX_GBP", "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP", "FX_SAR")) {
         String.format(Locale.US, "%,.2f", value)
     } else {
         formatNumber(value)
@@ -264,6 +264,12 @@ object HistoryPdfExporter {
     private fun reportUnits(itemKey: String, unitText: String, tag: String): ReportUnits = when (itemKey) {
         "FX_EUR" -> ReportUnits("100€", "$")
         "FX_GBP" -> ReportUnits("100£", "$")
+        "FX_JOD" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "د.أ" else "JOD")
+        "FX_AED" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "د.إ" else "AED")
+        "FX_KWD" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "د.ك" else "KWD")
+        "FX_EGP" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "ج.م" else "EGP")
+        "FX_SAR" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "ر.س" else "SAR")
+        "FX_SYP" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "ل.س" else "SYP")
         "TRY_INVESTING" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "ل.ت" else "TL")
         "IRR_TELEGRAM" -> ReportUnits("100$", when (tag) {
             "en" -> "Toman"
