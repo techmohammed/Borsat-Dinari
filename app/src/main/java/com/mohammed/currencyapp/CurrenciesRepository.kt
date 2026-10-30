@@ -37,6 +37,7 @@ object CurrenciesRepository {
         CurrencyDef("AED", R.string.cur_aed, "ae", "", true, "100$", 2, listOf("درهم إماراتي", "درهم اماراتي")),
         CurrencyDef("KWD", R.string.cur_kwd, "kw", "", true, "100$", 2, listOf("دينار كويتي")),
         CurrencyDef("EGP", R.string.cur_egp, "eg", "", true, "100$", 0, listOf("جنيه مصري")),
+        CurrencyDef("CNY", R.string.cur_cny, "cn", "", true, "100$", 2, listOf("يوان صيني", "يوان")),
         CurrencyDef("SAR", R.string.cur_sar, "sa", "", true, "100$", 2, listOf("ريال سعودي", "ريال سعودى")),
         CurrencyDef("SYP", R.string.cur_syp, "sy", "", true, "100$", 0, listOf("ليرة سورية", "ليرة سوريه", "ليرة سوريّة"))
     )
@@ -53,43 +54,51 @@ object CurrenciesRepository {
         PriceItem(context.getString(R.string.cur_egp), "eg", "—", "100$", Trend.FLAT, "FX_EGP"),
         PriceItem(context.getString(R.string.cur_sar), "sa", "—", "100$", Trend.FLAT, "FX_SAR"),
         PriceItem(context.getString(R.string.cur_syp), "sy", "—", "100$", Trend.FLAT, "FX_SYP"),
+        PriceItem(context.getString(R.string.cur_cny), "cn", "—", "100$", Trend.FLAT, "FX_CNY"),
     )
 
     fun fetch(context: Context, onResult: (List<PriceItem>) -> Unit) {
         executor.execute {
             val borsatDinariMessages = TelegramScraperRepository.fetchTrustedMessagesShared()
-
-            val items = mutableListOf<PriceItem>()
-            fetchOfficialUsd(context, borsatDinariMessages)?.let { items.add(it) }
-            val parsedCurrencies = fetchCurrencyItems(context, borsatDinariMessages)
-            val lateCurrencyKeys = setOf("FX_SAR", "FX_SYP")
-            val alwaysListedKeys = setOf("FX_JOD", "FX_AED", "FX_KWD", "FX_EGP", "FX_SAR", "FX_SYP")
-            val fallbackCurrencies = sample(context).filter {
-                it.cityKey in alwaysListedKeys && parsedCurrencies.none { parsed -> parsed.cityKey == it.cityKey }
-            }
-            items.addAll(parsedCurrencies.filterNot { it.cityKey in lateCurrencyKeys })
-            items.addAll(fallbackCurrencies.filterNot { it.cityKey in lateCurrencyKeys })
-
-            val tryItem = fetchTryFromBorsatDinari(context, borsatDinariMessages)
-            items.add(tryItem ?: sample(context)[3])
-            items.addAll(parsedCurrencies.filter { it.cityKey in lateCurrencyKeys })
-            items.addAll(fallbackCurrencies.filter { it.cityKey in lateCurrencyKeys })
-
-            val telegramToman = TelegramScraperRepository.extractTomanFromMessages(borsatDinariMessages)
-            val tomanItem = buildTelegramCurrencyItem(
-                context = context,
-                cacheKey = "IRR_TELEGRAM",
-                name = context.getString(R.string.cur_irr),
-                flag = "ir",
-                value = telegramToman,
-                unit = "100$",
-                suffix = "",
-                publishedAtMillis = TelegramScraperRepository.latestTomanTimestamp(borsatDinariMessages)
-            )
-            items.add(tomanItem ?: sample(context)[4])
-
+            val items = fetchItemsFromMessages(context, borsatDinariMessages)
             mainHandler.post { onResult(items) }
         }
+    }
+
+    /** Parses all currencies from an already-fetched Telegram page on a worker thread. */
+    internal fun fetchItemsFromMessages(
+        context: Context,
+        borsatDinariMessages: List<Pair<String, String>>
+    ): List<PriceItem> {
+        val items = mutableListOf<PriceItem>()
+        fetchOfficialUsd(context, borsatDinariMessages)?.let { items.add(it) }
+        val parsedCurrencies = fetchCurrencyItems(context, borsatDinariMessages)
+        val lateCurrencyKeys = setOf("FX_CNY", "FX_SAR", "FX_SYP")
+        val alwaysListedKeys = setOf("FX_JOD", "FX_AED", "FX_KWD", "FX_EGP", "FX_CNY", "FX_SAR", "FX_SYP")
+        val fallbackCurrencies = sample(context).filter {
+            it.cityKey in alwaysListedKeys && parsedCurrencies.none { parsed -> parsed.cityKey == it.cityKey }
+        }
+        items.addAll(parsedCurrencies.filterNot { it.cityKey in lateCurrencyKeys })
+        items.addAll(fallbackCurrencies.filterNot { it.cityKey in lateCurrencyKeys })
+
+        val tryItem = fetchTryFromBorsatDinari(context, borsatDinariMessages)
+        items.add(tryItem ?: sample(context)[3])
+        items.addAll(parsedCurrencies.filter { it.cityKey in lateCurrencyKeys })
+        items.addAll(fallbackCurrencies.filter { it.cityKey in lateCurrencyKeys })
+
+        val telegramToman = TelegramScraperRepository.extractTomanFromMessages(borsatDinariMessages)
+        val tomanItem = buildTelegramCurrencyItem(
+            context = context,
+            cacheKey = "IRR_TELEGRAM",
+            name = context.getString(R.string.cur_irr),
+            flag = "ir",
+            value = telegramToman,
+            unit = "100$",
+            suffix = "",
+            publishedAtMillis = TelegramScraperRepository.latestTomanTimestamp(borsatDinariMessages)
+        )
+        items.add(tomanItem ?: sample(context)[4])
+        return items
     }
 
     /**
@@ -131,7 +140,7 @@ object CurrenciesRepository {
         messages: List<Pair<String, String>>
     ): PriceItem? = when (key) {
         "USD_OFFICIAL" -> fetchOfficialUsd(context, messages)
-        "FX_EUR", "FX_GBP", "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP", "FX_SAR", "FX_SYP" -> fetchCurrencyItems(context, messages).find { it.cityKey == key }
+        "FX_EUR", "FX_GBP", "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP", "FX_CNY", "FX_SAR", "FX_SYP" -> fetchCurrencyItems(context, messages).find { it.cityKey == key }
         "TRY_INVESTING" -> fetchTryFromBorsatDinari(context, messages)
         "IRR_TELEGRAM" -> buildTelegramCurrencyItem(
             context, "IRR_TELEGRAM", context.getString(R.string.cur_irr), "ir",
@@ -191,7 +200,7 @@ object CurrenciesRepository {
         "FX_GBP",
         "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP",
         "TRY_INVESTING",
-        "FX_SAR", "FX_SYP",
+        "FX_CNY", "FX_SAR", "FX_SYP",
         "IRR_TELEGRAM"
     ).mapNotNull { buildCachedItem(context, it) }
 

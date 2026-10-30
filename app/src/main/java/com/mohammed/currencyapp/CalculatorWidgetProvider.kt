@@ -31,8 +31,8 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
             "karbala", "najaf", "wasit", "muthanna", "salahaldin", "diyala", "dhiqar",
             "qadisiyyah", "babil", "maysan", "anbar", "USD_OFFICIAL", "USD_BAGHDAD",
             "FX_EUR", "FX_GBP", "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP",
-            "TRY_INVESTING", "FX_SAR", "FX_SYP", "IRR_TELEGRAM"
-        )
+            "TRY_INVESTING", "FX_CNY", "FX_SAR", "FX_SYP", "IRR_TELEGRAM"
+        ) + CalcSupport.calculatorKeys
 
         private val keyIds = mapOf(
             "9" to R.id.calculatorKey9, "8" to R.id.calculatorKey8, "7" to R.id.calculatorKey7,
@@ -282,7 +282,7 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
 
     private fun resultText(result: Double?): String =
         if (result != null && result.isFinite()) {
-            DecimalFormat("#,##0.##", DecimalFormatSymbols(Locale.US)).format(result)
+            CalcSupport.format(result)
         } else "—"
 
     /** حركة Matrix خفيفة لرقم الناتج بعد الضغط على تحديث الحاسبة. */
@@ -353,10 +353,12 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         }
         var cities: List<PriceItem>? = null
         var currencies: List<PriceItem>? = null
+        var crypto: List<PriceItem>? = null
+        var metals: List<PriceItem>? = null
         fun finishIfReady() {
-            if (cities == null || currencies == null) return
+            if (cities == null || currencies == null || crypto == null || metals == null) return
             val favorites = FavoriteCityStore.getAll(context)
-            val all = (cities!! + currencies!!).distinctBy {
+            val all = (cities!! + currencies!! + crypto!! + metals!!).distinctBy {
                 it.cityKey ?: "${it.flagDrawable}:${it.name}:${it.unit}"
             }.sortedWith(compareBy<PriceItem> {
                 val index = favorites.indexOf(it.cityKey ?: "")
@@ -367,6 +369,8 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         }
         TelegramScraperRepository.fetch(context) { cities = it; finishIfReady() }
         CurrenciesRepository.fetch(context) { currencies = it; finishIfReady() }
+        CryptoRepository.fetch(context) { crypto = it; finishIfReady() }
+        MetalsRepository.fetch(context) { metals = it; finishIfReady() }
     }
 
     /** قائمة فورية من الكاش الدائم، لا تبدأ اتصال شبكة عند لمس السهم أو الأرقام. */
@@ -389,7 +393,7 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         "flag_${flag.lowercase(Locale.US)}", "drawable", context.packageName
     ).takeIf { it != 0 } ?: R.drawable.flag_iq
 
-    private fun outputUnit(context: Context, item: PriceItem): String = when (item.cityKey) {
+    private fun outputUnit(context: Context, item: PriceItem): String = CalcSupport.outputUnit(item) ?: when (item.cityKey) {
         "CALC_USD" -> context.getString(R.string.currency_us_dollar)
         "TRY_INVESTING" -> context.getString(R.string.currency_try_unit)
         "IRR_TELEGRAM" -> context.getString(R.string.currency_irr_unit)
@@ -399,6 +403,7 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         "FX_AED" -> context.getString(R.string.currency_aed_unit)
         "FX_KWD" -> context.getString(R.string.currency_kwd_unit)
         "FX_EGP" -> context.getString(R.string.currency_egp_unit)
+        "FX_CNY" -> context.getString(R.string.currency_cny_unit)
         "FX_SAR" -> context.getString(R.string.currency_sar_unit)
         "FX_SYP" -> context.getString(R.string.currency_syp_unit)
         else -> context.getString(R.string.currency_iqd_unit)
@@ -423,6 +428,7 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
     private fun ratePer100Usd(item: PriceItem): Double? {
         if (item.cityKey == "CALC_USD") return 100.0
         val price = extractNumber(item.price) ?: return null
+        if (CalcSupport.isQuote(item.cityKey)) return CalcSupport.ratePer100Usd(item.cityKey, price)
         return if (item.cityKey == "FX_EUR" || item.cityKey == "FX_GBP") {
             if (price == 0.0) null else 10_000.0 / price
         } else price

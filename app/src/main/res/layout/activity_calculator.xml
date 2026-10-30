@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
@@ -9,23 +10,49 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/brandBlue"
+        android:background="@color/headerBlue"
         android:layoutDirection="ltr"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:contentInsetEnd="0dp"
+        app:contentInsetStart="0dp"
+        app:contentInsetLeft="0dp"
+        app:contentInsetRight="0dp"
+        app:contentInsetStartWithNavigation="0dp">
 
-        <TextView
-            android:id="@+id/toolbarTitle"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical|right"
-            android:paddingEnd="18dp"
-            android:text="@string/calculator_title"
-            android:textColor="@android:color/white"
-            android:textSize="25sp"
-            android:fontFamily="@font/cairo_bold" />
+            android:layout_height="match_parent">
+            <ImageView
+                android:id="@+id/ivHeaderLogo"
+                android:background="?attr/selectableItemBackground"
+                android:contentDescription="@string/cd_back"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="left"
+                android:adjustViewBounds="true"
+                android:scaleType="fitStart"
+                android:src="@drawable/header_bg_image" />
+
+
+
+
+
+            <TextView
+                android:id="@+id/toolbarTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right|center_vertical"
+                android:layout_marginRight="16dp"
+                android:text="@string/calculator_title"
+                android:textColor="@android:color/white"
+                android:textSize="22sp"
+                android:fontFamily="@font/cairo_bold" />
+        </FrameLayout>
     </androidx.appcompat.widget.Toolbar>
 
     <ScrollView
+        android:scrollbars="none"
+        android:overScrollMode="never"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"

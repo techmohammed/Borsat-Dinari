@@ -38,6 +38,7 @@ object HistorySync {
     }
 
     private const val PREFS = "history_sync"
+    private const val SCHEMA = 2
     private const val WAVE = 4                       // عدد الصفحات المطلوبة بنفس الوقت (خفّفناها من 6 حتى ما يثقل الهاتف)
     private const val COMMIT_EVERY = 160             // نحفظ كل ~160 منشور (ثواني قليلة بكل دفعة)
     private const val MAX_PAGES = 450
@@ -284,6 +285,12 @@ object HistorySync {
 
     private fun loadCoverage(ctx: Context): Coverage? {
         val p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        // نسخة المخطط: رفعناها لمّا أضفنا الكريبتو والمعادن واليوان للسجل، حتى تُعاد المزامنة مرة وحدة
+        // وتتعبأ الأسعار القديمة (الدمج بالسجل idempotent فما تتكرر النقاط).
+        if (p.getInt("schema", 1) < SCHEMA) {
+            p.edit().clear().putInt("schema", SCHEMA).apply()
+            return null
+        }
         if (!p.contains("oldest_id")) return null
         return Coverage(
             p.getLong("oldest_id", 0L), p.getLong("oldest_time", 0L),
@@ -297,11 +304,12 @@ object HistorySync {
             .putLong("oldest_id", c.oldestId).putLong("oldest_time", c.oldestTime)
             .putLong("newest_id", c.newestId).putLong("newest_time", c.newestTime)
             .putBoolean("reached_start", c.reachedStart)
+            .putInt("schema", SCHEMA)
             .apply()
     }
 
     private fun resetCoverage(ctx: Context) {
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply()
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().putInt("schema", SCHEMA).apply()
     }
 
     private fun markReachedStart(ctx: Context) {

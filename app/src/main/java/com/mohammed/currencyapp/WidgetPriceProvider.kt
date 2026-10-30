@@ -18,6 +18,8 @@ object WidgetPriceProvider {
      * صحيحين بالودجت حتى لو الكاش فاضي كلياً (أول تشغيل مثلاً). */
     fun metaFor(key: String): TelegramScraperRepository.CityMeta? {
         TelegramScraperRepository.metaFor(key)?.let { return it }
+        MetalsRepository.nameResFor(key)?.let { return TelegramScraperRepository.CityMeta(key, it, MetalsRepository.flagFor(key)) }
+        CryptoRepository.nameResFor(key)?.let { return TelegramScraperRepository.CityMeta(key, it, CryptoRepository.flagFor(key)) }
         return when (key) {
             "FX_EUR" -> TelegramScraperRepository.CityMeta(key, R.string.cur_eur, "eu")
             "FX_GBP" -> TelegramScraperRepository.CityMeta(key, R.string.cur_gbp, "gb")
@@ -25,6 +27,7 @@ object WidgetPriceProvider {
             "FX_AED" -> TelegramScraperRepository.CityMeta(key, R.string.cur_aed, "ae")
             "FX_KWD" -> TelegramScraperRepository.CityMeta(key, R.string.cur_kwd, "kw")
             "FX_EGP" -> TelegramScraperRepository.CityMeta(key, R.string.cur_egp, "eg")
+            "FX_CNY" -> TelegramScraperRepository.CityMeta(key, R.string.cur_cny, "cn")
             "FX_SAR" -> TelegramScraperRepository.CityMeta(key, R.string.cur_sar, "sa")
             "FX_SYP" -> TelegramScraperRepository.CityMeta(key, R.string.cur_syp, "sy")
             "TRY_INVESTING" -> TelegramScraperRepository.CityMeta(key, R.string.cur_try, "tr")
@@ -37,6 +40,8 @@ object WidgetPriceProvider {
 
     /** يرجع آخر سعر محفوظ بالكاش فوراً وبدون أي اتصال شبكة. */
     fun buildCachedItem(context: Context, key: String): PriceItem? {
+        if (CryptoRepository.isCryptoKey(key)) return CryptoRepository.buildCachedItem(context, key)
+        if (MetalsRepository.isMetalKey(key)) return MetalsRepository.buildCachedItem(context, key)
         return if (key == "USD_OFFICIAL" || key == "USD_BAGHDAD" || key.startsWith("FX_") || key == "TRY_INVESTING" || key == "IRR_TELEGRAM") {
             CurrenciesRepository.buildCachedItem(context, key)
         } else {
@@ -47,6 +52,8 @@ object WidgetPriceProvider {
     /** تحديث شبكة مستهدف لعنصر المفضلة وحده. */
     fun fetchOne(context: Context, key: String, onResult: (PriceItem?) -> Unit) {
         when {
+            CryptoRepository.isCryptoKey(key) -> CryptoRepository.fetchOne(context, key, onResult)
+            MetalsRepository.isMetalKey(key) -> MetalsRepository.fetchOne(context, key, onResult)
             key == "USD_OFFICIAL" -> CurrenciesRepository.fetchOne(context, key, onResult)
             key == "USD_BAGHDAD" -> fetchUsdMirror(context, onResult)
             key.startsWith("FX_") || key == "TRY_INVESTING" || key == "IRR_TELEGRAM" ->
@@ -105,6 +112,8 @@ object WidgetPriceProvider {
         key: String,
         messages: List<Pair<String, String>>
     ): PriceItem? = when {
+        CryptoRepository.isCryptoKey(key) -> CryptoRepository.resolveBlocking(context, key, messages)
+        MetalsRepository.isMetalKey(key) -> MetalsRepository.resolveBlocking(context, key, messages)
         key == "USD_BAGHDAD" ->
             usdFromBaghdad(context, TelegramScraperRepository.resolveBlocking(context, "baghdad", messages))
         key == "USD_OFFICIAL" || key == "TRY_INVESTING" || key == "IRR_TELEGRAM" || key.startsWith("FX_") ->

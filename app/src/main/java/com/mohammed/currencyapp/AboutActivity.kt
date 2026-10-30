@@ -16,18 +16,6 @@ import kotlin.math.abs
 
 class AboutActivity : AppCompatActivity() {
 
-    companion object {
-        private const val TELEGRAM_CHANNEL_URL = "https://t.me/BorsatDinari"
-        private const val X_URL = "https://x.com/Borsatdinari"
-        private const val FACEBOOK_URL = "https://www.facebook.com/share/1Bv8F5CUZE/"
-        private const val INSTAGRAM_URL = "https://www.instagram.com/borsatdinari"
-        private const val WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029VbDz68h7YSd54EV6rw0R"
-        private const val TIKTOK_URL = "https://tiktok.com/@borsatdinari"
-        private const val GITHUB_URL = "https://github.com/techmohammed/Borsat-Dinari"
-        private const val EMAIL_URI = "mailto:BorsatDinari@gmail.com"
-        private const val THREADS_URL = "https://www.threads.com/@borsatdinari"
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -57,23 +45,12 @@ class AboutActivity : AppCompatActivity() {
             Gravity.CENTER_VERTICAL or if (isRtl) Gravity.RIGHT else Gravity.LEFT
         applySystemBarsInsets(binding.toolbar, binding.scrollAbout)
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        // إزالة عنوان التطبيق الصغير من شريط الصفحة، والإبقاء على اسم بورصة ديناري الكبير داخل المحتوى.
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
         supportActionBar?.title = ""
-
-        // أزرار قسم "تابعنا" أسفل الصفحة.
-        binding.btnFollowTelegram.setOnClickListener { openLink(TELEGRAM_CHANNEL_URL) }
-        binding.btnFollowX.setOnClickListener { openLink(X_URL) }
-        binding.btnFollowFacebook.setOnClickListener { openLink(FACEBOOK_URL) }
-        binding.btnFollowInstagram.setOnClickListener { openLink(INSTAGRAM_URL) }
-        binding.btnFollowWhatsapp.setOnClickListener { openLink(WHATSAPP_CHANNEL_URL) }
-        binding.btnFollowTiktok.setOnClickListener { openLink(TIKTOK_URL) }
-        binding.btnFollowGithub.setOnClickListener { openLink(GITHUB_URL) }
-        binding.btnFollowEmail.setOnClickListener {
-            openLink(EMAIL_URI, Intent.ACTION_SENDTO)
-        }
-        // F-Droid: بدون رابط حالياً (لسا التطبيق مو منشور هناك)، فبدون click listener عمداً.
-        binding.btnFollowThreads.setOnClickListener { openLink(THREADS_URL) }
+        binding.ivHeaderLogo.setOnClickListener { finish() }
+        binding.toolbarTitle.typeface = resources.getFont(
+            if (AppLanguage.currentTag() == "ku") R.font.peshang_des_5_bold else R.font.cairo_bold
+        )
 
         checkForUpdate(binding)
     }

@@ -34,14 +34,33 @@ object KurdishFont {
         applyToView(root, peshang, cairo, context)
     }
 
+    // خط Cairo يُحمّل مرة وحدة فقط (ResourcesCompat.getFont كان يُستدعى بكل
+    // إطار أنيميشن لكل صف، وهذا ثقيل على الخيط الرئيسي).
+    private var cairoBoldCache: Typeface? = null
+    private fun cairoBold(context: Context): Typeface? =
+        cairoBoldCache ?: ResourcesCompat.getFont(context.applicationContext, R.font.cairo_bold)
+            ?.also { cairoBoldCache = it }
+
     /** إبراز أرقام بطاقات الصفحة الرئيسية فقط؛ بقية الصفحات تبقى بالوزن الموحد. */
     fun emphasizeMainNumber(view: TextView) {
         val source = view.text?.toString() ?: return
+        setMainNumberText(view, source)
+    }
+
+    /**
+     * يضع نص رقم بطاقة الرئيسية بـ setText واحدة فقط بدون ما يشغّل الـTextWatcher
+     * (الطريقة القديمة كانت تسوي 3 setText بكل إطار، وكل setText بـautoSize
+     * تعيد قياس النص بعدة أحجام، فتثقل الشاشة وقت أنيميشن الأرقام).
+     */
+    fun setMainNumberText(view: TextView, text: CharSequence) {
         formattingViews[view] = true
-        view.text = source
-        formattingViews.remove(view)
-        view.typeface = ResourcesCompat.getFont(view.context, R.font.cairo_bold)
-        view.paint.isFakeBoldText = true
+        try {
+            view.text = text.toString()
+        } finally {
+            formattingViews.remove(view)
+        }
+        cairoBold(view.context)?.let { if (view.typeface !== it) view.typeface = it }
+        if (!view.paint.isFakeBoldText) view.paint.isFakeBoldText = true
     }
 
     private fun applyToView(

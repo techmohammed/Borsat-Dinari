@@ -3,18 +3,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layoutDirection="ltr"
     android:layout_width="match_parent"
-    android:layout_height="54dp"
+    android:layout_height="40dp"
     android:layout_marginHorizontal="14dp"
-    android:layout_marginVertical="3dp"
+    android:layout_marginVertical="2dp"
     android:background="@drawable/bg_history_row"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingHorizontal="14dp">
+    android:paddingHorizontal="12dp">
 
     <ImageView
         android:id="@+id/ivHistoryTrend"
-        android:layout_width="26dp"
-        android:layout_height="26dp"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
         android:contentDescription="@null"
         tools:src="@drawable/ic_hist_up" />
 
@@ -22,14 +22,14 @@
         android:id="@+id/tvHistoryPrice"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="14dp"
+        android:layout_marginLeft="10dp"
         android:layout_weight="1"
         android:fontFamily="@font/cairo_bold"
         android:gravity="left|center_vertical"
         android:includeFontPadding="false"
         android:maxLines="1"
         android:textColor="@color/textPrimary"
-        android:textSize="19sp"
+        android:textSize="16sp"
         android:textStyle="bold"
         tools:text="155,800" />
 
@@ -40,18 +40,18 @@
         android:fontFamily="@font/cairo_regular"
         android:includeFontPadding="false"
         android:textColor="@color/textSecondary"
-        android:textSize="15sp"
+        android:textSize="13sp"
         tools:text="17/9" />
 
     <TextView
         android:id="@+id/tvHistoryTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="14dp"
+        android:layout_marginLeft="10dp"
         android:fontFamily="@font/cairo_regular"
         android:includeFontPadding="false"
         android:textColor="@color/textSecondary"
-        android:textSize="15sp"
+        android:textSize="13sp"
         tools:text="16:45" />
 
 </LinearLayout>

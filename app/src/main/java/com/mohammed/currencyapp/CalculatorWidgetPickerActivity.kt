@@ -43,7 +43,7 @@ class CalculatorWidgetPickerActivity : Activity() {
             }
             val scroll = ScrollView(this).apply {
                 addView(rows)
-                isVerticalScrollBarEnabled = true
+                isVerticalScrollBarEnabled = false
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     (168 * resources.displayMetrics.density).toInt()
@@ -71,10 +71,12 @@ class CalculatorWidgetPickerActivity : Activity() {
     private fun loadItems(callback: (List<PriceItem>) -> Unit) {
         var cities: List<PriceItem>? = null
         var currencies: List<PriceItem>? = null
+        var crypto: List<PriceItem>? = null
+        var metals: List<PriceItem>? = null
         fun done() {
-            if (cities == null || currencies == null) return
+            if (cities == null || currencies == null || crypto == null || metals == null) return
             val favorites = FavoriteCityStore.getAll(this)
-            val items = (cities!! + currencies!!).distinctBy {
+            val items = (cities!! + currencies!! + crypto!! + metals!!).distinctBy {
                 it.cityKey ?: "${it.flagDrawable}:${it.name}:${it.unit}"
             }.sortedWith(compareBy<PriceItem> {
                 val index = favorites.indexOf(it.cityKey ?: "")
@@ -84,5 +86,7 @@ class CalculatorWidgetPickerActivity : Activity() {
         }
         TelegramScraperRepository.fetch(this) { cities = it; done() }
         CurrenciesRepository.fetch(this) { currencies = it; done() }
+        CryptoRepository.fetch(this) { crypto = it; done() }
+        MetalsRepository.fetch(this) { metals = it; done() }
     }
 }

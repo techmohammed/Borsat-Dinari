@@ -14,6 +14,7 @@
     <color name="rowUpBg">#1B3A28</color>
     <color name="rowDownBg">#46201F</color>
     <color name="rowFlatBg">#2C2F33</color>
+    <color name="currencyCard">#202F43</color>
     <color name="rowPriceText">#FFFFFF</color>
     <color name="deltaUp">#4CD471</color>
     <color name="deltaDown">#FF6B63</color>

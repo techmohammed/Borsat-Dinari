@@ -6,8 +6,15 @@ import android.os.Bundle
 import android.view.View
 
 class DinariApplication : Application() {
+    companion object {
+        /** سياق التطبيق للمكونات اللي ما عندها Context (مثل جالب القناة). */
+        lateinit var instance: Application
+            private set
+    }
+
     override fun onCreate() {
         super.onCreate()
+        instance = this
         // نفضل النمط المحفوظ قبل أي Activity يتصور — حتى أول شاشة ما تومض
         // بالنهاري لو المستخدم اختار الليلي سابقاً.
         ThemePreferences.applySavedMode(this)
@@ -24,6 +31,7 @@ class DinariApplication : Application() {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 activity.window.decorView.layoutDirection = View.LAYOUT_DIRECTION_RTL
                 KurdishFont.apply(activity.window.decorView, activity)
+                Haptics.install(activity)
             }
 
             override fun onActivityStarted(activity: Activity) {}

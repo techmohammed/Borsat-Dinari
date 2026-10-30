@@ -6,6 +6,7 @@ import android.os.Looper
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /**
  * يجيب كل أسعار المدن (وسعر التومان الإيراني) من مصدر واحد فقط: قناتنا
@@ -42,6 +43,9 @@ object TelegramScraperRepository {
     // بغض النظر عن آخر اتجاه معروف.
     private const val STALE_THRESHOLD_MS = 3 * 60 * 60 * 1000L
     private val executor = Executors.newSingleThreadExecutor(BackgroundThreads.factory("tg-scraper"))
+    private val requestTimeoutExecutor = Executors.newSingleThreadScheduledExecutor { runnable ->
+        Thread(runnable, "tg-request-timeout").apply { isDaemon = true }
+    }
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private data class CityPattern(
@@ -121,8 +125,57 @@ object TelegramScraperRepository {
      * والسعر الرسمي للدولار. */
     fun fetchTrustedBorsatDinariMessages(): List<Pair<String, String>> {
         val html = try { fetchChannelHtml(BORSAT_DINARI_CHANNEL) } catch (_: Exception) { "" }
-        return parseMessages(html)
+        val live = parseMessages(html)
+        if (live.isEmpty()) return live
+        return fillGap(live)
     }
+
+    private val postIdRegex = Regex("""data-post="[^/"]+/(\d+)"""")
+    private fun postId(chunk: String): Long? = postIdRegex.find(chunk)?.groupValues?.get(1)?.toLongOrNull()
+
+    private const val GAP_PREFS = "channel_gap"
+    private const val GAP_KEY_NEWS = "news_gap"
+    private const val GAP_KEY_NEWEST = "last_newest_id"
+    private const val GAP_MAX_PAGES = 10 // ~200 منشور
+
+    /**
+     * صفحة القناة الحية تعرض آخر ~20 منشور فقط. لو غاب المستخدم وانكتبت منشورات أكثر من هذا،
+     * نلف للخلف (?before=) صفحة صفحة لحد ما نوصل آخر منشور شفناه سابقاً، حتى ما تضيع
+     * تحديثات العملات الرقمية/المعادن/التنويهات. نتقدم بعلامة "آخر منشور" بس لو نجح الجلب
+     * (أو وصلنا الحد الأعلى)، ولو انقطعت الشبكة نبقيها حتى نعيد المحاولة.
+     */
+    private fun fillGap(live: List<Pair<String, String>>): List<Pair<String, String>> {
+        val prefs = DinariApplication.instance.getSharedPreferences(GAP_PREFS, Context.MODE_PRIVATE)
+        val lastSeen = prefs.getLong(GAP_KEY_NEWEST, 0L)
+        val liveIds = live.mapNotNull { postId(it.second) }
+        if (liveIds.isEmpty()) return live
+        val newest = liveIds.maxOrNull()!!
+        val collected = ArrayList<Pair<String, String>>(live)
+        var oldest = liveIds.minOrNull()!!
+        var advance = true
+        if (lastSeen > 0L && oldest > lastSeen + 1) {
+            var pages = 0
+            while (oldest > lastSeen + 1 && pages < GAP_MAX_PAGES) {
+                pages++
+                val older = try {
+                    parseMessages(fetchChannelHtml(BORSAT_DINARI_CHANNEL, beforeId = oldest))
+                } catch (_: Exception) { advance = false; break }
+                val ids = older.mapNotNull { postId(it.second) }
+                if (ids.isEmpty() || ids.minOrNull()!! >= oldest) break
+                collected.addAll(older)
+                oldest = ids.minOrNull()!!
+            }
+        }
+        // فجوة ما كدر الجلب العادي يغطيها (أكبر من الحد الأقصى): نعلّم حتى تُكمَّل الأخبار ببحث واحد.
+        if (advance && lastSeen > 0L && oldest > lastSeen + 1) prefs.edit().putBoolean(GAP_KEY_NEWS, true).apply()
+        if (advance && newest > lastSeen) prefs.edit().putLong(GAP_KEY_NEWEST, newest).apply()
+        return collected.distinctBy { postId(it.second) ?: it.second.hashCode().toLong() }
+            .sortedBy { postId(it.second) ?: 0L }
+    }
+
+    /** بحث نصي بالقناة (t.me/s/…?q=) لأنواع نادرة النشر مثل العملات الرقمية والمعادن. */
+    internal fun searchChannelMessages(query: String): List<Pair<String, String>> =
+        try { parseMessages(fetchChannelHtml(BORSAT_DINARI_CHANNEL, query = query)) } catch (_: Exception) { emptyList() }
 
     /** آخر سعر رسمي للدولار لكل 100$ من منشور بورصة ديناري. */
     fun extractBorsatDinariOfficialUsd(text: String): Long? {
@@ -148,6 +201,20 @@ object TelegramScraperRepository {
             val messages = fetchTrustedMessagesShared()
             val items = cityPatterns.map { cp -> resolveCityItem(cp, messages, cache, context) }
             mainHandler.post { onResult(items) }
+        }
+    }
+
+    /** Fetches once, resolves both main-page groups on a worker, then posts one UI result. */
+    fun fetchMainPage(
+        context: Context,
+        onResult: (exchanges: List<PriceItem>, currencies: List<PriceItem>) -> Unit
+    ) {
+        executor.execute {
+            val messages = fetchTrustedMessagesShared()
+            val cache = ScraperCache(context)
+            val exchanges = cityPatterns.map { cp -> resolveCityItem(cp, messages, cache, context) }
+            val currencies = CurrenciesRepository.fetchItemsFromMessages(context, messages)
+            mainHandler.post { onResult(exchanges, currencies) }
         }
     }
 
@@ -189,24 +256,39 @@ object TelegramScraperRepository {
     private var releaseCacheReady = false
     private var releaseCache: AppRelease? = null
 
-    @Synchronized
+    // قفلان منفصلان عمداً: stateLock للحالة فقط (لحظي، ما نسوي فيه شبكة أبداً)
+    // وfetchLock لتجميع طلبات الشبكة. قبل كان @Synchronized على الكائن كله
+    // يمسك القفل طوال طلب الشبكة (لحد 16+ ثانية بشبكة بطيئة)، فأي استدعاء من
+    // الخيط الرئيسي (زر التحديث، شريط التنويه، فحص التحديث) كان يتجمد.
+    private val stateLock = Any()
+    private val fetchLock = Any()
+
     fun fetchTrustedMessagesShared(): List<Pair<String, String>> {
-        val now = android.os.SystemClock.elapsedRealtime()
-        if (sharedMessages.isNotEmpty() && now - sharedMessagesAt < SHARED_TTL_MS) return sharedMessages
-        val fresh = fetchTrustedBorsatDinariMessages()
-        if (fresh.isNotEmpty()) {
-            sharedMessages = fresh
-            sharedMessagesAt = now
+        readFreshShared()?.let { return it }
+        synchronized(fetchLock) {
+            // خيط ثاني ممكن يكون جلبها أثناء انتظارنا للقفل.
+            readFreshShared()?.let { return it }
+            val fresh = fetchTrustedBorsatDinariMessages()
+            if (fresh.isNotEmpty()) {
+                synchronized(stateLock) {
+                    sharedMessages = fresh
+                    sharedMessagesAt = android.os.SystemClock.elapsedRealtime()
+                }
+            }
+            return fresh
         }
-        return fresh
+    }
+
+    private fun readFreshShared(): List<Pair<String, String>>? = synchronized(stateLock) {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (sharedMessages.isNotEmpty() && now - sharedMessagesAt < SHARED_TTL_MS) sharedMessages else null
     }
 
     /** يفرّغ الكاش المشترك — يناديه التحديث اليدوي (سحب للأسفل بالتطبيق أو
      * زر تحديث الودجت) حتى يجيب بيانات حية فعلاً بدل ما يرجع نفس صفحة
      * جلبها قبل دقيقة تحديث تلقائي. */
-    @Synchronized
     fun invalidateSharedMessages() {
-        sharedMessagesAt = 0L
+        synchronized(stateLock) { sharedMessagesAt = 0L }
     }
 
     /** يبني PriceItem من الكاش المحلي فقط، بدون أي اتصال شبكة — يُستخدم لعرض
@@ -325,8 +407,36 @@ object TelegramScraperRepository {
             conn.setRequestProperty("Cache-Control", "no-cache, no-store")
             conn.setRequestProperty("Pragma", "no-cache")
         }
-        val html = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-        conn.disconnect()
+        // مهلة إجمالية للطلب: readTimeout وحده يتجدد مع كل بايت يوصل، فشبكة
+        // بطيئة تقطّر الرد ممكن تبقي المحمّل (وخيط الجلب الوحيد) عالقاً دقايق.
+        // نقطع الاتصال من مجدول مستقل كي لا ينتظر انتهاء read() نفسه.
+        val deadline = android.os.SystemClock.elapsedRealtime() + 20_000L
+        val timeoutTask = requestTimeoutExecutor.schedule(
+            { conn.disconnect() },
+            20_000L,
+            TimeUnit.MILLISECONDS
+        )
+        val html = try {
+            conn.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
+                val sb = StringBuilder()
+                val buf = CharArray(8192)
+                while (true) {
+                    if (android.os.SystemClock.elapsedRealtime() >= deadline) {
+                        throw java.io.IOException("channel fetch deadline exceeded")
+                    }
+                    val n = reader.read(buf)
+                    if (n < 0) break
+                    sb.append(buf, 0, n)
+                    if (android.os.SystemClock.elapsedRealtime() >= deadline) {
+                        throw java.io.IOException("channel fetch deadline exceeded")
+                    }
+                }
+                sb.toString()
+            }
+        } finally {
+            timeoutTask.cancel(false)
+            conn.disconnect()
+        }
         return html
     }
 
@@ -336,13 +446,79 @@ object TelegramScraperRepository {
     /** تنويه القناة لعرضه في الشريط العلوي، مع وقت نشره الحقيقي في Telegram. */
     data class Announcement(val text: String, val postId: Long, val publishedAtMillis: Long)
 
+    data class ChannelNotice(
+        val id: Long,
+        val text: String,
+        val publishedAtMillis: Long,
+        val imageUrl: String?,
+        val postUrl: String
+    )
+
+    /** Fetches notices from the already-shared public channel page on a worker thread. */
+    fun fetchLatestNotices(onResult: (List<ChannelNotice>) -> Unit) {
+        executor.execute {
+            val notices = try {
+                parseLatestNotices(fetchTrustedMessagesShared())
+            } catch (_: Exception) {
+                emptyList()
+            }
+            // الصفحة الحية (مع تعبئة الفجوة) تغطي أغلب الحالات. نضيف بحث "تنويه" بالقناة بس لما نحتاجه:
+            // (1) الأرشيف فارغ (أول تشغيل)، أو (2) فجوة أكبر من حد الجلب العادي. وبحد أدنى 30 دقيقة بين بحثين
+            // حتى ما نكلف الجهاز والبطارية والشبكة.
+            val searched = try {
+                val prefs = DinariApplication.instance.getSharedPreferences(GAP_PREFS, Context.MODE_PRIVATE)
+                val now = System.currentTimeMillis()
+                val archiveEmpty = NewsArchiveStore.load(DinariApplication.instance).isEmpty()
+                val gap = prefs.getBoolean(GAP_KEY_NEWS, false)
+                val cooled = now - prefs.getLong("news_search_at", 0L) > 30 * 60 * 1000L
+                if ((archiveEmpty || gap) && cooled) {
+                    prefs.edit().putLong("news_search_at", now).apply()
+                    val found = parseLatestNotices(searchChannelMessages("تنويه"))
+                    if (found.isNotEmpty()) prefs.edit().putBoolean(GAP_KEY_NEWS, false).apply()
+                    found
+                } else emptyList()
+            } catch (_: Exception) { emptyList() }
+            mainHandler.post { onResult((notices + searched).distinctBy { it.id }.sortedByDescending { it.publishedAtMillis }) }
+        }
+    }
+
+    private fun parseLatestNotices(messages: List<Pair<String, String>>): List<ChannelNotice> {
+        val idRegex = Regex("""data-post="[^/"]+/(\d+)""")
+        val timeRegex = Regex("""<time[^>]*datetime="([^"]+)"""")
+        val textRegex = Regex(
+            """<div[^>]*class="[^"]*tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)</div>""",
+            RegexOption.IGNORE_CASE
+        )
+        val photoRegex = Regex("""background-image\s*:\s*url\(['"]?([^'")]+)""", RegexOption.IGNORE_CASE)
+        return messages.mapNotNull { (_, chunk) ->
+            val id = idRegex.find(chunk)?.groupValues?.get(1)?.toLongOrNull() ?: return@mapNotNull null
+            val rawText = textRegex.find(chunk)?.groupValues?.get(1) ?: return@mapNotNull null
+            val text = stripHtml(rawText).replace(bidiRegex, "").replace(Regex("\\s+"), " ").trim()
+            val noticeIndex = text.indexOf("تنويه")
+            if (noticeIndex !in 0..120) return@mapNotNull null
+            val displayText = text.substring(noticeIndex + "تنويه".length)
+                .replaceFirst(Regex("^[\\s:：،,\\-–—|]+"), "").trim()
+                .ifEmpty { text }
+            val publishedAt = timeRegex.find(chunk)?.groupValues?.get(1)?.let(::parseIsoToMillis) ?: 0L
+            val imageUrl = photoRegex.find(chunk)?.groupValues?.get(1)
+                ?.replace("&amp;", "&")
+            ChannelNotice(
+                id = id,
+                text = displayText,
+                publishedAtMillis = publishedAt,
+                imageUrl = imageUrl,
+                postUrl = "https://t.me/$BORSAT_DINARI_CHANNEL/$id"
+            )
+        }.sortedByDescending { it.publishedAtMillis }
+    }
+
     /**
      * يبحث في نفس رسائل القناة المشتركة عن أحدث منشور يبدأ بكلمة "تنويه".
      * لا يفتح اتصالاً منفصلاً إذا كانت الأسعار قد جلبت الصفحة قبلَه، لأن
      * fetchTrustedMessagesShared() يعيد نفس نتيجة الكاش لمدة دقيقتين.
      */
     fun fetchLatestAnnouncement(onResult: (Announcement?) -> Unit) {
-        synchronized(this) {
+        synchronized(stateLock) {
             val now = android.os.SystemClock.elapsedRealtime()
             if (announcementCacheReady && now - announcementCacheAt < ANNOUNCEMENT_TTL_MS) {
                 mainHandler.post { onResult(announcementCache) }
@@ -355,7 +531,7 @@ object TelegramScraperRepository {
             } catch (_: Exception) {
                 null
             }
-            synchronized(this) {
+            synchronized(stateLock) {
                 announcementCache = announcement
                 announcementCacheAt = android.os.SystemClock.elapsedRealtime()
                 announcementCacheReady = true
@@ -409,7 +585,7 @@ object TelegramScraperRepository {
      * (نت/تغيير صيغة) يرجع null بصمت.
      */
     fun fetchLatestAppRelease(onResult: (AppRelease?) -> Unit) {
-        synchronized(this) {
+        synchronized(stateLock) {
             val now = android.os.SystemClock.elapsedRealtime()
             if (releaseCacheReady && now - releaseCacheAt < RELEASE_TTL_MS) {
                 mainHandler.post { onResult(releaseCache) }
@@ -425,7 +601,7 @@ object TelegramScraperRepository {
             } catch (_: Exception) {
                 null
             }
-            synchronized(this) {
+            synchronized(stateLock) {
                 releaseCache = release
                 releaseCacheAt = android.os.SystemClock.elapsedRealtime()
                 releaseCacheReady = true
@@ -543,6 +719,9 @@ object TelegramScraperRepository {
         CurrencyHistoryDef("FX_SAR") { chunk ->
             extractBorsatDinariDollarToCurrency(chunk, listOf("ريال سعودي", "ريال سعودى"))?.let { formatCurrencyRate(it, 2) }
         },
+        CurrencyHistoryDef("FX_CNY") { chunk ->
+            extractBorsatDinariDollarToCurrency(chunk, listOf("يوان صيني", "يوان"))?.let { formatCurrencyRate(it, 2) }
+        },
         CurrencyHistoryDef("FX_SYP") { chunk ->
             extractBorsatDinariDollarToCurrency(chunk, listOf("ليرة سورية", "ليرة سوريه", "ليرة سوريّة"))?.let { formatCurrencyRate(it, 0) }
         }
@@ -580,6 +759,9 @@ object TelegramScraperRepository {
         for (def in currencyHistoryDefs) {
             def.extract(normalized)?.let { out[def.key] = it }
         }
+        val plain = plainMessageText(raw)
+        CryptoRepository.parseRawPrices(plain).forEach { (code, v) -> out["CRYPTO_$code"] = "$ $v" }
+        MetalsRepository.parseRawPrices(plain).forEach { (id, v) -> out["METAL_$id"] = "$ $v" }
         return out
     }
 
@@ -711,6 +893,14 @@ object TelegramScraperRepository {
         )
         val match = regex.findAll(t).lastOrNull() ?: return null
         return normalizeDigits(match.groupValues[1])?.toLongOrNull()
+    }
+
+    /** نص الرسالة الصافي (أسطر محفوظة، أرقام لاتينية) لاستعماله بمحلل العملات الرقمية. */
+    internal fun plainMessageText(chunk: String): String {
+        // كل كتلة الرسالة (حتى لو النص داخل <pre><code>)، مع توحيد المسافات الخاصة ورمز الدولار.
+        return normalizeArabicText(chunk)
+            .replace('\u00a0', ' ').replace('\u202f', ' ').replace('\u2009', ' ')
+            .replace("&#036;", "$").replace("&#36;", "$")
     }
 
     private val replyPreviewRegex = Regex("""tgme_widget_message_reply[\s\S]*?(?=js-message_text)""")

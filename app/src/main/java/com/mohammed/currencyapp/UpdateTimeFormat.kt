@@ -16,14 +16,18 @@ object UpdateTimeFormat {
         )
     }
 
-    /** مثال: 22:45 - 1/10/2026، الوقت يساراً والتاريخ يميناً. */
-    fun timeAndDate(context: Context, millis: Long): String =
+    /** الصيغة الموحدة لكل اللغات والأماكن: 22/9/2026 - 17:36 (أرقام لاتينية، دائماً يسار→يمين). */
+    fun stamp(millis: Long): String =
         Calendar.getInstance().run {
             timeInMillis = millis
-            String.format(Locale.US, "\u200E%02d:%02d\u200E - \u200E%s\u200E", get(Calendar.HOUR_OF_DAY), get(Calendar.MINUTE), dateDMY(millis))
+            String.format(Locale.US, "\u200E%s - %02d:%02d\u200E", dateDMY(millis), get(Calendar.HOUR_OF_DAY), get(Calendar.MINUTE))
         }
 
+    @Suppress("UNUSED_PARAMETER")
+    fun timeAndDate(context: Context, millis: Long): String = stamp(millis)
+
     /** للودجت: الوقت في سطر مستقل فوق التاريخ. */
+    @Suppress("UNUSED_PARAMETER")
     fun timeAboveDate(context: Context, millis: Long): String =
         Calendar.getInstance().run {
             timeInMillis = millis
@@ -31,9 +35,6 @@ object UpdateTimeFormat {
         }
 
     /** نص الوقت والتاريخ؛ الأيقونتان الفعليتان تأتيان من تخطيط البطاقة. */
-    fun cardTimeAndDate(context: Context, millis: Long): String =
-        Calendar.getInstance().run {
-            timeInMillis = millis
-            String.format(Locale.US, "\u200E%02d:%02d\u200E - \u200E%s\u200E", get(Calendar.HOUR_OF_DAY), get(Calendar.MINUTE), dateDMY(millis))
-        }
+    @Suppress("UNUSED_PARAMETER")
+    fun cardTimeAndDate(context: Context, millis: Long): String = stamp(millis)
 }

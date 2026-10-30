@@ -3,51 +3,65 @@ package com.mohammed.currencyapp
 import android.content.Context
 
 /**
- * المفضلة: لحد 3 بورصات/عملات مرتبة حسب ترتيب اختيارها. الأولى هي "الرئيسية"
- * (صفها كبير بالصفحة الرئيسية وبطاقتها الكبيرة بالودجت)، والثانية والثالثة
- * تظهر فوق باقي الصفوف بدون تكبير وببطاقتين صغيرتين بالودجت.
+ * المفضلة: حتى 5، مرتبة (الأولى = الأعلى بالرئيسية). الافتراضي لو ما اختار المستخدم شي:
+ * بغداد، أربيل، الدولار الرسمي، البصرة، اليورو. الضغط على نجمة مفضلة يشيلها،
+ * ولو انشالت كلها ترجع الافتراضيات.
+ * الودجتات واختصارات التطبيق تستخدم أول 3 فقط (بغداد، أربيل، الرسمي افتراضياً).
  */
 object FavoriteCityStore {
-    const val MAX_FAVORITES = 3
+    const val MAX_FAVORITES = 5
+
+    val DEFAULTS = listOf("baghdad", "erbil", "USD_OFFICIAL", "basra", "FX_EUR")
 
     private const val PREFS_NAME = "favorite_prefs"
     private const val KEY_CITY = "favorite_city"      // النسخ القديمة: مفضلة وحدة فقط
     private const val KEY_LIST = "favorite_list"      // مفاتيح مفصولة بفاصلة
-    private const val DEFAULT_CITY = "baghdad"
 
-    enum class Result { ADDED, REMOVED, REPLACED }
+    enum class Result { REMOVED, ADDED }
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    /** المفضلة بالترتيب (الأولى = الرئيسية). تنتقل تلقائياً من النسخ القديمة. */
+    /** True only after the user explicitly changed favorites. */
+    fun hasExplicitSelection(context: Context): Boolean {
+        val p = prefs(context)
+        return p.contains(KEY_LIST) || p.contains(KEY_CITY)
+    }
+
+    /** المفضلة: المختار صراحةً (حتى 5)، ولو فارغ ترجع الافتراضيات. */
     fun getAll(context: Context): List<String> {
         val p = prefs(context)
         val raw = p.getString(KEY_LIST, null)
-        if (raw != null) {
-            return raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(MAX_FAVORITES)
-        }
-        return listOf(p.getString(KEY_CITY, DEFAULT_CITY) ?: DEFAULT_CITY)
+        val chosen = when {
+            raw != null -> raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            p.contains(KEY_CITY) -> listOfNotNull(p.getString(KEY_CITY, null))
+            else -> emptyList()
+        }.distinct().take(MAX_FAVORITES)
+        return chosen.ifEmpty { DEFAULTS }
     }
 
     private fun save(context: Context, keys: List<String>) {
-        prefs(context).edit().putString(KEY_LIST, keys.joinToString(",")).apply()
+        prefs(context).edit().putString(KEY_LIST, keys.joinToString(",")).remove(KEY_CITY).apply()
     }
 
     /**
-     * الضغط على النجمة: يشيل لو موجود، ويضيف لو مو موجود. لو المفضلات امتلت (3)
-     * تنمسح آخر وحدة انضافت (اللي قبلها) وتاخذ مكانها الجديدة — بدون أي رسالة.
+     * الضغط على نجمة مفضلة يشيلها؛ على نجمة غير مفضلة يضيفها بالأول
+     * (ولو صاروا أكثر من 5 تنحذف آخر وحدة).
      */
     fun toggle(context: Context, key: String): Result {
         val current = getAll(context)
-        return when {
-            key in current -> { save(context, current - key); Result.REMOVED }
-            current.size >= MAX_FAVORITES -> {
-                save(context, current.take(MAX_FAVORITES - 1) + key)
-                Result.REPLACED
-            }
-            else -> { save(context, current + key); Result.ADDED }
+        return if (key in current) {
+            save(context, current.filter { it != key })
+            Result.REMOVED
+        } else {
+            save(context, (listOf(key) + current).take(MAX_FAVORITES))
+            Result.ADDED
         }
+    }
+
+    /** يحفظ ترتيب المفضلة بعد السحب (الرئيسية). */
+    fun setOrder(context: Context, ordered: List<String>) {
+        save(context, ordered.distinct().take(MAX_FAVORITES))
     }
 
     /** يرتب القائمة بحيث تكون المفضلة أول عناصر (بترتيب اختيارها) وباقي العناصر بترتيبها الأصلي. */

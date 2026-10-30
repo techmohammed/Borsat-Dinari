@@ -17,6 +17,7 @@
     <!-- الأزرق الرئيسي للتطبيق: نفس أزرق خلفية أيقونة التطبيق (الإطار الأزرق
          حول العملة الذهبية). ثابت بالنمطين النهاري والليلي. -->
     <color name="brandBlue">#003078</color>
+    <color name="headerBlue">#011B39</color>
     <color name="white">#FFFFFF</color>
 
     <!-- خلفية صف السعر حسب اتجاه التغيير: أخضر فاتح = صعود، أحمر فاتح = نزول،
@@ -24,6 +25,7 @@
     <color name="rowUpBg">#DDF4E4</color>
     <color name="rowDownBg">#FCE1E0</color>
     <color name="rowFlatBg">#ECEFF1</color>
+    <color name="currencyCard">#F1F7FD</color>
     <color name="rowPriceText">#000000</color>
 
     <!-- لون مقدار التغيير (المثلث + الرقم) أسفل السعر -->

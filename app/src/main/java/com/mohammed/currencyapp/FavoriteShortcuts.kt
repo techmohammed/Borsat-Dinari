@@ -8,7 +8,7 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 
 /**
- * اختصارات أيقونة التطبيق (ضغطة مطولة): نفس المفضلات الثلاث بترتيبها، وبجانب
+ * اختصارات أيقونة التطبيق (ضغطة مطولة): أول ثلاث مفضلات بترتيبها، وبجانب
  * كل وحدة علمها. تنتحدّث عند فتح التطبيق وبكل مرة تغيّر المفضلة. الضغط على أي
  * اختصار يفتح صفحة سجل أسعار تلك البورصة (نفس منطق الاختصارات القديمة).
  */
@@ -16,7 +16,7 @@ object FavoriteShortcuts {
 
     fun update(context: Context) {
         val app = context.applicationContext
-        val shortcuts = FavoriteCityStore.getAll(app).mapIndexedNotNull { index, key ->
+        val shortcuts = FavoriteCityStore.getAll(app).take(3).mapIndexedNotNull { index, key ->
             val meta = WidgetPriceProvider.metaFor(key) ?: return@mapIndexedNotNull null
             val flagRes = app.resources.getIdentifier("flag_${meta.flag}", "drawable", app.packageName)
             if (flagRes == 0) return@mapIndexedNotNull null

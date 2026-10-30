@@ -30,6 +30,10 @@
         <activity android:name=".AboutActivity" android:exported="false" />
         <activity android:name=".HistoryActivity" android:exported="false" />
         <activity android:name=".CalculatorActivity" android:exported="false" />
+        <activity
+            android:name=".InfoPageActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

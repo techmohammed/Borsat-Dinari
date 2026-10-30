@@ -16,6 +16,8 @@ import kotlin.math.roundToLong
  */
 object PriceDelta {
     fun absText(context: Context, key: String): String? = when {
+        CryptoRepository.isCryptoKey(key) -> CryptoRepository.deltaText(context, key)
+        MetalsRepository.isMetalKey(key) -> MetalsRepository.deltaText(context, key)
         key.startsWith("FX_") ->
             FxCache(context).loadDelta(key.removePrefix("FX_"))?.let { decimal(it) }
         key == "USD_BAGHDAD" ->

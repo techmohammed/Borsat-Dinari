@@ -1,154 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- صف بورصة/عملة: [العلم] [الاسم + (الرمز | الوحدة)] │ [السعر + العملة] │ [التغيير / الوقت / التاريخ] [نجمة].
+     الأعمدة مفصولة بخطوط رأسية رفيعة، وكل عمود متوسط عمودياً بالصف فما يتأثر لو تغيّر ارتفاعه. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/rowCard"
-    android:layoutDirection="ltr"
     android:layout_width="match_parent"
-    android:layout_height="68dp"
-    android:layout_marginHorizontal="12dp"
-    android:layout_marginVertical="4dp"
+    android:layout_height="62dp"
+    android:layout_marginVertical="2dp"
     android:background="@drawable/bg_row_card"
     android:gravity="center_vertical"
+    android:layoutDirection="ltr"
     android:orientation="horizontal"
     android:paddingHorizontal="8dp">
 
-    <!-- نجمة المفضلة -->
-    <ImageButton
-        android:id="@+id/btnStar"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:background="@android:color/transparent"
-        android:contentDescription="@string/cd_favorite"
-        android:padding="2dp"
-        android:src="@drawable/ic_star_outline"
-        tools:visibility="visible" />
-
-    <!-- السعر (أسود) وتحته مقدار التغيير مع المثلث -->
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="4dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/tvPrice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/cairo_bold"
-            android:gravity="left|center_vertical"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:textColor="@color/rowPriceText"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            app:autoSizeMaxTextSize="20sp"
-            app:autoSizeMinTextSize="12sp"
-            app:autoSizeStepGranularity="1sp"
-            app:autoSizeTextType="uniform"
-            tools:text="156,400 د.ع" />
-
-        <LinearLayout
-            android:id="@+id/deltaRow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:id="@+id/ivDeltaArrow"
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:contentDescription="@null"
-                tools:src="@drawable/ic_tri_up" />
-
-            <TextView
-                android:id="@+id/tvDelta"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="4dp"
-                android:fontFamily="@font/cairo_bold"
-                android:includeFontPadding="false"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                tools:text="+500"
-                tools:textColor="@color/deltaUp" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- الاسم أعلى الصف، 100$ بمحاذاة مركز العلم، والتاريخ مثبت أسفل الصف. -->
-    <FrameLayout
-        android:id="@+id/rightInfo"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_marginHorizontal="8dp">
-
-        <TextView
-            android:id="@+id/tvName"
-            android:layout_width="wrap_content"
-            android:layout_height="26dp"
-            android:layout_gravity="right|top"
-            android:gravity="right|center_vertical"
-            android:ellipsize="end"
-            android:fontFamily="@font/cairo_bold"
-            android:includeFontPadding="false"
-            android:maxHeight="26dp"
-            android:maxLines="1"
-            android:maxWidth="130dp"
-            android:textColor="@color/textPrimary"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:autoSizeMaxTextSize="18sp"
-            app:autoSizeMinTextSize="12sp"
-            app:autoSizeStepGranularity="1sp"
-            app:autoSizeTextType="uniform"
-            tools:text="بغداد" />
-
-        <TextView
-            android:id="@+id/tvUnit"
-            android:layout_width="wrap_content"
-            android:layout_height="24dp"
-            android:layout_gravity="right|center_vertical"
-            android:gravity="right|center_vertical"
-            android:includeFontPadding="false"
-            android:maxHeight="24dp"
-            android:maxLines="1"
-            android:maxWidth="48dp"
-            android:textColor="@color/textSecondary"
-            android:fontFamily="@font/cairo_bold"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            app:autoSizeMaxTextSize="12sp"
-            app:autoSizeMinTextSize="9sp"
-            app:autoSizeStepGranularity="1sp"
-            app:autoSizeTextType="uniform"
-            tools:text="100$" />
-
-        <TextView
-            android:id="@+id/tvUpdateTime"
-            android:layout_width="wrap_content"
-            android:layout_height="14dp"
-            android:layout_gravity="right|bottom"
-            android:layout_marginBottom="1dp"
-            android:ellipsize="end"
-            android:fontFamily="@font/cairo_regular"
-            android:gravity="right|center_vertical"
-            android:includeFontPadding="false"
-            android:maxHeight="14dp"
-            android:maxLines="1"
-            android:maxWidth="130dp"
-            android:textColor="@color/textSecondary"
-            android:textSize="8sp"
-            app:autoSizeMaxTextSize="8sp"
-            app:autoSizeMinTextSize="6sp"
-            app:autoSizeStepGranularity="1sp"
-            app:autoSizeTextType="uniform"
-            tools:text="◷ 13:45  ▦ 30/10/2026" />
-    </FrameLayout>
-
-    <!-- علم صغير بدائرة، في منتصف ارتفاع الصف -->
     <ImageView
         android:id="@+id/ivFlag"
         android:layout_width="40dp"
@@ -157,6 +22,224 @@
         android:contentDescription="@null"
         android:padding="1dp"
         android:scaleType="centerCrop"
-        tools:src="@drawable/flag_iq" />
+        tools:src="@drawable/flag_us" />
 
+    <!-- الاسم، وتحته الرمز (شريحة ملونة) بجانب الوحدة -->
+    <LinearLayout
+        android:id="@+id/rightInfo"
+        android:layout_width="94dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="7dp"
+        android:clipChildren="false"
+        android:gravity="center_vertical|left"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/cairo_bold"
+            android:gravity="left|center_vertical"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/textPrimary"
+            android:textSize="13.5dp"
+            android:textStyle="bold"
+            tools:text="ذهب عيار 24" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-1dp"
+            android:gravity="center_vertical|left"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvCode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_code_chip"
+                android:fontFamily="@font/cairo_bold"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="1dp"
+                android:textColor="@color/accentBlue"
+                android:textSize="10dp"
+                android:textStyle="bold"
+                tools:text="AU" />
+
+            <TextView
+                android:id="@+id/tvUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/cairo_regular"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/textSecondary"
+                android:textSize="10dp"
+                tools:text="غرام" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="34dp"
+        android:background="#33808080" />
+
+    <!-- السعر ووحدته (الأكبر والأوسع) -->
+    <FrameLayout
+        android:id="@+id/priceGroup"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:clipChildren="false"
+        android:paddingHorizontal="2dp">
+
+        <!-- السعر: مكانه ثابت بالمنتصف (فوق الوحدة) مهما كان حجم الخط -->
+        <TextView
+            android:id="@+id/tvPrice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="12dp"
+            android:fontFamily="@font/cairo_bold"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/rowPriceText"
+            android:textSize="27dp"
+            android:textStyle="bold"
+            tools:text="129.99" />
+
+        <!-- الوحدة: ثابتة على بعد ~2 ملم فوق الحافة السفلية للصف -->
+        <TextView
+            android:id="@+id/tvResultUnit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="5dp"
+            android:fontFamily="@font/cairo_regular"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/textSecondary"
+            android:textSize="9.5dp"
+            tools:text="USD" />
+    </FrameLayout>
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="34dp"
+        android:background="#33808080" />
+
+    <!-- التغيير ثم الوقت ثم التاريخ، كلها بعمود واحد متوسط عمودياً -->
+    <LinearLayout
+        android:layout_width="69dp"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:paddingStart="2dp">
+
+        <LinearLayout
+            android:id="@+id/deltaRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/ivDeltaArrow"
+                android:layout_width="9dp"
+                android:layout_height="9dp"
+                android:layout_marginEnd="3dp"
+                android:contentDescription="@null"
+                tools:src="@drawable/ic_tri_up" />
+
+            <TextView
+                android:id="@+id/tvDelta"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:autoSizeMaxTextSize="10sp"
+                android:autoSizeMinTextSize="7sp"
+                android:autoSizeStepGranularity="0.5sp"
+                android:autoSizeTextType="uniform"
+                android:fontFamily="@font/cairo_bold"
+                android:gravity="left|center_vertical"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textStyle="bold"
+                tools:text="+0.75"
+                tools:textColor="@color/deltaUp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/timeRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-2dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginEnd="3dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_update_clock"
+                app:tint="@color/textSecondary" />
+
+            <TextView
+                android:id="@+id/tvUpdateTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/cairo_regular"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/textSecondary"
+                android:textSize="9.5dp"
+                tools:text="18:05" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/dateRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-2dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginEnd="3dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_update_calendar"
+                app:tint="@color/textSecondary" />
+
+            <TextView
+                android:id="@+id/tvUpdateDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/cairo_regular"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/textSecondary"
+                android:textSize="9dp"
+                tools:text="28/10/2026" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btnStar"
+        android:layout_width="29dp"
+        android:layout_height="40dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="@string/cd_favorite"
+        android:padding="5dp"
+        android:src="@drawable/ic_star_outline" />
 </LinearLayout>

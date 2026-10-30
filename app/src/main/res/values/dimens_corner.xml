@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- نصف قطر تقويس الزوايا الموحد = تقويس زاوية البانر الجديد
+         (43px من ارتفاع 345px بالصورة الأصلية ≈ 12.5% × ارتفاع البانر 78dp ≈ 10dp). -->
+    <dimen name="corner_radius">10dp</dimen>
+</resources>

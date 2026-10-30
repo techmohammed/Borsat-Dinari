@@ -28,6 +28,10 @@ class CalculatorActivity : AppCompatActivity() {
     private var currenciesLoaded = false
     private var cityItems: List<PriceItem> = emptyList()
     private var currencyItems: List<PriceItem> = emptyList()
+    private var cryptoLoaded = false
+    private var metalsLoaded = false
+    private var cryptoItems: List<PriceItem> = emptyList()
+    private var metalItems: List<PriceItem> = emptyList()
     private var amountDigits = ""
     private val numberFormat = DecimalFormat("#,##0.##", DecimalFormatSymbols(Locale.US))
     private var swipeStartX = 0f
@@ -61,14 +65,13 @@ class CalculatorActivity : AppCompatActivity() {
         binding.amountInput.typeface = resources.getFont(R.font.cairo_bold)
         binding.amountInput.showSoftInputOnFocus = false
         binding.toolbarTitle.text = getString(R.string.calculator_title)
-        binding.toolbarTitle.gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
         binding.toolbarTitle.typeface = resources.getFont(
             if (AppLanguage.currentTag() == "ku") R.font.peshang_des_5_bold else R.font.cairo_bold
         )
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
         supportActionBar?.title = null
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        binding.ivHeaderLogo.setOnClickListener { finish() }
 
         setupNumberPad()
         binding.exchangeSelector.setOnClickListener {
@@ -97,14 +100,24 @@ class CalculatorActivity : AppCompatActivity() {
             currenciesLoaded = true
             rebuildExchangeItems()
         }
+        CryptoRepository.fetch(this) { fetched ->
+            cryptoItems = fetched
+            cryptoLoaded = true
+            rebuildExchangeItems()
+        }
+        MetalsRepository.fetch(this) { fetched ->
+            metalItems = fetched
+            metalsLoaded = true
+            rebuildExchangeItems()
+        }
     }
 
     private fun rebuildExchangeItems() {
-        if (!citiesLoaded || !currenciesLoaded) return
+        if (!citiesLoaded || !currenciesLoaded || !cryptoLoaded || !metalsLoaded) return
         val favorites = FavoriteCityStore.getAll(this)
         // لا نعتمد على اسم مترجم كمفتاح؛ حتى لا تختفي عناصر عند تغيير اللغة.
         // الترتيب الثابت يأتي من مصادر البيانات، فتظهر العملات الجديدة بعد التركية بكل اللغات.
-        items = (cityItems + currencyItems).distinctBy {
+        items = (cityItems + currencyItems + cryptoItems + metalItems).distinctBy {
             it.cityKey ?: "${it.flagDrawable}:${it.name}:${it.unit}"
         }
             .sortedWith(compareBy<PriceItem> {
@@ -170,7 +183,7 @@ class CalculatorActivity : AppCompatActivity() {
             content.addView(row)
         }
         val scroll = ScrollView(this).apply {
-            isVerticalScrollBarEnabled = true
+            isVerticalScrollBarEnabled = false
             overScrollMode = View.OVER_SCROLL_NEVER
             scrollBarStyle = View.SCROLLBARS_INSIDE_INSET
             setPadding(dp(2), 0, dp(10), 0)
@@ -296,7 +309,7 @@ class CalculatorActivity : AppCompatActivity() {
             binding.resultUnit.text = ""
             return
         }
-        binding.resultNumber.text = numberFormat.format(result)
+        binding.resultNumber.text = if (CalcSupport.isQuote(destination.cityKey)) CalcSupport.format(result) else numberFormat.format(result)
         binding.resultUnit.text = outputUnit(destination)
         binding.resultUnit.typeface = resources.getFont(
             if (AppLanguage.currentTag() == "ku") R.font.peshang_des_5_bold else R.font.cairo_bold
@@ -313,6 +326,7 @@ class CalculatorActivity : AppCompatActivity() {
     private fun ratePer100Usd(item: PriceItem): Double? {
         if (item.cityKey == usdBaseKey) return 100.0
         val price = extractNumber(item.price) ?: return null
+        if (CalcSupport.isQuote(item.cityKey)) return CalcSupport.ratePer100Usd(item.cityKey, price)
         return if (item.cityKey == "FX_EUR" || item.cityKey == "FX_GBP") {
             if (price == 0.0) null else 10_000.0 / price
         } else {
@@ -320,7 +334,7 @@ class CalculatorActivity : AppCompatActivity() {
         }
     }
 
-    private fun outputUnit(item: PriceItem): String = when (item.cityKey) {
+    private fun outputUnit(item: PriceItem): String = CalcSupport.outputUnit(item) ?: when (item.cityKey) {
         "CALC_USD" -> getString(R.string.currency_us_dollar)
         "TRY_INVESTING" -> getString(R.string.currency_try_unit)
         "IRR_TELEGRAM" -> getString(R.string.currency_irr_unit)
@@ -330,6 +344,7 @@ class CalculatorActivity : AppCompatActivity() {
         "FX_AED" -> getString(R.string.currency_aed_unit)
         "FX_KWD" -> getString(R.string.currency_kwd_unit)
         "FX_EGP" -> getString(R.string.currency_egp_unit)
+        "FX_CNY" -> getString(R.string.currency_cny_unit)
         "FX_SAR" -> getString(R.string.currency_sar_unit)
         "FX_SYP" -> getString(R.string.currency_syp_unit)
         else -> getString(R.string.currency_iqd_unit)

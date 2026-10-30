@@ -96,7 +96,8 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
             val meta = WidgetPriceProvider.metaFor(key)
             views.setViewVisibility(ids.card, View.VISIBLE)
             setName(context, views, ids, item?.name ?: meta?.name(context) ?: "—")
-            views.setTextViewText(ids.unit, item?.unit ?: "")
+            views.setTextViewText(ids.unit,
+                if (key.startsWith("CRYPTO_")) key.removePrefix("CRYPTO_") else item?.unit ?: "")
             views.setTextViewText(ids.price, displayPrice(item?.price))
             views.setTextViewText(
                 ids.updateTime,
@@ -257,7 +258,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
         /** يرسم كل الودجتات الحالية بآخر أسعار محفوظة بالكاش فوراً (بدون شبكة). */
         fun renderFromCache(context: Context) {
             if (!hasAnyWidget(context)) return
-            val keys = FavoriteCityStore.getAll(context)
+            val keys = FavoriteCityStore.getAll(context).take(3)
             val items = keys.map { WidgetPriceProvider.buildCachedItem(context, it) }
             pushAll(context, keys, items)
         }
@@ -298,7 +299,7 @@ class FavoriteWidgetProvider : AppWidgetProvider() {
                 }
                 refreshStartedAt = now
 
-                val keys = FavoriteCityStore.getAll(context)
+                val keys = FavoriteCityStore.getAll(context).take(3)
                 if (keys.isEmpty()) {
                     renderFromCache(context)
                     finish()

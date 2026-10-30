@@ -124,6 +124,8 @@ object HistoryPdfExporter {
         pdf.finishPage(page)
 
         var offset = 90
+        // الصفحات التالية تستغل الورقة كاملة: كل عمود يسع عدد صفوف أكبر بكثير من الأولى.
+        val extraRows = ((785f - 112f - 24f) / 10.5f).toInt()
         var pageNumber = 2
         while (offset < displayEntries.size) {
             val extraPage = pdf.startPage(android.graphics.pdf.PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNumber).create())
@@ -133,9 +135,9 @@ object HistoryPdfExporter {
             extraCanvas.drawRoundRect(24f, 22f, 571f, 88f, 18f, 18f, fill)
             val pageTitle = paint(Color.WHITE, 27f, textFont, if (rtl) Paint.Align.RIGHT else Paint.Align.LEFT)
             extraCanvas.drawText(labels.details, if (rtl) 555f else 40f, 60f, pageTitle)
-            val left = displayEntries.drop(offset).take(30)
-            val middle = displayEntries.drop(offset + 30).take(30)
-            val right = displayEntries.drop(offset + 60).take(30)
+            val left = displayEntries.drop(offset).take(extraRows)
+            val middle = displayEntries.drop(offset + extraRows).take(extraRows)
+            val right = displayEntries.drop(offset + 2 * extraRows).take(extraRows)
             drawTable(context, extraCanvas, left, displayEntries, labels, 32f, 112f, 208f, 785f, dateFmt, cairo, textFont, blue, green, red, grey)
             drawTable(context, extraCanvas, middle, displayEntries, labels, 213f, 112f, 389f, 785f, dateFmt, cairo, textFont, blue, green, red, grey)
             drawTable(context, extraCanvas, right, displayEntries, labels, 394f, 112f, 563f, 785f, dateFmt, cairo, textFont, blue, green, red, grey)
@@ -143,7 +145,7 @@ object HistoryPdfExporter {
             extraCanvas.drawText(labels.footer, PAGE_W / 2f, 815f, extraFooter)
             drawPageNumber(extraCanvas, pageNumber, rtl, grey, textFont)
             pdf.finishPage(extraPage)
-            offset += 90
+            offset += 3 * extraRows
             pageNumber++
         }
 
@@ -168,7 +170,7 @@ object HistoryPdfExporter {
         canvas.drawText(labels.time, l + 58f, t + 15f, head)
         canvas.drawText(labels.price, l + 95f, t + 15f, head)
         val rowH = 10.5f
-        val usable = minOf(30, ((b - t - 24f) / rowH).toInt().coerceAtLeast(1))
+        val usable = ((b - t - 24f) / rowH).toInt().coerceAtLeast(1)
         val shown = entries.take(usable)
         val iconUp = bitmap(context, R.drawable.ic_hist_up)
         val iconDown = bitmap(context, R.drawable.ic_hist_down)
@@ -253,7 +255,9 @@ object HistoryPdfExporter {
     private fun paint(color: Int, size: Float, typeface: Typeface, align: Paint.Align) = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; textSize = size; this.typeface = typeface; textAlign = align }
     private fun parse(value: String): Double? = Regex("[0-9]+(?:,[0-9]{3})*(?:\\.[0-9]+)?").find(value)?.value?.replace(",", "")?.toDoubleOrNull()
     private fun formatNumber(value: Double): String = String.format(Locale.US, "%,.0f", value)
-    private fun formatValue(value: Double, itemKey: String): String = if (itemKey in setOf("FX_EUR", "FX_GBP", "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP", "FX_SAR")) {
+    private fun formatValue(value: Double, itemKey: String): String = if (itemKey.startsWith("CRYPTO_") || itemKey.startsWith("METAL_")) {
+        String.format(Locale.US, if (value < 1.0) "%.4f" else "%,.2f", value)
+    } else if (itemKey in setOf("FX_EUR", "FX_GBP", "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP", "FX_CNY", "FX_SAR")) {
         String.format(Locale.US, "%,.2f", value)
     } else {
         formatNumber(value)
@@ -261,13 +265,20 @@ object HistoryPdfExporter {
     private fun numericText(value: String): String = Regex("[0-9][0-9,.]*").find(value)?.value ?: value
     private data class ReportUnits(val from: String, val to: String)
 
-    private fun reportUnits(itemKey: String, unitText: String, tag: String): ReportUnits = when (itemKey) {
+    private fun reportUnits(itemKey: String, unitText: String, tag: String): ReportUnits = when {
+        itemKey.startsWith("CRYPTO_") || itemKey.startsWith("METAL_") ->
+            ReportUnits(unitText.ifBlank { "1" }, "$")
+        else -> reportUnitsFx(itemKey, unitText, tag)
+    }
+
+    private fun reportUnitsFx(itemKey: String, unitText: String, tag: String): ReportUnits = when (itemKey) {
         "FX_EUR" -> ReportUnits("100€", "$")
         "FX_GBP" -> ReportUnits("100£", "$")
         "FX_JOD" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "د.أ" else "JOD")
         "FX_AED" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "د.إ" else "AED")
         "FX_KWD" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "د.ك" else "KWD")
         "FX_EGP" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "ج.م" else "EGP")
+        "FX_CNY" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "ي.ص" else "CNY")
         "FX_SAR" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "ر.س" else "SAR")
         "FX_SYP" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "ل.س" else "SYP")
         "TRY_INVESTING" -> ReportUnits("100$", if (tag == "ar" || tag == "ku") "ل.ت" else "TL")

@@ -12,34 +12,38 @@
     <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="56dp"
             android:layoutDirection="ltr"
-        android:background="@color/brandBlue"
+        android:background="@color/headerBlue"
         android:elevation="0dp"
         app:contentInsetEnd="0dp"
         app:contentInsetStart="0dp"
+        app:contentInsetLeft="0dp"
+        app:contentInsetRight="0dp"
         app:contentInsetStartWithNavigation="0dp">
 
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_gravity="left|center_vertical"
-            android:layout_marginLeft="6dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_back"
-            android:padding="10dp"
-            android:src="@drawable/ic_back_arrow"
-            app:tint="@color/white" />
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="left"
+                android:adjustViewBounds="true"
+                android:background="?attr/selectableItemBackground"
+                android:contentDescription="@string/cd_back"
+                android:scaleType="fitStart"
+                android:src="@drawable/header_bg_image" />
+
 
         <TextView
             android:id="@+id/tvItemName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
+            android:layout_gravity="right|center_vertical"
+            android:layout_marginRight="16dp"
             android:ellipsize="end"
             android:fontFamily="@font/cairo_bold"
             android:maxLines="1"
@@ -49,29 +53,7 @@
             android:textStyle="bold"
             tools:text="بغداد" />
 
-        <ImageButton
-            android:id="@+id/btnSharePdf"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_gravity="right|center_vertical"
-            android:layout_marginRight="54dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_share_history_pdf"
-            android:padding="10dp"
-            android:src="@drawable/ic_share_pdf"
-            app:tint="@color/white" />
 
-        <ImageButton
-            android:id="@+id/btnPickRange"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_gravity="right|center_vertical"
-            android:layout_marginRight="6dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_pick_range"
-            android:padding="10dp"
-            android:src="@drawable/ic_calendar_31"
-            app:tint="@color/white" />
 
         </FrameLayout>
     </androidx.appcompat.widget.Toolbar>
@@ -80,10 +62,10 @@
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/syncProgress"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="3dp"
         android:indeterminate="true"
         android:visibility="invisible"
-        app:indicatorColor="@color/accentBlue"
+        app:indicatorColor="#42A5F5"
         app:trackColor="@android:color/transparent"
         app:trackThickness="3dp" />
 
@@ -93,6 +75,35 @@
         android:layout_height="46dp"
         android:layout_marginHorizontal="14dp"
         android:layout_marginTop="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/btnSharePdf"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginRight="6dp"
+            android:background="@drawable/bg_tabs_container"
+            android:contentDescription="@string/cd_share_history_pdf"
+            android:padding="12dp"
+            android:src="@drawable/ic_share_pdf"
+            app:tint="@color/textPrimary" />
+
+        <ImageButton
+            android:id="@+id/btnPickRange"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginRight="6dp"
+            android:background="@drawable/bg_tabs_container"
+            android:contentDescription="@string/cd_pick_range"
+            android:padding="12dp"
+            android:src="@drawable/ic_calendar_31"
+            app:tint="@color/textPrimary" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="46dp"
         android:background="@drawable/bg_tabs_container"
         android:orientation="horizontal"
         android:padding="4dp"
@@ -118,6 +129,7 @@
             style="@style/HistoryTab"
             android:text="@string/tab_day" />
 
+    </LinearLayout>
     </LinearLayout>
 
     <FrameLayout
@@ -146,6 +158,8 @@
         android:visibility="gone" />
 
     <androidx.recyclerview.widget.RecyclerView
+        android:scrollbars="none"
+        android:overScrollMode="never"
         android:id="@+id/recyclerHistory"
         android:layout_width="match_parent"
         android:layout_height="0dp"
