@@ -2,23 +2,75 @@ name: Mirror to GitLab
 
 on:
   push:
-    branches: [ "*" ]
-    tags: [ "*" ]
+    branches: ["**"]
+    tags: ["**"]
+  release:
+    types: [published, edited]
   workflow_dispatch:
 
+concurrency:
+  group: mirror-gitlab
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  GITLAB_PATH: techmohammed/Borsat-Dinari
+
 jobs:
-  to_gitlab:
+  mirror_git:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Push to GitLab
+      - name: Mirror all branches, tags and history
         env:
+          GH_TOKEN: ${{ github.token }}
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          git remote add gitlab https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitlab.com/techmohammed/Borsat-Dinari.git
-          git push gitlab --all --force
-          git push gitlab --tags --force
+          set -euo pipefail
+          git clone --mirror "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" repo.git
+          cd repo.git
+          # GitHub يضيف مراجع pull/* مخفية يرفضها GitLab
+          git for-each-ref --format='delete %(refname)' refs/pull | git update-ref --stdin
+          git lfs fetch --all origin || true
+          git remote add gitlab "https://oauth2:${GITLAB_TOKEN}@gitlab.com/${GITLAB_PATH}.git"
+          git push --mirror gitlab
+          git lfs push --all gitlab || true
+
+  mirror_releases:
+    needs: mirror_git
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Copy releases and their APK files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          set -euo pipefail
+          API="https://gitlab.com/api/v4"
+          PID=$(jq -rn --arg p "$GITLAB_PATH" '$p|@uri')
+          gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate \
+            --jq '.[] | select(.draft|not) | .tag_name' > tags.txt
+          while read -r tag; do
+            [ -z "$tag" ] && continue
+            enc=$(jq -rn --arg t "$tag" '$t|@uri')
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "$API/projects/$PID/releases/$enc")
+            if [ "$code" = "200" ]; then echo "skip $tag (موجود)"; continue; fi
+            mkdir -p "dl/$tag"
+            gh release download "$tag" --repo "${{ github.repository }}" --dir "dl/$tag" || true
+            links='[]'
+            for f in "dl/$tag"/*; do
+              [ -f "$f" ] || continue
+              name=$(basename "$f"); nenc=$(jq -rn --arg t "$name" '$t|@uri')
+              url="$API/projects/$PID/packages/generic/releases/$enc/$nenc"
+              curl -sSf -H "PRIVATE-TOKEN: $GITLAB_TOKEN" --upload-file "$f" "$url" > /dev/null
+              links=$(jq -c --arg n "$name" --arg u "$url" '. + [{name:$n,url:$u,link_type:"package"}]' <<< "$links")
+            done
+            rname=$(gh release view "$tag" --repo "${{ github.repository }}" --json name --jq '.name')
+            rbody=$(gh release view "$tag" --repo "${{ github.repository }}" --json body --jq '.body')
+            payload=$(jq -n --arg tag "$tag" --arg name "${rname:-$tag}" --arg desc "$rbody" --argjson links "$links" \
+              '{tag_name:$tag,name:$name,description:$desc,assets:{links:$links}}')
+            curl -sSf -X POST -H "PRIVATE-TOKEN: $GITLAB_TOKEN" -H "Content-Type: application/json" \
+              -d "$payload" "$API/projects/$PID/releases" > /dev/null
+            echo "تم نسخ $tag"
+          done < tags.txt
