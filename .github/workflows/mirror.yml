@@ -1,0 +1,38 @@
+name: Mirror to GitLab and Releases
+
+on:
+  push:
+    branches: [ "*" ]
+  release:
+    types: [published, updated]
+  workflow_dispatch:
+
+jobs:
+  to_gitlab:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push Code and Tags to GitLab
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          git remote add gitlab https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitlab.com/techmohammed/Borsat-Dinari.git
+          git push --tags gitlab "refs/remotes/origin/*:refs/heads/*" || git push --force gitlab --all
+
+      - name: Sync Releases to GitLab
+        if: github.event_name == 'release'
+        uses: SvanBoxel/gitlab-release-action@v0.2.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          gitlab_token: ${{ secrets.GITLAB_TOKEN }}
+          gitlab_base_url: "https://gitlab.com/api/v4"
+          gitlab_project_id: "techmohammed/Borsat-Dinari"
+          name: ${{ github.event.release.name }}
+          tag_name: ${{ github.event.release.tag_name }}
+          body: ${{ github.event.release.body }}
+          draft: ${{ github.event.release.draft }}
+          prerelease: ${{ github.event.release.prerelease }}
