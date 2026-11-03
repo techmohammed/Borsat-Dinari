@@ -126,13 +126,15 @@ class HistoryActivity : AppCompatActivity() {
         }
     }
 
+    /** حركة قصيرة بالعنوان عند التنقل بين يوم/أسبوع/شهر/شهرين أو اختيار فترة. */
+    private fun pulseTitle() = binding.tvItemName.startWave()
+
     private val syncListener = object : HistorySync.Listener {
         override fun onDataChanged() {
             loadHistory(currentFrom, currentTo)
         }
 
         override fun onFinished() {
-            binding.syncProgress.visibility = View.INVISIBLE
             loadHistory(currentFrom, currentTo)
         }
     }
@@ -143,7 +145,7 @@ class HistoryActivity : AppCompatActivity() {
     private fun startSync() {
         if (HistorySync.isUpToDate(this, currentFrom)) return
         if (!isNetworkAvailable()) return
-        binding.syncProgress.visibility = View.VISIBLE
+        binding.tvItemName.startWave()
         HistorySync.request(applicationContext, currentFrom, syncListener)
     }
 
@@ -152,7 +154,7 @@ class HistoryActivity : AppCompatActivity() {
         // لو المزامنة شغالة نعيد ربط المستمع، وإذا توقفت أثناء الخروج نطلب
         // مزامنة جديدة تغطي نفس الفترة (مع احترام isUpToDate حتى لا نكرر الشبكة).
         if (HistorySync.attach(syncListener)) {
-            binding.syncProgress.visibility = View.VISIBLE
+            binding.tvItemName.startWave()
         } else {
             startSync()
         }
@@ -161,7 +163,6 @@ class HistoryActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         HistorySync.cancel()
-        binding.syncProgress.visibility = View.INVISIBLE
     }
 
     // ───────────── السحب يمين/يسار للتنقل بين الفترات ─────────────
@@ -225,6 +226,7 @@ class HistoryActivity : AppCompatActivity() {
         }
         loadHistory(startOfDay(cal.timeInMillis), endOfDay(now))
         startSync()
+        if (previous >= 0) pulseTitle()
         // الفترة الأطول موقعها يسار الحالية فيدخل المحتوى من اليسار، والأقصر من اليمين.
         if (previous != index && previous >= 0) slideContent(enterFromRight = index < previous)
     }
@@ -269,6 +271,7 @@ class HistoryActivity : AppCompatActivity() {
             selectedTab = -1
             selectTab(-1) // فترة مخصصة: ما يتلوّن أي زر فترة
             loadHistory(from, to)
+            pulseTitle()
             // أي فترة يختارها المستخدم من التقويم نجلب بياناتها من القناة
             // (startSync يعتمد على currentFrom/currentTo اللي للتو ضبطناها).
             startSync()

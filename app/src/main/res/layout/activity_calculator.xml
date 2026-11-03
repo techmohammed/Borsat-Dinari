@@ -114,8 +114,11 @@
                     <ImageView
                         android:id="@+id/sourceFlag"
                         android:layout_width="38dp"
-                        android:layout_height="48dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_flag_ring"
                         android:contentDescription="@string/calculator_exchange_label"
+                        android:padding="1dp"
+                        android:scaleType="centerCrop"
                         android:src="@drawable/flag_us" />
 
                     <TextView
@@ -146,8 +149,11 @@
                     <ImageView
                         android:id="@+id/exchangeFlag"
                         android:layout_width="38dp"
-                        android:layout_height="48dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_flag_ring"
                         android:contentDescription="@string/calculator_exchange_label"
+                        android:padding="1dp"
+                        android:scaleType="centerCrop"
                         android:src="@drawable/flag_iq" />
 
                     <TextView

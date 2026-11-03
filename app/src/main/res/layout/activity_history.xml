@@ -38,7 +38,7 @@
                 android:src="@drawable/header_bg_image" />
 
 
-        <TextView
+        <com.mohammed.currencyapp.WaveTextView
             android:id="@+id/tvItemName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -57,17 +57,6 @@
 
         </FrameLayout>
     </androidx.appcompat.widget.Toolbar>
-
-    <!-- شريط تقدم رفيع يظهر فقط أثناء جلب السجلات من القناة -->
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/syncProgress"
-        android:layout_width="match_parent"
-        android:layout_height="3dp"
-        android:indeterminate="true"
-        android:visibility="invisible"
-        app:indicatorColor="#42A5F5"
-        app:trackColor="@android:color/transparent"
-        app:trackThickness="3dp" />
 
     <!-- أزرار الفترة: يوم / أسبوع / شهر / شهرين (يوم بأقصى اليمين) -->
     <LinearLayout

@@ -3,13 +3,18 @@ package com.mohammed.currencyapp
 import android.content.Context
 
 /**
- * المفضلة: حتى 5، مرتبة (الأولى = الأعلى بالرئيسية). الافتراضي لو ما اختار المستخدم شي:
+ * المفضلة: حتى 5 (8 عند إخفاء الأخبار)، مرتبة (الأولى = الأعلى بالرئيسية). الافتراضي لو ما اختار المستخدم شي:
  * بغداد، أربيل، الدولار الرسمي، البصرة، اليورو. الضغط على نجمة مفضلة يشيلها،
  * ولو انشالت كلها ترجع الافتراضيات.
  * الودجتات واختصارات التطبيق تستخدم أول 3 فقط (بغداد، أربيل، الرسمي افتراضياً).
  */
 object FavoriteCityStore {
-    const val MAX_FAVORITES = 5
+    /** الحد الأقصى المحفوظ دائماً (يظهر منها 5 مع الأخبار و8 بدونها). */
+    const val MAX_FAVORITES = 8
+    const val MAX_WITH_NEWS = 5
+
+    fun visibleLimit(context: Context): Int =
+        if (NewsPreferences.isEnabled(context)) MAX_WITH_NEWS else MAX_FAVORITES
 
     val DEFAULTS = listOf("baghdad", "erbil", "USD_OFFICIAL", "basra", "FX_EUR")
 
@@ -29,7 +34,10 @@ object FavoriteCityStore {
     }
 
     /** المفضلة: المختار صراحةً (حتى 5)، ولو فارغ ترجع الافتراضيات. */
-    fun getAll(context: Context): List<String> {
+    fun getAll(context: Context): List<String> = stored(context).take(visibleLimit(context)).ifEmpty { DEFAULTS }
+
+    /** كل المحفوظ (حتى 8) حتى لا تضيع المفضلات الزائدة عند تفعيل الأخبار ثم إيقافها. */
+    private fun stored(context: Context): List<String> {
         val p = prefs(context)
         val raw = p.getString(KEY_LIST, null)
         val chosen = when {
@@ -37,7 +45,7 @@ object FavoriteCityStore {
             p.contains(KEY_CITY) -> listOfNotNull(p.getString(KEY_CITY, null))
             else -> emptyList()
         }.distinct().take(MAX_FAVORITES)
-        return chosen.ifEmpty { DEFAULTS }
+        return chosen
     }
 
     private fun save(context: Context, keys: List<String>) {
@@ -49,7 +57,7 @@ object FavoriteCityStore {
      * (ولو صاروا أكثر من 5 تنحذف آخر وحدة).
      */
     fun toggle(context: Context, key: String): Result {
-        val current = getAll(context)
+        val current = stored(context).ifEmpty { DEFAULTS }
         return if (key in current) {
             save(context, current.filter { it != key })
             Result.REMOVED
@@ -61,7 +69,8 @@ object FavoriteCityStore {
 
     /** يحفظ ترتيب المفضلة بعد السحب (الرئيسية). */
     fun setOrder(context: Context, ordered: List<String>) {
-        save(context, ordered.distinct().take(MAX_FAVORITES))
+        val rest = stored(context).filter { it !in ordered }
+        save(context, (ordered.distinct() + rest).take(MAX_FAVORITES))
     }
 
     /** يرتب القائمة بحيث تكون المفضلة أول عناصر (بترتيب اختيارها) وباقي العناصر بترتيبها الأصلي. */

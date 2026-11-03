@@ -167,6 +167,8 @@
     <string name="settings_section_general">General</string>
     <string name="settings_section_extras">Extras</string>
     <string name="settings_appearance">App appearance</string>
+    <string name="settings_news">Enable news</string>
+    <string name="settings_news_sub">Show the news card on the home page</string>
     <string name="settings_appearance_sub">Light / Dark</string>
     <string name="settings_guide">How to use the app</string>
     <string name="settings_guide_sub">Usage and widgets</string>

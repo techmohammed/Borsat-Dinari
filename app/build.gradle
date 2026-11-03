@@ -15,15 +15,15 @@ if (hasSigningConfig) {
 }
 
 android {
-    namespace 'com.mohammed.currencyapp'
+    namespace = 'com.mohammed.currencyapp'
     compileSdk 36
 
     defaultConfig {
         applicationId "com.mokhtar.com"
         minSdk 21
         targetSdk 36
-        versionCode 18
-        versionName "1.1.6"
+        versionCode 19
+        versionName "1.1.7"
     }
 
     dependenciesInfo {
@@ -38,6 +38,7 @@ android {
                 storePassword keystoreProperties['storePassword']
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
+                enableV3Signing = true
             }
         }
     }
@@ -45,10 +46,13 @@ android {
     buildTypes {
         release {
             minifyEnabled true
-            shrinkResources true
+            shrinkResources = true
+            vcsInfo {
+                include = false
+            }
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (hasSigningConfig) {
-                signingConfig signingConfigs.release
+                signingConfig = signingConfigs.release
             }
         }
     }
@@ -63,7 +67,17 @@ android {
     }
 
     buildFeatures {
-        viewBinding true
+        viewBinding = true
+    }
+
+    // ملفات معلومات صغيرة تُضاف داخل META-INF (أرقام نسخ المكتبات وبيانات البناء) ما يغطيها توقيع v1
+    // فتطلع كتحذيرات بفحص apksigner؛ ما يحتاجها التطبيق وقت التشغيل.
+    packaging {
+        resources {
+            excludes += 'META-INF/*.version'
+            excludes += 'META-INF/com/android/build/gradle/app-metadata.properties'
+            excludes += 'META-INF/version-control-info.textproto'
+        }
     }
 }
 

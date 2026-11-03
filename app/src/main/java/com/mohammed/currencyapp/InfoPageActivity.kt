@@ -25,7 +25,7 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 
 /**
- * الصفحات الفرعية للإعدادات (كلها بنفس الهيدر الموحد: أيقونة التطبيق يسار والعنوان بالوسط):
+ * الصفحات الفرعية للإعدادات (نفس هيدر الصفحة الرئيسية: صورة الهيدر يسار والعنوان يمين):
  * شرح التطبيق، شروط الاستخدام، المساعدة والدعم، قنوات التواصل.
  */
 class InfoPageActivity : AppCompatActivity() {
@@ -67,16 +67,17 @@ class InfoPageActivity : AppCompatActivity() {
             setBackgroundColor(ContextCompat.getColor(this@InfoPageActivity, R.color.background))
         }
         val header = FrameLayout(this).apply {
-            setBackgroundColor(ContextCompat.getColor(this@InfoPageActivity, R.color.brandBlue))
+            setBackgroundColor(ContextCompat.getColor(this@InfoPageActivity, R.color.headerBlue))
             layoutDirection = View.LAYOUT_DIRECTION_LTR
-            elevation = dp(2).toFloat()
+            elevation = 0f
         }
         header.addView(ImageView(this).apply {
-            setImageResource(R.mipmap.ic_launcher)
-            setPadding(dp(3), dp(3), dp(3), dp(3))
+            setImageResource(R.drawable.header_bg_image)
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_START
             contentDescription = getString(R.string.cd_back)
             setOnClickListener { finish() }
-        }, FrameLayout.LayoutParams(dp(44), dp(44), Gravity.LEFT or Gravity.CENTER_VERTICAL).apply { leftMargin = dp(8) })
+        }, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.LEFT))
         header.addView(TextView(this).apply {
             text = title
             setTextColor(Color.WHITE)
@@ -84,8 +85,8 @@ class InfoPageActivity : AppCompatActivity() {
             maxLines = 1
             ellipsize = android.text.TextUtils.TruncateAt.END
             typeface = AppFonts.bold(this@InfoPageActivity)
-        }, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER).apply {
-            marginStart = dp(56); marginEnd = dp(56)
+        }, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT or Gravity.CENTER_VERTICAL).apply {
+            rightMargin = dp(16)
         })
         root.addView(header, LinearLayout.LayoutParams(-1, dp(56)))
 
@@ -331,7 +332,7 @@ class InfoPageActivity : AppCompatActivity() {
         }
         middle.addView(column(
             s("GITHUB", R.drawable.soc_github, "https://github.com/techmohammed/Borsat-Dinari"),
-            s("GITLAB", R.drawable.soc_gitlab, null)
+            s("GITLAB", R.drawable.soc_gitlab, "https://gitlab.com/techmohammed/Borsat-Dinari")
         ), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         middle.addView(ImageView(this).apply {
             setImageResource(R.drawable.report_app_icon_8)

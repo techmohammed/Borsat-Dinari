@@ -27,7 +27,9 @@ class PriceListAdapter(
     // مفاتيح الصفوف اللي سعرها فعلياً تغيّر بآخر submitList — تُستخدم لتشغيل
     // أنيميشن "الأرقام المبعثرة تستقر" على صفوف تغيّرت بس، مو كل الصفوف
     // (تحديث يدوي بالسحب للأسفل، أو تحديث تلقائي كل 15 دقيقة وهو مفتوح).
-    private var changedKeys: Set<String> = emptySet()
+    private var changedKeys: MutableSet<String> = mutableSetOf()
+    private val clearHandler = Handler(Looper.getMainLooper())
+    private val clearChanged = Runnable { changedKeys = mutableSetOf() }
 
     fun submitList(newRows: List<ListRow>, newFavoriteKeys: List<String>) {
         val oldPriceByKey = rows.filterIsInstance<ListRow.Row>()
@@ -39,16 +41,16 @@ class PriceListAdapter(
                 val old = oldPriceByKey[key]
                 if (old != null && old != row.item.price) key else null
             }
-            .toSet()
+            .toMutableSet()
 
         rows = newRows
         favoriteKeys = newFavoriteKeys
         notifyDataSetChanged()
 
-        // نمسح علامة "تغيّر" بعد ما تخلص عملية إعادة الرسم الحالية، حتى لا
-        // تتكرر الأنيميشن لاحقاً لمجرد إعادة تدوير/عرض نفس الصف بالسكرول
-        // بدون أي بيانات جديدة فعلياً.
-        Handler(Looper.getMainLooper()).post { changedKeys = emptySet() }
+        // الصف يستهلك علامة "تغيّر" لحظة ربطه (فتشتغل الحركة مرة وحدة فقط)،
+        // وإذا ما انربط (خارج الشاشة) نمسحها بعد ثانية ونصف حتى ما تتحرك لاحقاً بالسكرول.
+        clearHandler.removeCallbacks(clearChanged)
+        clearHandler.postDelayed(clearChanged, 1500L)
     }
 
     override fun getItemViewType(position: Int): Int = when (rows[position]) {
@@ -81,8 +83,7 @@ class PriceListAdapter(
         when (val row = rows[position]) {
             is ListRow.Header -> (holder as HeaderViewHolder).bind(row.title)
             is ListRow.Row -> {
-                val key = row.item.cityKey ?: row.item.name
-                (holder as RowViewHolder).bind(row.item, favoriteKeys, animatePrice = changedKeys.contains(key))
+                (holder as RowViewHolder).bind(row.item, favoriteKeys, animatePrice = true)
             }
         }
     }
@@ -258,7 +259,9 @@ class PriceListAdapter(
             androidx.core.widget.TextViewCompat.setLineHeight(
                 tvPrice, (priceSize * 1.2f * tvPrice.resources.displayMetrics.density).toInt()
             )
-            val plan = if (animatePrice) DigitRevealAnimator.plan(displayPrice) else null
+            val priceKey = item.cityKey ?: item.name
+            val startStep = if (animatePrice) PriceAnimState.stepFor(priceKey, item.price, System.currentTimeMillis()) else 0
+            val plan = if (startStep > 0) DigitRevealAnimator.plan(displayPrice) else null
             if (plan == null) {
                 KurdishFont.setMainNumberText(tvPrice, displayPrice)
                 return
@@ -266,10 +269,9 @@ class PriceListAdapter(
 
             // نفس فكرة أنيميشن الودجت بالضبط: أرقام عشوائية تستقر تدريجياً
             // على الرقم الصحيح خلال ~900ms، بدل تغيير الرقم فجأة.
-            val duration = 900L
-            val frameRate = 50L
-            val totalSteps = (duration / frameRate).toInt().coerceAtLeast(1)
-            var step = 0
+            val frameRate = PriceAnimState.FRAME_MS
+            val totalSteps = (PriceAnimState.DURATION_MS / frameRate).toInt().coerceAtLeast(1)
+            var step = startStep - 1
             val runnable = object : Runnable {
                 override fun run() {
                     step++
@@ -314,4 +316,29 @@ private fun resultCurrencyCode(item: PriceItem, context: android.content.Context
     if (item.price.endsWith(" د.ع")) return context.getString(R.string.iqd_short)
     if (item.price.trimStart().startsWith("$")) return "USD"
     return currencyIsoCode(item)
+}
+
+
+/**
+ * حالة أنيميشن الأرقام تعيش خارج الـAdapter: الصفحات تُعاد بناؤها كل ما وصل
+ * جزء من التحديث (رقمية/معادن/أخبار)، فكان الـAdapter الجديد ينسى أن السعر تغيّر
+ * ويعرض الرقم النهائي فوراً. هنا نتذكر آخر سعر معروض ووقت بدء حركة كل صف،
+ * فإذا انبنى الصف من جديد أثناء الحركة يكمل من نفس الخطوة بدل ما يقفز.
+ */
+object PriceAnimState {
+    const val DURATION_MS = 900L
+    const val FRAME_MS = 75L
+    private val lastShown = HashMap<String, String>()
+    private val startedAt = HashMap<String, Long>()
+
+    /** يرجع الخطوة اللي تبدأ منها الحركة (1..)، أو 0 لو ما أكو حركة لهذا الصف. */
+    @Synchronized
+    fun stepFor(key: String, price: String, now: Long): Int {
+        val old = lastShown.put(key, price)
+        if (old != null && old != price) startedAt[key] = now
+        val start = startedAt[key] ?: return 0
+        val elapsed = now - start
+        if (elapsed >= DURATION_MS) { startedAt.remove(key); return 0 }
+        return (elapsed / FRAME_MS).toInt() + 1
+    }
 }

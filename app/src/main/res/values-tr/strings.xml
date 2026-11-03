@@ -167,6 +167,8 @@
     <string name="settings_section_general">Genel</string>
     <string name="settings_section_extras">Ekstralar</string>
     <string name="settings_appearance">Uygulama görünümü</string>
+    <string name="settings_news">Haberleri etkinleştir</string>
+    <string name="settings_news_sub">Ana sayfada haber kartını göster</string>
     <string name="settings_appearance_sub">Açık / Koyu</string>
     <string name="settings_guide">Uygulama rehberi</string>
     <string name="settings_guide_sub">Kullanım ve widget\'lar</string>

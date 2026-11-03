@@ -167,6 +167,8 @@
     <string name="settings_section_general">عام</string>
     <string name="settings_section_extras">الإضافات</string>
     <string name="settings_appearance">مظهر التطبيق</string>
+    <string name="settings_news">تفعيل الأخبار</string>
+    <string name="settings_news_sub">إظهار مربع الأخبار بالصفحة الرئيسية</string>
     <string name="settings_appearance_sub">فاتح / داكن</string>
     <string name="settings_guide">شرح التطبيق</string>
     <string name="settings_guide_sub">طريقة الاستخدام والويدجت</string>

@@ -167,6 +167,8 @@
     <string name="settings_section_general">گشتی</string>
     <string name="settings_section_extras">زیادکراوەکان</string>
     <string name="settings_appearance">ڕووکاری ئەپ</string>
+    <string name="settings_news">چالاککردنی هەواڵەکان</string>
+    <string name="settings_news_sub">پیشاندانی کارتی هەواڵ لە پەڕەی سەرەکی</string>
     <string name="settings_appearance_sub">ڕووناک / تاریک</string>
     <string name="settings_guide">ڕوونکردنەوەی ئەپ</string>
     <string name="settings_guide_sub">بەکارهێنان و ویدجێت</string>

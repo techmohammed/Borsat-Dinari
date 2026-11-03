@@ -21,7 +21,6 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.transition.AutoTransition
 import android.transition.TransitionManager
-import android.os.SystemClock
 import androidx.core.widget.TextViewCompat
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -61,8 +60,6 @@ class MainActivity : AppCompatActivity() {
     private var refreshGeneration = 0
     private var scrollTarget: View? = null
     private val expandedNews = mutableSetOf<Long>()
-    private var progressShownAt = 0L
-    private val hideProgressRunnable = Runnable { binding.mainProgress.visibility = View.INVISIBLE }
     private val cornerPx: Float by lazy { resources.getDimension(R.dimen.corner_radius) }
     private val swipeDetector by lazy {
         GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
@@ -163,7 +160,10 @@ class MainActivity : AppCompatActivity() {
         NavSpec(R.string.navbar_metals, R.drawable.ic_nav_metals, TAB_METALS)
     )
 
+    private var navTab = -1
+
     private fun setupBottomNavigation() {
+        navTab = currentTab
         binding.bottomNavigation.layoutDirection = View.LAYOUT_DIRECTION_RTL
         binding.bottomNavigation.removeAllViews()
         navSpecs.forEach { spec ->
@@ -228,10 +228,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun showTab(tab: Int, animate: Boolean = true) {
         if (tab !in TAB_CRYPTO..TAB_NEWS) return
+        val tabChanged = tab != navTab
         currentTab = tab
-        setupBottomNavigation()
+        // الشريط السفلي والعنوان ما يتأثرون بوصول البيانات: نعيد بناءهم فقط عند تغيير التبويب
+        // حتى لا تتقطع حركة العنوان أثناء إعادة رسم الصفحة عدة مرات بالتحديث.
+        if (tabChanged) setupBottomNavigation()
         scrollTarget = null
-        binding.tvAppTitle.text = titleFor(tab)
+        val newTitle = titleFor(tab)
+        if (binding.tvAppTitle.text.toString() != newTitle) binding.tvAppTitle.text = newTitle
         val page = when (tab) {
             TAB_HOME -> buildHomePage()
             TAB_NEWS -> buildNewsPage()
@@ -265,24 +269,11 @@ class MainActivity : AppCompatActivity() {
         return refresh
     }
 
-    private fun showProgress() {
-        progressShownAt = SystemClock.uptimeMillis()
-        mainHandler.removeCallbacks(hideProgressRunnable)
-        binding.mainProgress.visibility = View.VISIBLE
-        mainHandler.postDelayed(hideProgressRunnable, 20_000L) // مؤقت أمان لو الشبكة علّقت
-    }
-
-    /** يخفي الخط بعد ما يبقى ظاهر وقت كافي (~0.9ث) حتى لو التحديث من الكاش وسريع. */
-    private fun hideProgress() {
-        val wait = (900L - (SystemClock.uptimeMillis() - progressShownAt)).coerceAtLeast(0L)
-        mainHandler.removeCallbacks(hideProgressRunnable)
-        mainHandler.postDelayed(hideProgressRunnable, wait)
-    }
-
     private fun refreshData(invalidate: Boolean = false) {
         if (invalidate) TelegramScraperRepository.invalidateSharedMessages()
         val generation = ++refreshGeneration
-        showProgress()
+        // موجة العنوان (مرة وحدة) هي دليل بدء التحديث بدل الخط الأزرق القديم.
+        binding.tvAppTitle.startWave()
         TelegramScraperRepository.fetchMainPage(this) { exchanges, currencies ->
             if (generation != refreshGeneration || isFinishing) return@fetchMainPage
             latestExchanges = FavoriteCityStore.sortWithFavoriteFirst(this, exchanges)
@@ -306,7 +297,6 @@ class MainActivity : AppCompatActivity() {
             renderCurrentTab()
             TelegramScraperRepository.fetchLatestNotices { latest ->
                 if (isFinishing) return@fetchLatestNotices
-                if (generation == refreshGeneration) hideProgress()
                 NewsArchiveStore.merge(this, latest)
                 notices = NewsArchiveStore.load(this)
                 if (currentTab == TAB_HOME || currentTab == TAB_NEWS) renderCurrentTab()
@@ -314,7 +304,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun renderCurrentTab() = showTab(currentTab, animate = false)
+    // وصول بيانات التحديث (محلي/رقمية/معادن/أخبار) كان يعيد بناء الصفحة 3-4 مرات خلال أجزاء من الثانية
+    // فتتقطع الحركة؛ ندمج الطلبات المتقاربة بإعادة رسم واحدة.
+    private val renderRunnable = Runnable { showTab(currentTab, animate = false) }
+    private fun renderCurrentTab() {
+        mainHandler.removeCallbacks(renderRunnable)
+        mainHandler.postDelayed(renderRunnable, 120L)
+    }
 
     private fun buildHomePage(): View {
         val scroll = ScrollView(this).apply {
@@ -324,7 +320,7 @@ class MainActivity : AppCompatActivity() {
         scrollTarget = scroll
         val content = vertical().apply { clipChildren = false; clipToPadding = false; setPadding(dp(14), dp(0), dp(14), dp(14)) }
         content.addView(buildUpdateStrip(getString(R.string.favorites_title)))
-        // المفضلة حتى 5 (الافتراضي: بغداد، أربيل، الرسمي، البصرة، اليورو).
+        // المفضلة حتى 5 مع الأخبار و8 بدونها (الافتراضي: بغداد، أربيل، الرسمي، البصرة، اليورو).
         val favoriteKeys = FavoriteCityStore.getAll(this)
         val allItems = latestCurrencies + latestExchanges + latestCrypto + latestMetals
         val favoriteItems = favoriteKeys.mapNotNull { key -> allItems.find { (it.cityKey ?: it.name) == key } }
@@ -334,7 +330,7 @@ class MainActivity : AppCompatActivity() {
             content.addView(buildFavoritesList(favoriteItems, favoriteKeys))
         }
         content.addView(buildActionCards())
-        content.addView(buildNewsPreview())
+        if (NewsPreferences.isEnabled(this)) content.addView(buildNewsPreview())
         scroll.addView(content)
         return scroll
     }
@@ -668,7 +664,7 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(14), 0, dp(14), dp(18))
         }
         val blue = 0xFF1769E0.toInt()
-        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.1.6" }.getOrDefault("1.1.6")
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.1.7" }.getOrDefault("1.1.7")
 
         // ── تفضيلات التطبيق ──
         content.addView(settingsSectionTitle(getString(R.string.settings_section_prefs)))
@@ -728,6 +724,21 @@ class MainActivity : AppCompatActivity() {
         themeSwitch.setOnCheckedChangeListener { _, _ -> ThemePreferences.toggle(this) }
         themeRow.setOnClickListener { themeSwitch.toggle() }
         prefs.addView(themeRow)
+        prefs.addView(settingsDivider())
+        val newsSwitch = androidx.appcompat.widget.SwitchCompat(this).apply {
+            isChecked = NewsPreferences.isEnabled(this@MainActivity)
+            val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
+            thumbTintList = android.content.res.ColorStateList(states, intArrayOf(blue, 0xFFBDBDBD.toInt()))
+            trackTintList = android.content.res.ColorStateList(states, intArrayOf(0x661769E0, 0x44808080))
+        }
+        val newsRow = settingsRow(R.drawable.ic_nav_news, getString(R.string.settings_news), getString(R.string.settings_news_sub), trailing = newsSwitch)
+        newsSwitch.setOnCheckedChangeListener { _, checked ->
+            NewsPreferences.setEnabled(this, checked)
+            FavoriteShortcuts.update(this)
+            FavoriteWidgetProvider.renderFromCache(this)
+        }
+        newsRow.setOnClickListener { newsSwitch.toggle() }
+        prefs.addView(newsRow)
         content.addView(prefs)
 
         // ── عام ──

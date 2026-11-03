@@ -164,6 +164,10 @@ class CalculatorActivity : AppCompatActivity() {
                     dp(36),
                     dp(36)
                 ).apply { marginEnd = dp(10) }
+                setBackgroundResource(R.drawable.bg_flag_ring)
+                setPadding(dp(1), dp(1), dp(1), dp(1))
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                contentDescription = null
                 setImageResource(flagResource(item.flagDrawable))
             }
             val name = TextView(this).apply {
