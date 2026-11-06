@@ -1,0 +1,16 @@
+stages:
+  - deploy
+
+pages:
+  stage: deploy
+  image: python:3.12-slim
+  script:
+    - python -m pip install --no-cache-dir -r requirements-pages.txt
+    - python _gitlab_pages/build_pages.py
+  pages:
+    publish: public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
