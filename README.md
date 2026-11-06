@@ -120,6 +120,7 @@ Currency prices are provided for information only. The app takes no responsibili
 | Store | Link |
 |---|---|
 | APKPure | [com.mokhtar.com](https://apkpure.com/dp/com.mokhtar.com) |
+| GitHub Release | [Download APK v1.1.7](https://github.com/techmohammed/Borsat-Dinari/releases/download/v1.1.7/Borsat-Dinari-v1.1.7-release.apk) · [Release notes](https://github.com/techmohammed/Borsat-Dinari/releases/tag/v1.1.7) |
 | F-Droid | Coming soon |
 | Google Play Store | Coming soon |
 | Aptoide | Coming soon |
