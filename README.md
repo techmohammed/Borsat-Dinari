@@ -92,6 +92,10 @@ The GitHub repository is mirrored automatically to GitLab (full mirror, LFS, rel
 
 Currency prices are provided for information only. The app takes no responsibility for any financial decision made while trading or exchanging.
 
+## Privacy Policy
+
+For details about how Borsat Dinari handles information and protects your privacy, read the [Privacy Policy](privacy-policy.html).
+
 ## App info
 
 - **Version:** 1.1.7
