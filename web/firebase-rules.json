@@ -1,0 +1,19 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "stats": {
+      "total": {
+        ".read": true,
+        ".write": "newData.isNumber() && ((!data.exists() && newData.val() == 1) || newData.val() == data.val() + 1)"
+      }
+    },
+    "online": {
+      ".read": true,
+      "$id": {
+        ".write": "$id.length >= 8 && $id.length <= 24",
+        ".validate": "newData.isNumber() && newData.val() == now"
+      }
+    }
+  }
+}

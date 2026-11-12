@@ -231,3 +231,17 @@ svg.ch{display:block;background:none;height:250px;width:100%}
 .vc small{font-size:11px;color:var(--tx2)}
 .vd2{position:absolute;top:9px;inset-inline-start:10px;width:8px;height:8px;border-radius:50%;background:#1E9E46;animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(30,158,70,.5)}50%{opacity:.6;box-shadow:0 0 0 5px rgba(30,158,70,0)}}
+
+.strip svg{color:#fff;opacity:1}
+#dock{flex:none;padding:6px 14px 0;margin-bottom:-5px;position:relative;z-index:2}
+#dock .acts{margin:0}
+#dock .vis{display:flex;gap:7px;margin:6px 0 0;direction:ltr}
+.vr{flex:1;min-width:0;height:32px;border-radius:10px;background:var(--head);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;direction:ltr;padding:0 6px}
+.vr b{font-size:13px;font-weight:700;color:#E5EEFC;-webkit-text-stroke:0}
+.vr .sp{width:1px;height:16px;background:rgba(255,255,255,.4);flex:none}
+.vr svg{flex:none;color:#fff}
+.vd2{position:static;inset:auto;flex:none;width:8px;height:8px;border-radius:50%}
+.vd2.g{background:#1E9E46;animation:pulseG 1.6s ease-in-out infinite}
+.vd2.y{background:#F5B301;animation:pulseY 1.6s ease-in-out infinite}
+@keyframes pulseG{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(30,158,70,.6)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(30,158,70,0)}}
+@keyframes pulseY{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(245,179,1,.6)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(245,179,1,0)}}

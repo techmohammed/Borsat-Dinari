@@ -118,14 +118,16 @@ function rowHTML(it,mode){
 function listFor(r){var ids=r==='local'?LOCAL:r==='global'?WORLD:r==='crypto'?CRYPTO:METALS;return ids.map(function(i){return IT[i]})}
 function emptyBox(r){var k=r==='crypto'?'crypto_empty':r==='metals'?'metals_empty':'no_data';return '<div class="empty"><b>'+esc(t(k))+'</b></div>'}
 function actCard(c,ic,lab,sub,id){return '<button class="act" data-act="'+id+'"><span class="c" style="background:'+c+'">'+icon(ic,19)+'</span><span class="t">'+esc(lab)+'</span><span class="s">'+(sub?lrm(esc(sub)):'&nbsp;')+'</span></button>'}
-function homePage(){
- var favs=S.favs.filter(function(i){return IT[i]});
- var h=stripHTML()+'<div class="list" id="favlist">'+(favs.length?favs.map(function(i){return rowHTML(IT[i],'fav')}).join(''):'<div class="empty"><b>'+esc(t('favorites_empty'))+'</b><small>'+esc(t('favorites_hint'))+'</small></div>')+'</div>';
- h+='<div class="list"><div class="acts">'
+function dockHTML(){
+ return '<div class="acts">'
   +actCard('#2878F0','refresh_history',t('quick_refresh'),stampOf(),'refresh')
   +actCard('#0BA77D','calculator',t('quick_calculator'),t('quick_convert'),'calc')
   +actCard('#E89A20','menu_burger',t('quick_about'),t('app_name'),'about')
-  +actCard('#6653D8','nav_settings',t('nav_settings'),t('app_name'),'settings')+'</div><div id="vstats">'+visInner()+'</div></div>';
+  +actCard('#6653D8','nav_settings',t('nav_settings'),t('app_name'),'settings')+'</div><div id="vstats" class="vis">'+visInner()+'</div>'}
+function dock(){var d=$('#dock');if(!d)return;if(route==='home'){d.style.display='';d.innerHTML=dockHTML()}else{d.style.display='none';d.innerHTML=''}}
+function homePage(){
+ var favs=S.favs.filter(function(i){return IT[i]});
+ var h=stripHTML()+'<div class="list" id="favlist">'+(favs.length?favs.map(function(i){return rowHTML(IT[i],'fav')}).join(''):'<div class="empty"><b>'+esc(t('favorites_empty'))+'</b><small>'+esc(t('favorites_hint'))+'</small></div>')+'</div>';
  return h}
 /* ---------- pages ---------- */
 function mkRow(label,sub,ic,opts){opts=opts||{};
@@ -318,7 +320,7 @@ function openPop(which,btn){
 document.addEventListener('click',function(e){if(!e.target.closest('#cpop'))closePop()},true);
 /* ---------- render ---------- */
 function render(keepScroll,before,fade){
- applyLang();header();nav();instBar();
+ applyLang();header();nav();dock();instBar();
  var P=$('#page'),sc=keepScroll?P.scrollTop:0,h='';
  if(!IT.baghdad)IT=items();
  if(TABS.indexOf(route)>-1){
@@ -367,8 +369,11 @@ if(!VID||VID.length<8||VID.length>24){VID=Math.random().toString(36).slice(2,10)
 var VS={on:null,tot:null};
 var VT={ar:['المتواجدون الآن','إجمالي الزوار'],en:['Online now','Total visitors'],tr:['Şu an çevrimiçi','Toplam ziyaretçi'],ku:['ئێستا بەردەستن','کۆی سەردانیکەران']};
 function fbp(path,method,body,keep){return fetch(FB+'/'+path+'.json',{method:method,headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',keepalive:!!keep})}
-function visInner(){if(VS.on===null&&VS.tot===null)return '';var v=VT[S.lang]||VT.ar;
- return '<div class="vis"><div class="vc"><span class="vd2"></span><b class="num">'+(VS.on===null?'—':grp(VS.on,0))+'</b><small>'+esc(v[0])+'</small></div><div class="vc"><b class="num">'+(VS.tot===null?'—':grp(VS.tot,0))+'</b><small>'+esc(v[1])+'</small></div></div>'}
+var PPL='<svg class="i" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3"/><path d="M6.5 20v-1.5a5.5 5.5 0 0 1 11 0V20"/><circle cx="4.6" cy="10" r="2.1"/><path d="M1.3 18v-.8a3.4 3.4 0 0 1 3.9-3.3"/><circle cx="19.4" cy="10" r="2.1"/><path d="M22.7 18v-.8a3.4 3.4 0 0 0-3.9-3.3"/></svg>';
+var EYE='<svg class="i" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+function visInner(){var v=VT[S.lang]||VT.ar,sp='<span class="sp"></span>';
+ return '<div class="vr" title="'+esc(v[0])+'"><b class="num">'+(VS.on===null?'—':grp(VS.on,0))+'</b>'+sp+EYE+sp+'<span class="vd2 g"></span></div>'
+ +'<div class="vr" title="'+esc(v[1])+'"><span class="vd2 y"></span>'+sp+PPL+sp+'<b class="num">'+(VS.tot===null?'—':grp(VS.tot,0))+'</b></div>'}
 function visUpdate(){var e=$('#vstats');if(e)e.innerHTML=visInner()}
 function visBeat(){if(document.hidden)return;fbp('online/'+VID,'PUT',{'.sv':'timestamp'}).catch(function(){})}
 function visPull(){
