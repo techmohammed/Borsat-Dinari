@@ -26,7 +26,7 @@ html[dir=ltr] #ttlw{direction:ltr}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 .pad{padding:0 14px 14px}
 /* update strip */
-.strip{position:relative;overflow:hidden;display:flex;align-items:center;direction:ltr;height:32px;margin:4px 0;background:var(--head);border-radius:10px;padding:0 10px 0 12px;color:#fff}
+.strip{position:relative;overflow:hidden;display:flex;align-items:center;direction:ltr;height:32px;margin:4px 14px;background:var(--head);border-radius:10px;padding:0 10px 0 12px;color:#fff}
 .strip .lb{flex:1;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
 .strip .st{font-size:11px;font-weight:700;color:#E5EEFC;white-space:nowrap}
 .strip .sep{width:1px;height:16px;background:rgba(255,255,255,.4);margin:0 8px}
@@ -221,3 +221,6 @@ svg.ch{display:block;background:none;height:250px;width:100%}
 #ibar.okb .sep{background:rgba(255,255,255,.5)}
 #favlist{padding-bottom:0}
 .acts{margin-top:6px}
+
+#ibar{margin:4px 14px 0}
+.strip.busy::after{display:none}
