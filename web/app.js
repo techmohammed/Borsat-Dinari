@@ -125,7 +125,7 @@ function homePage(){
   +actCard('#2878F0','refresh_history',t('quick_refresh'),stampOf(),'refresh')
   +actCard('#0BA77D','calculator',t('quick_calculator'),t('quick_convert'),'calc')
   +actCard('#E89A20','menu_burger',t('quick_about'),t('app_name'),'about')
-  +actCard('#6653D8','nav_settings',t('nav_settings'),t('app_name'),'settings')+'</div></div>';
+  +actCard('#6653D8','nav_settings',t('nav_settings'),t('app_name'),'settings')+'</div><div id="vstats">'+visInner()+'</div></div>';
  return h}
 /* ---------- pages ---------- */
 function mkRow(label,sub,ic,opts){opts=opts||{};
@@ -361,6 +361,30 @@ function wave(){
  var done=anims.length?anims[anims.length-1].finished:Promise.resolve();
  done.then(function(){els.forEach(function(e){e.remove()});ttl.style.visibility='';waving=false}).catch(function(){els.forEach(function(e){e.remove()});ttl.style.visibility='';waving=false});
 }
+/* ---------- visitors (Firebase Realtime Database, REST) ---------- */
+var FB='https://borsat-dinari-default-rtdb.europe-west1.firebasedatabase.app',VID=lsGet('vid','');
+if(!VID||VID.length<8||VID.length>24){VID=Math.random().toString(36).slice(2,10)+Date.now().toString(36);lsSet('vid',VID)}
+var VS={on:null,tot:null};
+var VT={ar:['المتواجدون الآن','إجمالي الزوار'],en:['Online now','Total visitors'],tr:['Şu an çevrimiçi','Toplam ziyaretçi'],ku:['ئێستا بەردەستن','کۆی سەردانیکەران']};
+function fbp(path,method,body,keep){return fetch(FB+'/'+path+'.json',{method:method,headers:body===undefined?{}:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',keepalive:!!keep})}
+function visInner(){if(VS.on===null&&VS.tot===null)return '';var v=VT[S.lang]||VT.ar;
+ return '<div class="vis"><div class="vc"><span class="vd2"></span><b class="num">'+(VS.on===null?'—':grp(VS.on,0))+'</b><small>'+esc(v[0])+'</small></div><div class="vc"><b class="num">'+(VS.tot===null?'—':grp(VS.tot,0))+'</b><small>'+esc(v[1])+'</small></div></div>'}
+function visUpdate(){var e=$('#vstats');if(e)e.innerHTML=visInner()}
+function visBeat(){if(document.hidden)return;fbp('online/'+VID,'PUT',{'.sv':'timestamp'}).catch(function(){})}
+function visPull(){
+ Promise.all([fbp('online','GET'),fbp('stats/total','GET')]).then(function(rs){return Promise.all(rs.map(function(r){if(!r.ok)throw 0;return r.json()}))}).then(function(a){
+  var o=a[0]||{},ids=Object.keys(o).filter(function(k){return typeof o[k]==='number'}),mx=0;ids.forEach(function(k){if(o[k]>mx)mx=o[k]});
+  VS.on=ids.filter(function(k){return o[k]>=mx-70000}).length;
+  var stale=ids.filter(function(k){return o[k]<mx-300000}).slice(0,25);
+  if(stale.length){var p={};stale.forEach(function(k){p[k]=null});fbp('online','PATCH',p).catch(function(){})}
+  VS.tot=typeof a[1]==='number'?a[1]:0;visUpdate()}).catch(function(){})}
+function visStart(){
+ var go2=function(){visBeat();if(route==='home')visPull()};
+ var first=function(){if(lsGet('counted','')!=='1')return fbp('stats/total','PUT',{'.sv':{increment:1}}).then(function(r){if(r.ok)lsSet('counted','1')}).catch(function(){});return Promise.resolve()};
+ setTimeout(function(){first().then(function(){visBeat();visPull()})},2500);
+ setInterval(go2,30000);
+ document.addEventListener('visibilitychange',function(){if(document.hidden){fbp('online/'+VID,'DELETE',undefined,true).catch(function(){})}else go2()});
+ window.addEventListener('pagehide',function(){try{fbp('online/'+VID,'DELETE',undefined,true)}catch(e){}})}
 /* ---------- install bar ---------- */
 var IN={ar:{bar:'تثبيت التطبيق',ok:'تم تثبيت التطبيق بنجاح',title:'تثبيت التطبيق',done:'تم',cancel:'إلغاء',
  ios:'اضغط زر المشاركة في Safari (المربع والسهم للأعلى) ثم اختر «إضافة إلى الشاشة الرئيسية» ثم «إضافة».',
@@ -485,7 +509,7 @@ document.addEventListener('pointerdown',function(e){
 var r0=parseHash();if(!valid(r0))r0=lsGet('route','home');if(!valid(r0))r0='home';
 route=r0;history.replaceState(null,'','#/'+route);lsSet('route',route);
 IT=items();render(false);
-load(false);
+load(false);visStart();
 setInterval(function(){if(!document.hidden)load(false)},15*60*1000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)load(false)});
 if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
