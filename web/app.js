@@ -11,7 +11,8 @@ var LASTR=+lsGet('lastr',0)||0;
 var S={lang:lsGet('lang','ar'),theme:lsGet('theme','light'),favs:null,data:{cur:null,cry:null,met:null},loading:false,drag:false,prev:{},nav:0};
 if(LANGS.indexOf(S.lang)<0)S.lang='ar';
 try{S.favs=JSON.parse(lsGet('favs',''))}catch(e){}
-if(!Array.isArray(S.favs))S.favs=['baghdad','erbil','usd_official','basra','eur'];
+var DEFF=['baghdad','erbil','usd_official','eur','BTC','ETH','gold24','gold22'];
+if(!Array.isArray(S.favs)||S.favs.join()==='baghdad,erbil,usd_official,basra,eur')S.favs=DEFF.slice();
 ['cur','cry','met'].forEach(function(k){try{S.data[k]=JSON.parse(lsGet('d_'+k,'null'))}catch(e){}});
 function t(k){var l=D[S.lang];return (l&&l[k]!==undefined)?l[k]:(D.ar[k]!==undefined?D.ar[k]:k)}
 var SUBTXT={ar:'طريقة الاستخدام',en:'Usage',tr:'Kullanım',ku:'بەکارهێنان'};
@@ -104,7 +105,7 @@ function strip(){}
 /* ---------- rows ---------- */
 function rowHTML(it,mode){
  var tr=trend(it),cls=tr>0?'up':tr<0?'down':'',d=dt(it);
- var meta='<div class="mt num"><div class="dr '+cls+'">'+(tr?icon(tr>0?'tri_up':'tri_down',9)+'<span class="dt'+(fmtDelta(it).length>7?' s':'')+'">'+fmtDelta(it)+'</span>':'<span class="inv">.</span>')+'</div>'
+ var meta='<div class="mt num"><div class="dr '+cls+'">'+(tr?icon(tr>0?'tri_up':'tri_down',9)+'<span class="dt'+(fmtDelta(it).length>6?' s':'')+'">'+(tr>0?'+':'-')+fmtDelta(it)+'</span>':'<span class="inv">.</span>')+'</div>'
  +'<div class="tr">'+(d?icon('clock_outline',10)+pad2(d.getHours())+':'+pad2(d.getMinutes()):'')+'</div>'
  +'<div class="da">'+(d?icon('update_calendar',10)+d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear():'')+'</div></div>';
  var star=mode==='fav'?'<span class="sb drg" data-drag="'+it.id+'">'+icon('drag_handle',22)+'</span>':'<span class="sb" data-fav="'+it.id+'">'+icon(S.favs.indexOf(it.id)>-1?'star_filled':'star_outline',22,'')+'</span>';
@@ -123,8 +124,8 @@ function homePage(){
  h+='<div class="list"><div class="acts">'
   +actCard('#2878F0','refresh_history',t('quick_refresh'),stampOf(),'refresh')
   +actCard('#0BA77D','calculator',t('quick_calculator'),t('quick_convert'),'calc')
-  +actCard('#E89A20','menu_burger',t('quick_about'),'','about')
-  +actCard('#6653D8','nav_settings',t('nav_settings'),'','settings')+'</div></div>';
+  +actCard('#E89A20','menu_burger',t('quick_about'),t('app_name'),'about')
+  +actCard('#6653D8','nav_settings',t('nav_settings'),t('app_name'),'settings')+'</div></div>';
  return h}
 /* ---------- pages ---------- */
 function mkRow(label,sub,ic,opts){opts=opts||{};
@@ -209,25 +210,30 @@ function histEntries(it,h){
  return out}
 function histRender(it,h,slide){
  var P=$('#page'),ents=histEntries(it,h).filter(function(e){return e.ms>=H.from&&e.ms<=H.to});
+ var allE=histEntries(it,h),before=allE.filter(function(e){return e.ms<H.from}).pop();
  var list=ents.slice().reverse(),cb=$('#chart'),lb=$('#hList');if(!cb)return;
- if(!ents.length){cb.style.display='none';lb.innerHTML='<div class="hint" style="margin-top:60px;font-size:14px">'+esc(t('no_data'))+'</div>';return}
+ if(!ents.length&&!before){cb.style.display='none';lb.innerHTML='<div class="hint" style="margin-top:60px;font-size:14px">'+esc(t('no_data'))+'</div>';return}
  cb.style.display='';
- drawChart(it,ents);
+ drawChart(it,ents,before);
+ if(!ents.length){lb.innerHTML='<div class="hint" style="margin-top:30px;font-size:14px">'+esc(t('no_data'))+'</div>';return}
  lb.innerHTML=list.map(function(e){var d=new Date(e.ms);var ic=e.tr>0?'<svg class="hi" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1E9E46"/><path d="M12,6L17.5,12.2H13.7V18H10.3V12.2H6.5Z" fill="#fff"/></svg>':e.tr<0?'<svg class="hi" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#E0312D"/><path d="M12,18L6.5,11.8H10.3V6H13.7V11.8H17.5Z" fill="#fff"/></svg>':'<svg class="hi" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#AEB8C4"/><circle cx="12" cy="12" r="4.2" fill="#E9EDF2"/></svg>';
   return '<div class="hrw">'+ic+'<span class="hpr">'+fmtV(it,e.price)+'</span><span class="hdt">'+d.getDate()+'/'+(d.getMonth()+1)+'</span><span class="htm">'+pad2(d.getHours())+':'+pad2(d.getMinutes())+'</span></div>'}).join('');
  if(slide){[cb,lb].forEach(function(el){el.animate([{transform:'translateX('+slide+'px)',opacity:.25},{transform:'none',opacity:1}],{duration:200,easing:'ease-out'})})}
 }
 function niceScale(mn,mx){var raw=mx-mn,span=raw<1e-9?Math.max(Math.abs(mx)*.01,1):raw,rs=span/4,mag=Math.pow(10,Math.floor(Math.log10(rs))),nm=rs/mag,st=mag*(nm<=1?1:nm<=2?2:nm<=2.5?2.5:nm<=5?5:10);
  return {min:Math.floor((mn-span*.05)/st)*st,max:Math.ceil((mx+span*.05)/st)*st,step:st}}
-function drawChart(it,ents){
+function drawChart(it,ents,before){
  var box=$('#chart');if(!box)return;
  var DAY=86400000,HR=3600000,now=Date.now(),daily=sod(Math.max(Math.min(H.to,now),H.from))>sod(H.from),pts,aF,aT;
  var raw=ents.map(function(e){return [e.ms,e.price]});
- if(daily){var m={},ord=[];raw.forEach(function(p){var d=sod(p[0]);if(!m[d]){m[d]=[];ord.push(d)}m[d].push(p[1])});pts=ord.sort(function(a,b){return a-b}).map(function(d){return [d,m[d].reduce(function(a,b){return a+b},0)/m[d].length]});aF=sod(H.from);aT=sod(Math.max(Math.min(H.to,now),H.from))}
+ var lastP=raw.length?raw[raw.length-1][1]:(before?before.price:it.p),nowE=Math.min(H.to,now);
+ if(!daily){if(before)raw.unshift([H.from,before.price]);if(raw.length&&raw[raw.length-1][0]<nowE-60000&&lastP!=null)raw.push([nowE,lastP])}
+ if(daily){var m={},ord=[];raw.forEach(function(p){var d=sod(p[0]);if(!m[d]){m[d]=[];ord.push(d)}m[d].push(p[1])});
+  var d0=sod(H.from),dN=sod(nowE);if(before&&!m[d0]){m[d0]=[before.price];ord.push(d0)}if(lastP!=null&&!m[dN]&&dN>=d0){m[dN]=[lastP];ord.push(dN)}pts=ord.sort(function(a,b){return a-b}).map(function(d){return [d,m[d].reduce(function(a,b){return a+b},0)/m[d].length]});aF=sod(H.from);aT=sod(Math.max(Math.min(H.to,now),H.from))}
  else{pts=raw;aF=H.from;aT=Math.max(Math.min(H.to,now),raw.length?raw[raw.length-1][0]:H.to)}
  if(aT<=aF)aT=aF+1;
  var W=box.clientWidth||360,Hh=250;
- if(pts.length<2){box.innerHTML='<div class="hint" style="padding-top:100px;font-size:13px">'+esc(t('chart_no_data'))+'</div>';box.style.height=Hh+'px';return}
+ if(pts.length<1){box.innerHTML='<div class="hint" style="padding-top:100px;font-size:13px">'+esc(t('chart_no_data'))+'</div>';box.style.height=Hh+'px';return}
  var pr=pts.map(function(p){return p[1]}),sc=niceScale(Math.min.apply(0,pr),Math.max.apply(0,pr)),rng=(sc.max-sc.min)||1;
  var cl=58,cr=W-22,ct=14,cb2=Hh-34,cw=Math.max(1,cr-cl),ch=Math.max(1,cb2-ct);
  var xF=function(t0){return cl+cw*((t0-aF)/(aT-aF))},yF=function(v){return cb2-((v-sc.min)/rng*ch)};
@@ -312,7 +318,7 @@ function openPop(which,btn){
 document.addEventListener('click',function(e){if(!e.target.closest('#cpop'))closePop()},true);
 /* ---------- render ---------- */
 function render(keepScroll,before,fade){
- applyLang();header();nav();
+ applyLang();header();nav();instBar();
  var P=$('#page'),sc=keepScroll?P.scrollTop:0,h='';
  if(!IT.baghdad)IT=items();
  if(TABS.indexOf(route)>-1){
@@ -355,6 +361,78 @@ function wave(){
  var done=anims.length?anims[anims.length-1].finished:Promise.resolve();
  done.then(function(){els.forEach(function(e){e.remove()});ttl.style.visibility='';waving=false}).catch(function(){els.forEach(function(e){e.remove()});ttl.style.visibility='';waving=false});
 }
+/* ---------- install bar ---------- */
+var IN={ar:{bar:'تثبيت التطبيق',ok:'تم تثبيت التطبيق بنجاح',title:'تثبيت التطبيق',done:'تم',cancel:'إلغاء',
+ ios:'اضغط زر المشاركة في Safari (المربع والسهم للأعلى) ثم اختر «إضافة إلى الشاشة الرئيسية» ثم «إضافة».',
+ iosx:'افتح هذه الصفحة في متصفح Safari، ثم اضغط زر المشاركة واختر «إضافة إلى الشاشة الرئيسية» ثم «إضافة».',
+ aff:'اضغط قائمة المتصفح (⋮) ثم اختر «تثبيت» أو «إضافة إلى الشاشة الرئيسية».',
+ sam:'اضغط قائمة المتصفح (☰) ثم «إضافة الصفحة إلى» ثم «الشاشة الرئيسية».',
+ desk:'اضغط أيقونة التثبيت في شريط العنوان أعلى المتصفح، أو من قائمة المتصفح اختر «تثبيت التطبيق».',
+ mac:'من قائمة Safari اختر «ملف» ثم «إضافة إلى Dock».',
+ ff:'متصفح Firefox على الكمبيوتر لا يدعم تثبيت التطبيقات. افتح الرابط في Chrome أو Edge.',
+ gen:'من قائمة المتصفح اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».'},
+ en:{bar:'Install app',ok:'App installed successfully',title:'Install the app',done:'Done',cancel:'Cancel',
+ ios:'Tap the Share button in Safari (square with an up arrow), then choose “Add to Home Screen”, then “Add”.',
+ iosx:'Open this page in Safari, then tap Share and choose “Add to Home Screen”, then “Add”.',
+ aff:'Tap the browser menu (⋮), then choose “Install” or “Add to Home screen”.',
+ sam:'Tap the browser menu (☰), then “Add page to”, then “Home screen”.',
+ desk:'Click the install icon in the address bar, or choose “Install app” from the browser menu.',
+ mac:'In Safari choose File, then “Add to Dock”.',
+ ff:'Desktop Firefox does not support installing apps. Open the link in Chrome or Edge.',
+ gen:'From the browser menu choose “Install app” or “Add to Home screen”.'},
+ tr:{bar:'Uygulamayı yükle',ok:'Uygulama başarıyla yüklendi',title:'Uygulamayı yükle',done:'Tamam',cancel:'İptal',
+ ios:'Safari’de Paylaş düğmesine (yukarı oklu kare) dokunun, ardından “Ana Ekrana Ekle” ve “Ekle” seçin.',
+ iosx:'Bu sayfayı Safari’de açın, Paylaş’a dokunun ve “Ana Ekrana Ekle” ile “Ekle” seçin.',
+ aff:'Tarayıcı menüsüne (⋮) dokunun, ardından “Yükle” veya “Ana ekrana ekle” seçin.',
+ sam:'Tarayıcı menüsüne (☰) dokunun, ardından “Sayfayı ekle” ve “Ana ekran” seçin.',
+ desk:'Adres çubuğundaki yükleme simgesine tıklayın veya tarayıcı menüsünden “Uygulamayı yükle” seçin.',
+ mac:'Safari’de Dosya menüsünden “Dock’a Ekle” seçin.',
+ ff:'Masaüstü Firefox uygulama yüklemeyi desteklemez. Bağlantıyı Chrome veya Edge’de açın.',
+ gen:'Tarayıcı menüsünden “Uygulamayı yükle” veya “Ana ekrana ekle” seçin.'},
+ ku:{bar:'دامەزراندنی ئەپ',ok:'ئەپەکە بە سەرکەوتوویی دامەزرا',title:'دامەزراندنی ئەپ',done:'تەواو',cancel:'هەڵوەشاندنەوە',
+ ios:'لە Safari دوگمەی هاوبەشکردن (چوارگۆشەی تیرەکەی سەرەوە) دابگرە، پاشان «زیادکردن بۆ شاشەی سەرەکی» و «زیادکردن» هەڵبژێرە.',
+ iosx:'ئەم پەڕەیە لە Safari بکەرەوە، پاشان هاوبەشکردن دابگرە و «زیادکردن بۆ شاشەی سەرەکی» هەڵبژێرە.',
+ aff:'لیستی وێبگەڕ (⋮) دابگرە، پاشان «دامەزراندن» یان «زیادکردن بۆ شاشەی سەرەکی» هەڵبژێرە.',
+ sam:'لیستی وێبگەڕ (☰) دابگرە، پاشان «زیادکردنی پەڕە بۆ» و «شاشەی سەرەکی» هەڵبژێرە.',
+ desk:'ئایکۆنی دامەزراندن لە شریتی ناونیشان دابگرە، یان لە لیستی وێبگەڕ «دامەزراندنی ئەپ» هەڵبژێرە.',
+ mac:'لە Safari «File» پاشان «Add to Dock» هەڵبژێرە.',
+ ff:'Firefox لەسەر کۆمپیوتەر پشتگیری دامەزراندنی ئەپ ناکات. بەستەرەکە لە Chrome یان Edge بکەرەوە.',
+ gen:'لە لیستی وێبگەڕ «دامەزراندنی ئەپ» یان «زیادکردن بۆ شاشەی سەرەکی» هەڵبژێرە.'}};
+var DL='<svg class="i" width="18" height="18" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" fill="currentColor"/></svg>';
+var CK='<svg class="i" width="18" height="18" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" fill="currentColor"/></svg>';
+var deferred=null,instState=lsGet('inst','')==='1'?'done':'',okTimer=null;
+function isStandalone(){return window.navigator.standalone===true||(window.matchMedia&&(matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: window-controls-overlay)').matches||matchMedia('(display-mode: minimal-ui)').matches))}
+function ua(){var u=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(u)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),and=/Android/.test(u);
+ return {ios:ios,android:and,safari:/Safari/.test(u)&&!/Chrome|CriOS|FxiOS|EdgiOS|OPiOS|Android/.test(u),ff:/Firefox|FxiOS/.test(u),sam:/SamsungBrowser/.test(u),mac:/Macintosh/.test(u)&&!ios,desktop:!ios&&!and}}
+function instStep(){var d=ua(),x=IN[S.lang]||IN.ar;
+ if(d.ios)return (d.safari&&!/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent))?x.ios:x.iosx;
+ if(d.android)return d.sam?x.sam:d.ff?x.aff:x.gen;
+ if(d.mac&&d.safari)return x.mac;
+ if(d.ff)return x.ff;
+ return x.desk}
+function instVisible(){return !isStandalone()&&(TABS.indexOf(route)>-1||route==='settings')&&(instState!=='done'||okTimer)}
+function instBar(){
+ var el=$('#ibar');if(!el)return;
+ var x=IN[S.lang]||IN.ar,show=instVisible()&&!(instState==='done'&&!okTimer);
+ if(!show){el.style.display='none';return}
+ el.style.display='';
+ var ok=instState==='done';
+ el.className='strip ibar'+(ok?' okb':'');
+ el.innerHTML='<span class="lb">'+esc(ok?x.ok:x.bar)+'</span><span class="sep"></span>'+(ok?CK:DL);
+}
+function instDialog(){
+ var x=IN[S.lang]||IN.ar,old=document.getElementById('idlg');if(old)old.remove();
+ var d=document.createElement('div');d.id='idlg';d.className='dlg';
+ d.innerHTML='<div class="dc" style="direction:'+(RTL[S.lang]?'rtl':'ltr')+'"><h3>'+esc(x.title)+'</h3><p style="margin:0 0 14px;line-height:1.9;font-size:14px">'+esc(instStep())+'</p><div class="da2"><button id="iC">'+esc(x.cancel)+'</button><button id="iO">'+esc(x.done)+'</button></div></div>';
+ document.body.appendChild(d);
+ $('#iC',d).onclick=function(){d.remove()};d.onclick=function(e){if(e.target===d)d.remove()};
+ $('#iO',d).onclick=function(){d.remove();instDone()}}
+function instDone(){instState='done';lsSet('inst','1');clearTimeout(okTimer);okTimer=setTimeout(function(){okTimer=null;instBar();layoutFix()},4000);instBar()}
+function layoutFix(){}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;if(instState==='done'){instState='';lsSet('inst','')}instBar()});
+window.addEventListener('appinstalled',function(){deferred=null;instDone()});
+document.addEventListener('click',function(e){var b=e.target.closest('#ibar');if(!b||instState==='done')return;
+ if(deferred){var p=deferred;deferred=null;p.prompt();p.userChoice.then(function(r){if(r&&r.outcome==='accepted')instDone();else{deferred=p}}).catch(function(){})}else instDialog()});
 /* ---------- haptics ---------- */
 var hapEl=null;
 function hap(){

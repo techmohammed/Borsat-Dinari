@@ -213,3 +213,11 @@ svg.ch{display:block;background:none;height:250px;width:100%}
 .dc{background:var(--card);border-radius:16px;padding:18px;width:min(86vw,340px)}.dc h3{margin:0 0 12px;font-size:18px}
 .dc input{width:100%;font:inherit;font-size:16px;padding:10px;margin-bottom:10px;border-radius:10px;border:1px solid var(--grid);background:var(--bg);color:var(--tx)}
 .da2{display:flex;gap:8px;justify-content:flex-end}.da2 button{padding:8px 16px;border-radius:10px;font-weight:700;color:var(--brand)}:root[data-t=dark] .da2 button{color:var(--acc)}
+
+#ibar{flex:none;margin:4px 14px 0;cursor:pointer;z-index:3}
+#ibar .lb{font-size:12px;font-weight:700}
+#ibar svg{flex:none;color:#fff}
+#ibar.okb{background:#1E9E46}
+#ibar.okb .sep{background:rgba(255,255,255,.5)}
+#favlist{padding-bottom:0}
+.acts{margin-top:6px}
