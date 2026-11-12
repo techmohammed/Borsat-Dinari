@@ -136,6 +136,15 @@ class PriceListAdapter(
                 override fun getOutline(v: View, outline: android.graphics.Outline) { outline.setOval(0, 0, v.width, v.height) }
             }
             ivFlag.clipToOutline = true
+            // وحدة السعر تتحاذى مع منتصف سطر التاريخ تماماً (نفس الارتفاع) مهما كانت الشاشة.
+            val priceGroup: View = view.findViewById(R.id.priceGroup)
+            view.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                val dateParent = dateRow.parent as? View ?: return@addOnLayoutChangeListener
+                val dateCenter = dateParent.top + dateRow.top + dateRow.height / 2f
+                val unitCenterNow = priceGroup.top + tvResultUnit.top + tvResultUnit.height / 2f
+                val shift = dateCenter - unitCenterNow
+                if (kotlin.math.abs(tvResultUnit.translationY - shift) > 0.5f) tvResultUnit.translationY = shift
+            }
         }
         private val deltaRow: View = view.findViewById(R.id.deltaRow)
         private val ivDeltaArrow: android.widget.ImageView = view.findViewById(R.id.ivDeltaArrow)
@@ -252,13 +261,7 @@ class PriceListAdapter(
             // السعر بالأسود وبدون "د.ع" (الوحدة تحت الاسم). نبقي item.price الأصلي
             // للمقارنة وللودجت والهيستوري، ونعرض بس النسخة المختصرة هنا.
             val displayPrice = item.price.removeSuffix(" د.ع").trimStart().removePrefix("$").trim()
-            // حجم الخط حسب طول الرقم حتى تبقى وحدة السعر والوقت ظاهرين دائماً.
-            val priceSize = when { displayPrice.length <= 7 -> 27f; displayPrice.length <= 9 -> 22f; else -> 20f }
-            tvPrice.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, priceSize)
-            // ارتفاع سطر السعر قريب من حجم الأرقام فعلاً (أرقام بدون نزول)، حتى تلتصق الوحدة تحته بنفس المسافة بكل الصفوف.
-            androidx.core.widget.TextViewCompat.setLineHeight(
-                tvPrice, (priceSize * 1.2f * tvPrice.resources.displayMetrics.density).toInt()
-            )
+            // حجم السعر ثابت (18dp) لكل الصفوف والأطوال والشاشات، من ملف الـlayout، بدون تكيّف.
             val priceKey = item.cityKey ?: item.name
             val startStep = if (animatePrice) PriceAnimState.stepFor(priceKey, item.price, System.currentTimeMillis()) else 0
             val plan = if (startStep > 0) DigitRevealAnimator.plan(displayPrice) else null
@@ -301,7 +304,7 @@ private fun currencyIsoCode(item: PriceItem): String {
         key == "TRY_INVESTING" -> "TRY"
         key == "IRR_TELEGRAM" -> "IRR"
         key == "USD_OFFICIAL" || key == "USD_BAGHDAD" -> "USD"
-        key in setOf("baghdad", "basra", "erbil", "kirkuk", "sulaymaniyah", "duhok", "mosul", "karbala", "najaf", "wasit", "muthanna", "salahaldin", "diyala", "dhiqar", "qadisiyyah", "babil", "maysan", "anbar") -> "IQD"
+        key in setOf("baghdad", "basra", "erbil", "kirkuk", "sulaymaniyah", "duhok", "mosul", "karbala", "najaf", "wasit", "muthanna", "salahaldin", "diyala", "dhiqar", "qadisiyyah", "babil", "maysan", "anbar", "halabja") -> "IQD"
         item.flagDrawable == "eu" -> "EUR"
         item.flagDrawable == "gb" -> "GBP"
         item.flagDrawable == "tr" -> "TRY"

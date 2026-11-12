@@ -29,7 +29,7 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
         private val calculatorKeys = listOf(
             "baghdad", "basra", "erbil", "kirkuk", "sulaymaniyah", "duhok", "mosul",
             "karbala", "najaf", "wasit", "muthanna", "salahaldin", "diyala", "dhiqar",
-            "qadisiyyah", "babil", "maysan", "anbar", "USD_OFFICIAL", "USD_BAGHDAD",
+            "qadisiyyah", "babil", "maysan", "anbar", "halabja", "USD_OFFICIAL", "USD_BAGHDAD",
             "FX_EUR", "FX_GBP", "FX_JOD", "FX_AED", "FX_KWD", "FX_EGP",
             "TRY_INVESTING", "FX_CNY", "FX_SAR", "FX_SYP", "IRR_TELEGRAM"
         ) + CalcSupport.calculatorKeys

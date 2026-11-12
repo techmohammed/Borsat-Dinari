@@ -3,6 +3,9 @@ name: Mirror to GitLab
 on:
   push:
     branches: ["**"]
+    # تحديثات الأسعار التلقائية (كل 15 دقيقة) لا تحتاج ميرور فوري؛ تنتقل مع أول دفع عادي لاحق
+    paths-ignore:
+      - "data/**"
     tags: ["**"]
   release:
     types: [published, edited]

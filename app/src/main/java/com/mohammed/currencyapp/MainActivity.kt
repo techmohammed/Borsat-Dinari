@@ -664,7 +664,7 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(14), 0, dp(14), dp(18))
         }
         val blue = 0xFF1769E0.toInt()
-        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.1.7" }.getOrDefault("1.1.7")
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.1.8" }.getOrDefault("1.1.8")
 
         // ── تفضيلات التطبيق ──
         content.addView(settingsSectionTitle(getString(R.string.settings_section_prefs)))

@@ -7,7 +7,7 @@
 <p align="center"><b>Live Iraqi dinar exchange rates, world currencies, crypto, metals and market news — free, ad-free, open source.</b></p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-1.1.7-blue" />
+  <img alt="version" src="https://img.shields.io/badge/version-1.1.8-blue" />
   <img alt="platform" src="https://img.shields.io/badge/platform-Android-green" />
   <img alt="language" src="https://img.shields.io/badge/Kotlin-100%25-purple" />
   <img alt="license" src="https://img.shields.io/badge/license-open%20source-lightgrey" />
@@ -30,6 +30,18 @@ Borsat Dinari shows the price of the US dollar and other currencies against the 
 - Four languages: Arabic (default), English, Türkçe, Kurdî/کوردی — layout stays RTL in every language
 - Light and dark themes
 - Open source
+
+## What's new in 1.1.8
+
+### Interface
+- **Fixed-size price text.** The price in every list row now uses one fixed size (18 dp, two-thirds of the previous largest size) instead of adapting to the number's length, so every row looks the same and nothing is clipped on any phone. The forced line height that was cutting the tops of the digits on some devices was removed.
+- **Unit aligned with the date.** The unit under the price (IQD, USD, TRY…) now uses the same 9 dp size as the date, so its hidden frame is the same height as the date line and it takes almost no room from the price. It is lined up with the date row exactly, on every screen size, and the price sits higher to balance it.
+
+### Markets
+- **Halabja governorate added.** Halabja (حلبجة; the Persian-letter spelling حلبچة is accepted too in the channel's posts) appears on the Local page right after Anbar with the Kurdistan flag, and in the calculator and calculator widget lists. It can be favorited like any other city.
+
+### Release
+- Version **1.1.8** (versionCode 20).
 
 ## What's new in 1.1.7
 
@@ -77,7 +89,7 @@ Add a widget from your home screen to see up to 3 favorite markets with automati
 ```
 
 - Package: `com.mohammed.currencyapp` · Application ID: `com.mokhtar.com`
-- Version: **1.1.7** (versionCode 19)
+- Version: **1.1.8** (versionCode 20)
 - Release signing uses APK Signature Scheme v3.
 - Data source: the public Telegram channel [`t.me/s/BorsatDinari`](https://t.me/s/BorsatDinari), scraped on-device.
 
@@ -98,7 +110,7 @@ For details about how Borsat Dinari handles information and protects your privac
 
 ## App info
 
-- **Version:** 1.1.7
+- **Version:** 1.1.8
 - **Designed by:** Eng. Mohammed Mokhtar Faiq
 - **Release year:** 2026
 - **Last update:** November 2026
@@ -115,6 +127,10 @@ For details about how Borsat Dinari handles information and protects your privac
 | Threads | [@borsatdinari](https://www.threads.com/@borsatdinari) |
 | TikTok | [@borsatdinari](https://tiktok.com/@borsatdinari) |
 | Pinterest | [borsatdinari](https://www.pinterest.com/borsatdinari/) |
+| Reddit | [u/BorsatDinari](https://www.reddit.com/u/BorsatDinari) |
+| Discord | [BorsatDinari](https://discord.com/users/1568517464592224297) |
+| LinkedIn | [borsatdinari](https://www.linkedin.com/in/borsatdinari) |
+| YouTube | [@BorsatDinari](https://www.youtube.com/@BorsatDinari) |
 | GitHub | [techmohammed/Borsat-Dinari](https://github.com/techmohammed/Borsat-Dinari) |
 | GitLab | [techmohammed/Borsat-Dinari](https://gitlab.com/techmohammed/Borsat-Dinari) |
 | Email | [BorsatDinari@gmail.com](mailto:BorsatDinari@gmail.com) |
@@ -124,11 +140,22 @@ For details about how Borsat Dinari handles information and protects your privac
 | Store | Link |
 |---|---|
 | APKPure | [com.mokhtar.com](https://apkpure.com/dp/com.mokhtar.com) |
-| GitHub Release | [Download APK v1.1.7](https://github.com/techmohammed/Borsat-Dinari/releases/download/v1.1.7/Borsat-Dinari-v1.1.7-release.apk) · [Release notes](https://github.com/techmohammed/Borsat-Dinari/releases/tag/v1.1.7) |
+| GitHub Release | [Download APK v1.1.8](https://github.com/techmohammed/Borsat-Dinari/releases/download/v1.1.8/Borsat-Dinari-v1.1.8-release.apk) · [Release notes](https://github.com/techmohammed/Borsat-Dinari/releases/tag/v1.1.8) |
 | F-Droid | Coming soon |
 | Google Play Store | Coming soon |
 | Aptoide | Coming soon |
 | Uptodown | Coming soon |
+
+### Web app (iPhone & any browser)
+
+Don't have Android? Open the web app and add it to your home screen — same prices, favorites, history charts and four languages:
+
+**https://techmohammed.github.io/Borsat-Dinari/web/**
+
+- **iPhone / iPad (Safari):** Share → *Add to Home Screen*.
+- **Android / desktop (Chrome, Edge):** menu → *Install app* / *Add to Home screen*.
+
+Prices are published as plain JSON files under [`data/`](data/) (`currencies.json`, `crypto.json`, `metals.json` and `history/`), refreshed automatically whenever a price changes. The web app only reads those files — it has no server and collects nothing.
 
 ## License
 

@@ -345,6 +345,12 @@ class InfoPageActivity : AppCompatActivity() {
         ), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         add(middle, 10)
         add(rowOf(
+            s("REDDIT", R.drawable.soc_reddit, "https://www.reddit.com/u/BorsatDinari"),
+            s("DISCORD", R.drawable.soc_discord, "https://discord.com/users/1568517464592224297"),
+            s("LINKEDIN", R.drawable.soc_linkedin, "https://www.linkedin.com/in/borsatdinari"),
+            s("YOUTUBE", R.drawable.soc_youtube, "https://www.youtube.com/@BorsatDinari")
+        ), 10)
+        add(rowOf(
             s("TIKTOK", R.drawable.soc_tiktok, "https://tiktok.com/@borsatdinari"),
             s("APKPURE", R.drawable.soc_apkpure, "https://apkpure.com/dp/com.mokhtar.com"),
             s("F-DROID", R.drawable.soc_fdroid, null),

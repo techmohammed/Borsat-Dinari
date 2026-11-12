@@ -57,6 +57,7 @@
     <string name="city_babil">Babil</string>
     <string name="city_maysan">Maysan</string>
     <string name="city_anbar">Enbar</string>
+    <string name="city_halabja">Halepçe</string>
     <string name="cur_usd_official">Resmi</string>
     <string name="cur_usd_avg">Dolar</string>
     <string name="cur_eur">Euro</string>
@@ -186,7 +187,7 @@
     <string name="share_text">Irak\'taki dolar ve döviz fiyatlarını takip etmek için Borsat Dinari\'yi indir\nhttps://t.me/BorsatDinari</string>
     <string name="language_changed_hint">Dil seçin</string>
     <string name="about_updates_title">Son güncellemeler</string>
-    <string name="about_updates_text">•  7 yeni dünya para birimi eklendi\n•  10 kripto para eklendi\n•  10 metal eklendi\n•  Yeni sayfalar: haberler, rehber, kullanım koşulları, yardım ve destek, iletişim kanalları\n•  Uygulama arayüzü baştan yenilendi\n•  Uygulamayı arkadaşlarınızla paylaşabilirsiniz</string>
+    <string name="about_updates_text">•  7 yeni dünya para birimi eklendi\n•  10 kripto para eklendi\n•  10 metal eklendi\n•  Yeni sayfalar: haberler, rehber, kullanım koşulları, yardım ve destek, iletişim kanalları\n•  Uygulama arayüzü baştan yenilendi\n•  Uygulamayı arkadaşlarınızla paylaşabilirsiniz\n•  Halepçe ili eklendi</string>
     <string name="guide_home_title">Ana sayfa ve favoriler</string>
     <string name="guide_home_text">•  Ana sayfa, seçtiğiniz 5 favori piyasayı gösterir; varsayılan (Bağdat, Erbil resmi dolar, Basra, Euro).\n•  Sırayı değiştirmek için herhangi bir satırın yanındaki üç çizgili tutamacı sürükleyin.\n•  Sıralama kaydedilir ve siz değiştirene kadar sabit kalır.\n•  Dünya veya Yerel piyasada bir öğenin yanındaki yıldıza dokunarak onu ana sayfaya taşıyın.\n•  Fiyat geçmişini açmak için bir satıra dokunun ve dönemi seçin: bir gün, bir hafta, bir ay, iki ay veya takvimden belirli bir aralık.\n•  Fiyat geçmişini dışa aktarıp herkesle paylaşabilirsiniz.\n•  Fiyatları yenilemek için sayfayı aşağı çekin; sayfalar arasında geçmek için sağa veya sola kaydırın.</string>
     <string name="guide_widget_title">Widget\'lar ve türleri</string>

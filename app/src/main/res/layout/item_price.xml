@@ -105,28 +105,28 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="14dp"
             android:fontFamily="@font/cairo_bold"
             android:gravity="center"
             android:includeFontPadding="false"
             android:maxLines="1"
             android:textColor="@color/rowPriceText"
-            android:textSize="27dp"
+            android:textSize="18dp"
             android:textStyle="bold"
             tools:text="129.99" />
 
-        <!-- الوحدة: ثابتة على بعد ~2 ملم فوق الحافة السفلية للصف -->
+        <!-- الوحدة: بنفس حجم خط التاريخ (9dp) فيكون إطارها بنفس ارتفاعه ولا تأخذ مساحة من السعر؛
+             مكانها العمودي يُضبط بالكود ليتطابق مع منتصف سطر التاريخ بالعمود المجاور. -->
         <TextView
             android:id="@+id/tvResultUnit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="5dp"
+            android:layout_gravity="top|center_horizontal"
             android:fontFamily="@font/cairo_regular"
             android:includeFontPadding="false"
             android:maxLines="1"
             android:textColor="@color/textSecondary"
-            android:textSize="9.5dp"
+            android:textSize="9dp"
             tools:text="USD" />
     </FrameLayout>
 

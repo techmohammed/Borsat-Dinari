@@ -89,6 +89,8 @@ object TelegramScraperRepository {
         CityPattern("babil", R.string.city_babil, "iq", listOf("بابل")),
         CityPattern("maysan", R.string.city_maysan, "iq", listOf("ميسان")),
         CityPattern("anbar", R.string.city_anbar, "iq", listOf("الأنبار", "أنبار")),
+        // حلبجة (بالجيم العربية)؛ نقبل أيضاً كتابة الچ الفارسية والهاء. علمها نفس دهوك.
+        CityPattern("halabja", R.string.city_halabja, "kurdistan", listOf("حلبجة", "حلبچة", "حلبجه", "حلبچه")),
     )
 
     /** يجيب سعر التومان الإيراني من آخر منشور بقناة بورصة ديناري. */

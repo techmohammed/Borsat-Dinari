@@ -57,6 +57,7 @@
     <string name="city_babil">Babel</string>
     <string name="city_maysan">Maysan</string>
     <string name="city_anbar">Anbar</string>
+    <string name="city_halabja">Halabja</string>
     <string name="cur_usd_official">Official</string>
     <string name="cur_usd_avg">US Dollar</string>
     <string name="cur_eur">Euro</string>
@@ -186,7 +187,7 @@
     <string name="share_text">Get Borsat Dinari to follow dollar and currency prices in Iraq\nhttps://t.me/BorsatDinari</string>
     <string name="language_changed_hint">Choose a language</string>
     <string name="about_updates_title">Latest updates</string>
-    <string name="about_updates_text">•  Added 7 new world currencies\n•  Added 10 cryptocurrencies\n•  Added 10 metals\n•  New pages: news, guide, terms of use, help &amp; support, contact channels\n•  Completely redesigned app interface\n•  You can now share the app with your friends</string>
+    <string name="about_updates_text">•  Added 7 new world currencies\n•  Added 10 cryptocurrencies\n•  Added 10 metals\n•  New pages: news, guide, terms of use, help &amp; support, contact channels\n•  Completely redesigned app interface\n•  You can now share the app with your friends\n•  Added Halabja governorate</string>
     <string name="guide_home_title">Home page and favorites</string>
     <string name="guide_home_text">•  Home shows 5 favorite markets of your choice; the default is (Baghdad, Erbil official dollar, Basra, Euro).\n•  Drag the three-line handle next to any row to change the order.\n•  The order is saved and stays until you change it.\n•  From the Global or Local market, tap the star next to any item to bring it to Home.\n•  Tap any row to open its price history and choose the period: a day, a week, a month, two months or a custom range from the calendar.\n•  You can export the price history and share it with anyone.\n•  Pull down on any page to refresh the prices, and swipe right or left to move between pages.</string>
     <string name="guide_widget_title">Widgets and their types</string>

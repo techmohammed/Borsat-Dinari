@@ -23,5 +23,6 @@ object ExchangeRatesStore {
         CityDef("babil", "بابل", "iq"),
         CityDef("maysan", "ميسان", "iq"),
         CityDef("anbar", "الأنبار", "iq"),
+        CityDef("halabja", "حلبجة", "kurdistan"),
     )
 }
