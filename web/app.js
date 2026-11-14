@@ -136,7 +136,7 @@ function homePage(){
 function mkRow(label,sub,ic,opts){opts=opts||{};
  var tg=opts.nb?'div':'button';return '<'+tg+' class="sr'+(opts.dis?' dis':'')+'" '+(opts.a?'data-a="'+opts.a+'"':'')+'><span class="ci">'+icon(ic,20)+'</span><span class="tx"><b>'+esc(label)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span>'+(opts.tail||'')+'</'+tg+'>'}
 function chev(){return '<span class="tl">'+icon('set_chevron',22,'chev')+'</span>'}
-var langOpen=false,rateOpen=false,RT={sum:0,count:0,mine:parseInt(lsGet('myrate','0'),10)||0,msg:''};
+var langOpen=false,rateOpen=false,RT={sum:0,count:0,mine:parseInt(lsGet('myrate','0'),10)||0,msg:'',pend:0,show:false};
 var LF={ar:'iq',en:'us',tr:'tr',ku:'kurdistan'};
 function settingsPage(){
  var dark=S.theme==='dark';
@@ -380,7 +380,7 @@ function visInner(){var v=VT[S.lang]||VT.ar,sp='<span class="sp"></span>';
  return '<div class="vr" title="'+esc(v[0])+'"><b class="num">'+(VS.on===null?'—':grp(VS.on,0))+'</b>'+sp+EYE+sp+'<span class="vd2 g"></span></div>'
  +'<div class="vr" title="'+esc(v[1])+'"><span class="vd2 y"></span>'+sp+PPL+sp+'<b class="num">'+(VS.tot===null?'—':grp(VS.tot,0))+'</b></div>'}
 function visUpdate(){var e=$('#vstats');if(e)e.innerHTML=visInner()}
-function vbar(){var e=$('#vstats');if(!e)return;var show=TABS.indexOf(route)>-1||route==='settings';e.style.display=show?'':'none';if(show)e.innerHTML=visInner()}
+function vbar(){var e=$('#vstats');if(!e)return;var show=route==='home';e.style.display=show?'':'none';if(show)e.innerHTML=visInner()}
 function visBeat(){if(document.hidden)return;fbp('online/'+VID,'PUT',{'.sv':'timestamp'}).catch(function(){})}
 function visPull(){
  Promise.all([fbp('online','GET'),fbp('stats/total','GET')]).then(function(rs){return Promise.all(rs.map(function(r){if(!r.ok)throw 0;return r.json()}))}).then(function(a){
@@ -389,16 +389,16 @@ function visPull(){
   var stale=ids.filter(function(k){return o[k]<mx-300000}).slice(0,25);
   if(stale.length){var p={};stale.forEach(function(k){p[k]=null});fbp('online','PATCH',p).catch(function(){})}
   VS.tot=typeof a[1]==='number'?a[1]:0;visUpdate()}).catch(function(){})}
-var STAR='<svg viewBox="0 0 24 24" width="36" height="36"><path d="M12,17.27L18.18,21l-1.64,-7.03L22,9.24l-7.19,-0.61L12,2 9.19,8.63 2,9.24l5.46,4.73L5.82,21z"/></svg>';
+var STARP='M12 2.6c.5 0 .9.3 1.2.8l2 4 4.4.6c.5.1.9.4 1 .9s-.1 1-.5 1.3l-3.2 3.1.8 4.4c.1.5-.1 1-.5 1.2s-.9.2-1.4 0L12 17l-3.9 2.1c-.5.2-1 .2-1.4 0s-.6-.7-.5-1.2l.8-4.4-3.2-3.1c-.4-.3-.5-.8-.4-1.3s.5-.8 1-.9l4.4-.6 2-4c.3-.5.7-.8 1.2-.8z';
 function rateHTML(){
- var avg=RT.count>0?RT.sum/RT.count:null,st='';
- for(var n=1;n<=5;n++)st+='<button class="rts'+((!RT.mine||n<=RT.mine)?' on':'')+'" data-rate="'+n+'" aria-label="'+n+'">'+STAR+'</button>';
- return '<div class="rtp"><b class="rta num">'+(avg===null?'—':avg.toFixed(1))+'</b><div class="rtst">'+st+'</div><small>'+esc(RT.count>0?t('rate_count').replace('{n}',grp(RT.count,0)):t('rate_none'))+'</small><p>'+esc(RT.msg||t('rate_hint'))+'</p></div>'}
+ var avg=RT.count>0?RT.sum/RT.count:null,st='',cur=RT.pend||(RT.mine||3);
+ for(var n=1;n<=5;n++){var sz=30+(n-1)*3;st+='<button class="rts'+(n<=cur?' on':'')+'" data-rate="'+n+'" aria-label="'+n+'"><svg viewBox="0 0 24 24" width="'+sz+'" height="'+sz+'"><path d="'+STARP+'"/></svg></button>'}
+ return '<div class="rtp" id="rtp">'+(RT.show?'<b class="rta num">'+(avg===null?'—':avg.toFixed(1))+'</b><small>'+esc(RT.count>0?t('rate_count').replace('{n}',grp(RT.count,0)):t('rate_none'))+'</small>':'')+'<div class="rtst">'+st+'</div><p>'+esc(RT.msg||t('rate_hint'))+'</p><button class="rtb" data-rsend="1">'+esc(t('rate_button'))+'</button></div>'}
 function rateRedraw(){if(rateOpen&&route==='settings')render(true)}
 function ratePull(){
  Promise.all([fbp('stats/rating','GET'),fbp('ratings/'+VID,'GET')]).then(function(rs){return Promise.all(rs.map(function(r){if(!r.ok)throw 0;return r.json()}))}).then(function(a){
   var s=a[0]||{};RT.sum=+s.sum||0;RT.count=+s.count||0;
-  if(typeof a[1]==='number'){RT.mine=a[1];lsSet('myrate',a[1])}
+  if(typeof a[1]==='number'){RT.mine=a[1];lsSet('myrate',a[1]);RT.show=true;if(!RT.pend)RT.pend=a[1]}
   rateRedraw()}).catch(function(){})}
 function rateSend(n){
  fbp('ratings/'+VID,'GET').then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(old){
@@ -407,9 +407,9 @@ function rateSend(n){
   if(n!==old)p['stats/rating/sum']={'.sv':{increment:n-old}};
   if(!old)p['stats/rating/count']={'.sv':{increment:1}};
   return fbp('','PATCH',p)}).then(function(r){
-  if(!r.ok)throw 0;RT.mine=n;lsSet('myrate',n);RT.msg=t('rate_thanks');ratePull();rateRedraw()}).catch(function(){RT.msg=t('rate_error');rateRedraw()})}
+  if(!r.ok)throw 0;RT.mine=n;RT.pend=n;RT.show=true;lsSet('myrate',n);RT.msg=t('rate_thanks');ratePull();rateRedraw()}).catch(function(){RT.msg=t('rate_error');rateRedraw()})}
 function visStart(){
- var go2=function(){visBeat();if(TABS.indexOf(route)>-1||route==='settings')visPull()};
+ var go2=function(){visBeat();if(route==='home')visPull()};
  var first=function(){if(lsGet('counted','')!=='1')return fbp('stats/total','PUT',{'.sv':{increment:1}}).then(function(r){if(r.ok)lsSet('counted','1')}).catch(function(){});return Promise.resolve()};
  setTimeout(function(){first().then(function(){visBeat();visPull()})},2500);
  setInterval(go2,30000);
@@ -501,9 +501,11 @@ document.addEventListener('click',function(e){
  var a=e.target.closest('[data-act]');
  if(a){var k=a.dataset.act;if(k==='refresh')load(true);else go(k);return}
  var sa=e.target.closest('[data-a]');
- if(sa){var k2=sa.dataset.a;if(k2==='lang'){langOpen=!langOpen;render(true)}else if(k2==='rate'){rateOpen=!rateOpen;RT.msg='';render(true);if(rateOpen)ratePull()}else if(k2==='theme'){S.theme=S.theme==='dark'?'light':'dark';lsSet('theme',S.theme);render(true)}else if(k2==='share')shareApp();else go(k2);return}
+ if(sa){var k2=sa.dataset.a;if(k2==='lang'){langOpen=!langOpen;render(true)}else if(k2==='rate'){rateOpen=!rateOpen;RT.msg='';RT.show=RT.show||RT.mine>0;RT.pend=RT.mine||RT.pend||3;render(true);if(rateOpen){ratePull();setTimeout(function(){var r=$('#rtp');if(r)r.scrollIntoView({behavior:'smooth',block:'end'})},120)}}else if(k2==='theme'){S.theme=S.theme==='dark'?'light':'dark';lsSet('theme',S.theme);render(true)}else if(k2==='share')shareApp();else go(k2);return}
  var rt=e.target.closest('[data-rate]');
- if(rt){rateSend(+rt.dataset.rate);return}
+ if(rt){RT.pend=+rt.dataset.rate;rateRedraw();return}
+ var rb=e.target.closest('[data-rsend]');
+ if(rb){rateSend(RT.pend||RT.mine||3);return}
  var fz=e.target.closest('[data-fs]');
  if(fz){FS=+fz.dataset.fs;lsSet('fs',FS);render(true);return}
  var lo=e.target.closest('[data-lang]');

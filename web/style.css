@@ -257,7 +257,10 @@ svg.ch{display:block;background:none;height:250px;width:100%}
 .rta{display:block;font-size:calc(34px*var(--fs));line-height:1.25;font-weight:700;color:var(--tx)}
 .rtst{display:flex;justify-content:center;gap:6px;direction:ltr;margin:2px 0 4px}
 .rts{padding:2px;line-height:0}
-.rts path{fill:none;stroke:#F5B301;stroke-width:1.5;stroke-linejoin:round}
+.rts{line-height:0}
+.rts path{fill:none;stroke:#F5B301;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
 .rts.on path{fill:#F5B301}
+.rtst{align-items:center}
+.rtb{display:block;margin:4px auto 0;min-width:160px;height:42px;border-radius:12px;background:#1769E0;color:#fff;font-weight:700;font-size:calc(15px*var(--fs))}
 .rtp small{display:block;font-size:calc(12px*var(--fs));color:var(--tx2)}
 .rtp p{margin:6px 0 0;font-size:calc(13px*var(--fs));color:var(--tx)}

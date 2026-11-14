@@ -207,7 +207,7 @@ class MainActivity : ScaledActivity() {
                 gravity = Gravity.CENTER
                 maxLines = 1
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(22))
-                if (spec.tab == currentTab) translationY = -dp(7).toFloat()
+                if (spec.tab == currentTab) translationY = dp(3).toFloat()
             }
             item.addView(iconHolder)
             item.addView(label)
@@ -217,7 +217,7 @@ class MainActivity : ScaledActivity() {
                     gravity = Gravity.CENTER
                     topMargin = dp(1)
                 }
-                if (spec.tab == currentTab) translationY = -dp(4).toFloat()
+                if (spec.tab == currentTab) translationY = dp(2).toFloat()
             }
             item.addView(underline)
             binding.bottomNavigation.addView(item)
@@ -244,6 +244,7 @@ class MainActivity : ScaledActivity() {
         // حتى لا تتقطع حركة العنوان أثناء إعادة رسم الصفحة عدة مرات بالتحديث.
         if (tabChanged) setupBottomNavigation()
         scrollTarget = null
+        binding.visitorDock.visibility = if (tab == TAB_HOME) View.VISIBLE else View.GONE
         val newTitle = titleFor(tab)
         if (binding.tvAppTitle.text.toString() != newTitle) binding.tvAppTitle.text = newTitle
         val page = when (tab) {
@@ -884,7 +885,13 @@ class MainActivity : ScaledActivity() {
             TransitionManager.beginDelayedTransition(content, AutoTransition().setDuration(200))
             rateExpanded = !rateExpanded
             ratePanel.visibility = if (rateExpanded) View.VISIBLE else View.GONE
-            if (rateExpanded) { rateMessage = null; updateRatePanel(); VisitorStats.loadRating(this) { runOnUiThread { updateRatePanel() } } }
+            if (rateExpanded) {
+                rateMessage = null
+                updateRatePanel()
+                VisitorStats.loadRating(this) { runOnUiThread { rateShowResult = rateShowResult || VisitorStats.myRating(this) > 0; if (VisitorStats.myRating(this) > 0) ratePending = VisitorStats.myRating(this); updateRatePanel() } }
+                // كل الصفحة تزحف للأعلى حتى تظهر اللوحة كاملة.
+                scroll.postDelayed({ scroll.smoothScrollTo(0, content.height) }, 260L)
+            }
         })
         extras.addView(ratePanel)
         if (rateExpanded) VisitorStats.loadRating(this) { runOnUiThread { updateRatePanel() } }
@@ -896,17 +903,51 @@ class MainActivity : ScaledActivity() {
 
     private var rateExpanded = false
     private var rateMessage: String? = null
+    private var rateShowResult = false
+    private var ratePending = 0
     private var rateAvgText: TextView? = null
     private var rateStarsRow: LinearLayout? = null
     private var rateCountText: TextView? = null
     private var rateMsgText: TextView? = null
 
+    /** نجمة بزوايا مقوّسة (غير حادة)؛ ممتلئة أو إطار فقط. */
+    private class StarView(context: Context) : View(context) {
+        var filled = true
+        private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFF5B301.toInt()
+            strokeJoin = android.graphics.Paint.Join.ROUND
+        }
+        override fun onDraw(canvas: android.graphics.Canvas) {
+            val w = width.toFloat()
+            val cx = w / 2f
+            val cy = height / 2f * 1.04f
+            val outer = w / 2f * 0.84f
+            val inner = outer * 0.5f
+            val path = android.graphics.Path()
+            for (i in 0 until 10) {
+                val ang = -Math.PI / 2 + i * Math.PI / 5
+                val rad = if (i % 2 == 0) outer else inner
+                val x = (cx + rad * Math.cos(ang)).toFloat()
+                val y = (cy + rad * Math.sin(ang)).toFloat()
+                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            path.close()
+            paint.strokeWidth = w * 0.12f
+            paint.pathEffect = android.graphics.CornerPathEffect(w * 0.16f)
+            paint.style = if (filled) android.graphics.Paint.Style.FILL_AND_STROKE else android.graphics.Paint.Style.STROKE
+            canvas.drawPath(path, paint)
+        }
+    }
+
     private fun buildRatePanel(): LinearLayout {
         val panel = vertical().apply {
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(14), dp(2), dp(14), dp(14))
+            setPadding(dp(14), dp(2), dp(14), dp(16))
             visibility = if (rateExpanded) View.VISIBLE else View.GONE
         }
+        val mine = VisitorStats.myRating(this)
+        if (ratePending == 0) ratePending = if (mine > 0) mine else 3
+        rateShowResult = rateShowResult || mine > 0
         rateAvgText = text("—", 34, textPrimary(), true).apply { gravity = Gravity.CENTER; textDirection = View.TEXT_DIRECTION_LTR }
         rateStarsRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -914,40 +955,52 @@ class MainActivity : ScaledActivity() {
             layoutDirection = View.LAYOUT_DIRECTION_LTR
         }
         rateCountText = text("", 12, textSecondary(), false).apply { gravity = Gravity.CENTER }
-        rateMsgText = text("", 13, textPrimary(), false).apply { gravity = Gravity.CENTER; setPadding(0, dp(6), 0, 0) }
+        rateMsgText = text("", 13, textPrimary(), false).apply { gravity = Gravity.CENTER; setPadding(0, dp(6), 0, dp(10)) }
+        val button = text(getString(R.string.rate_button), 15, Color.WHITE, true).apply {
+            gravity = Gravity.CENTER
+            background = rounded(0xFF1769E0.toInt(), 12)
+            isClickable = true
+            setOnClickListener { submitRate(ratePending) }
+        }
         panel.addView(rateAvgText)
-        panel.addView(rateStarsRow)
         panel.addView(rateCountText)
+        panel.addView(rateStarsRow, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
         panel.addView(rateMsgText)
+        panel.addView(button, LinearLayout.LayoutParams(dp(160), dp(42)))
         updateRatePanel()
         return panel
     }
 
     private fun updateRatePanel() {
         val count = VisitorStats.ratingCount
-        rateAvgText?.text = if (count > 0) String.format(java.util.Locale.US, "%.1f", VisitorStats.ratingSum.toDouble() / count) else "—"
-        val mine = VisitorStats.myRating(this)
+        rateAvgText?.apply {
+            visibility = if (rateShowResult) View.VISIBLE else View.GONE
+            text = if (count > 0) String.format(java.util.Locale.US, "%.1f", VisitorStats.ratingSum.toDouble() / count) else "—"
+        }
+        rateCountText?.apply {
+            visibility = if (rateShowResult) View.VISIBLE else View.GONE
+            text = if (count > 0) getString(R.string.rate_count, String.format(java.util.Locale.US, "%,d", count)) else getString(R.string.rate_none)
+        }
         rateStarsRow?.let { row ->
             row.removeAllViews()
             for (n in 1..5) {
-                row.addView(TextView(this).apply {
-                    text = if (mine == 0 || n <= mine) "★" else "☆"
-                    textSize = 34f
-                    setTextColor(0xFFF5B301.toInt())
-                    setPadding(dp(4), 0, dp(4), 0)
+                // النجمة 1 بالحجم الحالي (30dp) وتكبر تدريجياً حتى الخامسة.
+                val size = dp(30 + (n - 1) * 3)
+                row.addView(StarView(this).apply {
+                    filled = n <= ratePending
                     isClickable = true
                     contentDescription = n.toString()
-                    setOnClickListener { submitRate(n) }
-                })
+                    setOnClickListener { ratePending = n; updateRatePanel() }
+                }, LinearLayout.LayoutParams(size + dp(6), size + dp(6)))
             }
         }
-        rateCountText?.text = if (count > 0) getString(R.string.rate_count, String.format(java.util.Locale.US, "%,d", count)) else getString(R.string.rate_none)
         rateMsgText?.text = rateMessage ?: getString(R.string.rate_hint)
     }
 
     private fun submitRate(stars: Int) {
         VisitorStats.submitRating(this, stars) { ok ->
             runOnUiThread {
+                if (ok) rateShowResult = true
                 rateMessage = getString(if (ok) R.string.rate_thanks else R.string.rate_error)
                 updateRatePanel()
             }

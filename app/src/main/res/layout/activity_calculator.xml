@@ -235,18 +235,18 @@
                 android:alignmentMode="alignMargins"
                 android:useDefaultMargins="true">
 
-                <Button android:id="@+id/key9" android:text="9" style="@style/CalculatorKeyStyle" />
-                <Button android:id="@+id/key8" android:text="8" style="@style/CalculatorKeyStyle" />
-                <Button android:id="@+id/key7" android:text="7" style="@style/CalculatorKeyStyle" />
-                <Button android:id="@+id/key6" android:text="6" style="@style/CalculatorKeyStyle" />
-                <Button android:id="@+id/key5" android:text="5" style="@style/CalculatorKeyStyle" />
-                <Button android:id="@+id/key4" android:text="4" style="@style/CalculatorKeyStyle" />
-                <Button android:id="@+id/key3" android:text="3" style="@style/CalculatorKeyStyle" />
-                <Button android:id="@+id/key2" android:text="2" style="@style/CalculatorKeyStyle" />
-                <Button android:id="@+id/key1" android:text="1" style="@style/CalculatorKeyStyle" />
-                <Button android:id="@+id/keyDelete" android:text="⌫" android:contentDescription="مسح مرتبة" style="@style/CalculatorDeleteKeyStyle" />
-                <Button android:id="@+id/key0" android:text="0" style="@style/CalculatorKeyStyle" />
-                <Button android:id="@+id/keyPoint" android:text="." style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/key9" android:text="9" style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/key8" android:text="8" style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/key7" android:text="7" style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/key6" android:text="6" style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/key5" android:text="5" style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/key4" android:text="4" style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/key3" android:text="3" style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/key2" android:text="2" style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/key1" android:text="1" style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/keyDelete" android:text="⌫" android:contentDescription="مسح مرتبة" style="@style/CalculatorDeleteKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/key0" android:text="0" style="@style/CalculatorKeyStyle" />
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/keyPoint" android:text="." style="@style/CalculatorKeyStyle" />
             </GridLayout>
 
         </LinearLayout>
