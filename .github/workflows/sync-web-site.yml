@@ -1,0 +1,63 @@
+name: Sync web to borsatdinari.github.io
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/sync-web-site.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-web-site
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  TARGET_REPO: borsatdinari/borsatdinari.github.io
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+
+      - name: Copy web/ to the site repo (data/ and README.md are kept)
+        env:
+          WEB_SITE_TOKEN: ${{ secrets.WEB_SITE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEB_SITE_TOKEN:-}" ]; then
+            echo "السر WEB_SITE_TOKEN غير موجود بالريبو" >&2
+            exit 1
+          fi
+          git clone --depth 1 "https://x-access-token:${WEB_SITE_TOKEN}@github.com/${TARGET_REPO}.git" site
+          # data/ يحدّثه البوت و README.md خاص بالريبو الجديد: لا نمسهما
+          rsync -a --delete \
+            --exclude '.git/' \
+            --exclude 'data/' \
+            --exclude 'README.md' \
+            --exclude '.nojekyll' \
+            --exclude 'firebase-rules.json' \
+            web/ site/
+          mkdir -p site/data
+          [ -e site/data/.gitkeep ] || [ -n "$(ls -A site/data)" ] || touch site/data/.gitkeep
+          cd site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "لا توجد تغييرات للنقل"
+            exit 0
+          fi
+          git commit -m "Sync web from techmohammed/Borsat-Dinari@${GITHUB_SHA::7}"
+          # البوت يدفع للمجلد data/ بنفس الفرع؛ نعيد المحاولة مع rebase عند التعارض
+          for i in 1 2 3 4; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+          done
+          echo "فشل الدفع بعد عدة محاولات" >&2
+          exit 1
