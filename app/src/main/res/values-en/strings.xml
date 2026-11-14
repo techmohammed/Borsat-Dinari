@@ -257,4 +257,6 @@
     <string name="navbar_metals">Metals</string>
     <string name="market_metals_title">Metal prices in USD</string>
     <string name="metals_empty">No metals data yet</string>
+    <string name="settings_font_size">Font size</string>
+    <string name="settings_font_size_sub">Change the text size inside the app</string>
 </resources>

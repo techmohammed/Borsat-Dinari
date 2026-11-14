@@ -34,7 +34,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ScaledActivity() {
     companion object {
         const val EXTRA_SHORTCUT_CITY_KEY = "shortcut_city_key"
         const val EXTRA_SHORTCUT_CITY_NAME = "shortcut_city_name"
@@ -138,11 +138,15 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         mainHandler.removeCallbacks(refreshRunnable)
         mainHandler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS)
+        mainHandler.removeCallbacks(visitorRunnable)
+        mainHandler.postDelayed(visitorRunnable, 2500L)
     }
 
     override fun onStop() {
         super.onStop()
         mainHandler.removeCallbacks(refreshRunnable)
+        mainHandler.removeCallbacks(visitorRunnable)
+        VisitorStats.leave(this)
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -330,6 +334,7 @@ class MainActivity : AppCompatActivity() {
             content.addView(buildFavoritesList(favoriteItems, favoriteKeys))
         }
         content.addView(buildActionCards())
+        content.addView(buildVisitorBars())
         if (NewsPreferences.isEnabled(this)) content.addView(buildNewsPreview())
         scroll.addView(content)
         return scroll
@@ -410,6 +415,103 @@ class MainActivity : AppCompatActivity() {
             actions.addView(card)
         }
         return actions
+    }
+
+    /** ثلاث A: صغير / وسط / كبير (الوسط هو الافتراضي = القياس الحالي). */
+    private fun fontSizeSelector(): View {
+        val current = FontScale.level(this)
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+        }
+        listOf(FontScale.SMALL to 13f, FontScale.MEDIUM to 17f, FontScale.LARGE to 22f).forEach { (level, sizeDp) ->
+            val selected = level == current
+            val letter = TextView(this).apply {
+                text = "A"
+                setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, sizeDp)
+                typeface = AppFonts.bold(this@MainActivity)
+                includeFontPadding = false
+                gravity = Gravity.CENTER
+                setTextColor(if (selected) Color.WHITE else textSecondary())
+                background = if (selected) rounded(0xFF1769E0.toInt(), 100) else null
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    if (level != FontScale.level(this@MainActivity)) {
+                        FontScale.set(this@MainActivity, level)
+                        recreate()
+                    }
+                }
+            }
+            box.addView(letter, LinearLayout.LayoutParams(dp(34), dp(34)).apply { marginStart = dp(2) })
+        }
+        return box
+    }
+
+    private var visitorOnlineText: TextView? = null
+    private var visitorTotalText: TextView? = null
+    private val visitorRunnable = object : Runnable {
+        override fun run() {
+            VisitorStats.sync(this@MainActivity) { runOnUiThread { updateVisitorViews() } }
+            mainHandler.postDelayed(this, 30_000L)
+        }
+    }
+
+    private fun updateVisitorViews() {
+        visitorOnlineText?.text = VisitorStats.online?.let { String.format(java.util.Locale.US, "%,d", it) } ?: "—"
+        visitorTotalText?.text = VisitorStats.total?.let { String.format(java.util.Locale.US, "%,d", it) } ?: "—"
+    }
+
+    /** مستطيلان بارتفاع شريط التحديث: يسار = المتواجدون الآن، يمين = إجمالي الزوار. */
+    private fun buildVisitorBars(): View {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+            layoutParams = LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(6) }
+        }
+        fun box(): LinearLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+            background = rounded(ContextCompat.getColor(this@MainActivity, R.color.headerBlue), 0)
+        }
+        fun divider(): View = View(this).apply { setBackgroundColor(0x66FFFFFF) }
+        fun addDivider(parent: LinearLayout) = parent.addView(divider(), LinearLayout.LayoutParams(dp(1), dp(16)).apply { marginStart = dp(8); marginEnd = dp(8) })
+        fun icon(res: Int): View = ImageView(this).apply { setImageResource(res) }
+        fun dot(color: Int): View = View(this).apply {
+            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }
+            val pulse = android.animation.ObjectAnimator.ofFloat(this, View.ALPHA, 1f, 0.35f, 1f).apply {
+                duration = 1600L
+                repeatCount = android.animation.ValueAnimator.INFINITE
+            }
+            addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) { pulse.start() }
+                override fun onViewDetachedFromWindow(v: View) { pulse.cancel() }
+            })
+        }
+        fun number(): TextView = text("—", 13, 0xFFE5EEFC.toInt(), true).apply { textDirection = View.TEXT_DIRECTION_LTR }
+
+        val onlineBox = box()
+        visitorOnlineText = number()
+        onlineBox.addView(visitorOnlineText)
+        addDivider(onlineBox)
+        onlineBox.addView(icon(R.drawable.ic_visitor_eye), LinearLayout.LayoutParams(dp(18), dp(18)))
+        addDivider(onlineBox)
+        onlineBox.addView(dot(0xFF1E9E46.toInt()), LinearLayout.LayoutParams(dp(8), dp(8)))
+
+        val totalBox = box()
+        totalBox.addView(dot(0xFFF5B301.toInt()), LinearLayout.LayoutParams(dp(8), dp(8)))
+        addDivider(totalBox)
+        totalBox.addView(icon(R.drawable.ic_visitor_people), LinearLayout.LayoutParams(dp(18), dp(18)))
+        addDivider(totalBox)
+        visitorTotalText = number()
+        totalBox.addView(visitorTotalText)
+
+        row.addView(onlineBox, LinearLayout.LayoutParams(0, dp(32), 1f).apply { marginEnd = dp(7) })
+        row.addView(totalBox, LinearLayout.LayoutParams(0, dp(32), 1f))
+        updateVisitorViews()
+        return row
     }
 
     private fun buildNewsPreview(): View {
@@ -724,6 +826,8 @@ class MainActivity : AppCompatActivity() {
         themeSwitch.setOnCheckedChangeListener { _, _ -> ThemePreferences.toggle(this) }
         themeRow.setOnClickListener { themeSwitch.toggle() }
         prefs.addView(themeRow)
+        prefs.addView(settingsDivider())
+        prefs.addView(settingsRow(R.drawable.ic_set_font, getString(R.string.settings_font_size), getString(R.string.settings_font_size_sub), trailing = fontSizeSelector()))
         prefs.addView(settingsDivider())
         val newsSwitch = androidx.appcompat.widget.SwitchCompat(this).apply {
             isChecked = NewsPreferences.isEnabled(this@MainActivity)

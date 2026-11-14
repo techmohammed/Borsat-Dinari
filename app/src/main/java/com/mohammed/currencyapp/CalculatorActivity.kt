@@ -17,7 +17,7 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
 
-class CalculatorActivity : AppCompatActivity() {
+class CalculatorActivity : ScaledActivity() {
     private lateinit var binding: ActivityCalculatorBinding
     private var items: List<PriceItem> = emptyList()
     private var calculatorOptions: List<PriceItem> = emptyList()

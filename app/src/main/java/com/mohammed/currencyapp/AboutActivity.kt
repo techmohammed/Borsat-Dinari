@@ -14,7 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.mohammed.currencyapp.databinding.ActivityAboutBinding
 import kotlin.math.abs
 
-class AboutActivity : AppCompatActivity() {
+class AboutActivity : ScaledActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

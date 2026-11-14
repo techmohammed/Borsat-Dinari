@@ -36,7 +36,7 @@ import kotlin.math.abs
  * (MaterialDatePicker بوضع range)، محدود بآخر 60 يوم لأن هذا أقصى مدة
  * نحتفظ فيها بالهيستوري أصلاً (انظر HistoryStore).
  */
-class HistoryActivity : AppCompatActivity() {
+class HistoryActivity : ScaledActivity() {
 
     companion object {
         const val EXTRA_KEY = "extra_key"

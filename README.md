@@ -20,7 +20,7 @@ Borsat Dinari shows the price of the US dollar and other currencies against the 
 ## Features
 
 - Free, ad-free and non-profit — forever
-- No sensitive permissions, no intrusive notifications, no personal data collection
+- No sensitive permissions or intrusive notifications. The visitor counter sends a random local installation ID and periodic timestamps to Firebase Realtime Database solely to calculate online and total visitor counts.
 - Very light and fast
 - Local markets (by city), world currencies, cryptocurrencies and metals, each in its own tab
 - Market news ("تنويه" notices) with a 60-day archive
@@ -155,7 +155,7 @@ Don't have Android? Open the web app and add it to your home screen — same pri
 - **iPhone / iPad (Safari):** Share → *Add to Home Screen*.
 - **Android / desktop (Chrome, Edge):** menu → *Install app* / *Add to Home screen*.
 
-Prices are published as plain JSON files under [`data/`](data/) (`currencies.json`, `crypto.json`, `metals.json` and `history/`), refreshed automatically whenever a price changes. The web app only reads those files — it has no server and collects nothing.
+Prices are published as plain JSON files under [`data/`](data/) (`currencies.json`, `crypto.json`, `metals.json` and `history/`), refreshed automatically whenever a price changes. The web app reads prices directly from those files; its visitor counter separately sends a random browser ID and periodic timestamps to Firebase Realtime Database to calculate online and total visitor counts.
 
 ## License
 

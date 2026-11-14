@@ -257,4 +257,6 @@
     <string name="navbar_metals">کانزا</string>
     <string name="market_metals_title">نرخی کانزاکان بە دۆلار</string>
     <string name="metals_empty">هێشتا داتای کانزاکان نییە</string>
+    <string name="settings_font_size">قەبارەی خەت</string>
+    <string name="settings_font_size_sub">قەبارەی نووسین لە ناو ئەپەکەدا بگۆڕە</string>
 </resources>

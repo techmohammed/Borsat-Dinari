@@ -257,4 +257,6 @@
     <string name="navbar_metals">Metaller</string>
     <string name="market_metals_title">Metal fiyatları (USD)</string>
     <string name="metals_empty">Henüz metal verisi yok</string>
+    <string name="settings_font_size">Yazı boyutu</string>
+    <string name="settings_font_size_sub">Uygulama içindeki yazı boyutunu değiştirin</string>
 </resources>

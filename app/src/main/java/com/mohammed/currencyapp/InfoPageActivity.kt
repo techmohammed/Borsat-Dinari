@@ -28,7 +28,7 @@ import com.google.android.material.chip.ChipGroup
  * الصفحات الفرعية للإعدادات (نفس هيدر الصفحة الرئيسية: صورة الهيدر يسار والعنوان يمين):
  * شرح التطبيق، شروط الاستخدام، المساعدة والدعم، قنوات التواصل.
  */
-class InfoPageActivity : AppCompatActivity() {
+class InfoPageActivity : ScaledActivity() {
 
     companion object {
         const val EXTRA_PAGE = "page"

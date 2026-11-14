@@ -257,4 +257,6 @@
     <string name="navbar_metals">المعادن</string>
     <string name="market_metals_title">أسعار المعادن بالدولار</string>
     <string name="metals_empty">لا توجد بيانات للمعادن بعد</string>
+    <string name="settings_font_size">حجم الخط</string>
+    <string name="settings_font_size_sub">غيّر حجم الخط داخل التطبيق</string>
 </resources>
