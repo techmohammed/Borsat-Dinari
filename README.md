@@ -20,7 +20,7 @@ Borsat Dinari shows the price of the US dollar and other currencies against the 
 ## Features
 
 - Free, ad-free and non-profit — forever
-- No sensitive permissions or intrusive notifications. The visitor counter sends a random local installation ID and periodic timestamps to Firebase Realtime Database solely to calculate online and total visitor counts.
+- No sensitive permissions, no intrusive notifications, no personal data collection (the visitor counter and rating use only a random anonymous device ID — see [Visitor counter & ratings](#visitor-counter--ratings))
 - Very light and fast
 - Local markets (by city), world currencies, cryptocurrencies and metals, each in its own tab
 - Market news ("تنويه" notices) with a 60-day archive
@@ -29,7 +29,21 @@ Borsat Dinari shows the price of the US dollar and other currencies against the 
 - Haptic feedback across the app
 - Four languages: Arabic (default), English, Türkçe, Kurdî/کوردی — layout stays RTL in every language
 - Light and dark themes
+- Font size setting (small / medium / large) and up to 10 favorites on the home page
+- Visitor counter (total visitors and online now) pinned above the bottom bar
+- In-app rating: five stars with the average rating of everyone
+- Web version (WebApp): <https://borsatdinari.github.io/>
 - Open source
+
+## What's new (latest)
+
+- **Font size** setting in Settings: small, medium or large, applied to every page.
+- **Favorites up to 10** on the home page (5 while the news card is enabled).
+- **Visitor bars** — *Total visitors* and *Online now* — pinned just above the bottom navigation bar on every tab, in the app and on the web.
+- **Rate the app**: tap the row in Settings and a small panel opens under it with five yellow stars and the average rating; one rating per device, and you can change it later.
+- **WebApp** icon added to *Social Channels* (left of WhatsApp), linking to <https://borsatdinari.github.io/>.
+- Bottom-bar tab underline fixed so the blue line under the selected tab is visible.
+- App guide updated to cover all of the above.
 
 ## What's new in 1.1.8
 
@@ -120,6 +134,7 @@ For details about how Borsat Dinari handles information and protects your privac
 | Platform | Link |
 |---|---|
 | Telegram | [t.me/BorsatDinari](https://t.me/BorsatDinari) |
+| WebApp | [borsatdinari.github.io](https://borsatdinari.github.io/) |
 | WhatsApp channel | [Borsat Dinari](https://whatsapp.com/channel/0029VbDz68h7YSd54EV6rw0R) |
 | Instagram | [@borsatdinari](https://www.instagram.com/borsatdinari) |
 | Facebook | [Borsat Dinari](https://www.facebook.com/share/1Bv8F5CUZE/) |
@@ -150,12 +165,18 @@ For details about how Borsat Dinari handles information and protects your privac
 
 Don't have Android? Open the web app and add it to your home screen — same prices, favorites, history charts and four languages:
 
-**https://techmohammed.github.io/Borsat-Dinari/web/**
+**https://borsatdinari.github.io/**
+
+(the same site is still available at <https://techmohammed.github.io/Borsat-Dinari/web/>)
 
 - **iPhone / iPad (Safari):** Share → *Add to Home Screen*.
 - **Android / desktop (Chrome, Edge):** menu → *Install app* / *Add to Home screen*.
 
-Prices are published as plain JSON files under [`data/`](data/) (`currencies.json`, `crypto.json`, `metals.json` and `history/`), refreshed automatically whenever a price changes. The web app reads prices directly from those files; its visitor counter separately sends a random browser ID and periodic timestamps to Firebase Realtime Database to calculate online and total visitor counts.
+Prices are published as plain JSON files under [`data/`](data/) (`currencies.json`, `crypto.json`, `metals.json` and `history/`), refreshed automatically whenever a price changes. The web app only reads those files — it has no server of its own. The only thing it writes is the anonymous visitor counter and rating described below.
+
+### Visitor counter & ratings
+
+To count visitors, show how many people are online right now, and store app ratings, the app and the web app use Firebase Realtime Database with a **random identifier** generated on your device the first time you open it. This identifier is not linked to your name, phone number, account, location or any other personal data, it is not private or sensitive information, and it is used only to avoid counting the same device twice and to keep one rating per device. Nothing else is collected.
 
 ## License
 

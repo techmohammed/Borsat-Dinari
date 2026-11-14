@@ -95,6 +95,8 @@ class MainActivity : ScaledActivity() {
         setContentView(binding.root)
         KurdishFont.apply(binding.root, this)
         applySystemBarsInsets(binding.toolbar, binding.bottomNavigation)
+        // مستطيلا الزوار ثابتان فوق الشريط السفلي في كل التبويبات.
+        binding.visitorDock.addView(buildVisitorBars())
         // تقليل ارتفاع الشريط السفلي 2 ملم من الأعلى بدون تحريك الأيقونات: نقص الخلفية فقط من فوق.
         val trim = (11.3f * resources.displayMetrics.density).toInt()
         binding.bottomNavigation.background = android.graphics.drawable.InsetDrawable(
@@ -187,7 +189,11 @@ class MainActivity : ScaledActivity() {
             val iconHolder = FrameLayout(this).apply {
                 background = rounded(if (spec.tab == currentTab) 0xFF1769E0.toInt() else Color.TRANSPARENT, 100)
                 val holderSize = if (spec.tab == currentTab) 52 else 36
-                layoutParams = LinearLayout.LayoutParams(dp(holderSize), dp(holderSize)).apply { gravity = Gravity.CENTER }
+                // الدائرة المحددة 52dp لكن تأخذ 36dp من التخطيط، وإلا ينزاح الخط الأزرق خارج الشريط (76dp) ويختفي.
+                layoutParams = LinearLayout.LayoutParams(dp(holderSize), dp(holderSize)).apply {
+                    gravity = Gravity.CENTER
+                    if (spec.tab == currentTab) bottomMargin = -dp(16)
+                }
                 if (spec.tab == currentTab) translationY = -dp(15).toFloat()
             }
             val icon = ImageView(this).apply {
@@ -334,7 +340,6 @@ class MainActivity : ScaledActivity() {
             content.addView(buildFavoritesList(favoriteItems, favoriteKeys))
         }
         content.addView(buildActionCards())
-        content.addView(buildVisitorBars())
         if (NewsPreferences.isEnabled(this)) content.addView(buildNewsPreview())
         scroll.addView(content)
         return scroll
@@ -468,7 +473,7 @@ class MainActivity : ScaledActivity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_LTR
-            layoutParams = LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(6) }
+            setPadding(dp(14), dp(6), dp(14), dp(6))
         }
         fun box(): LinearLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -873,12 +878,80 @@ class MainActivity : ScaledActivity() {
         val extras = settingsCard()
         extras.addView(settingsRow(R.drawable.ic_set_share, getString(R.string.settings_share), getString(R.string.settings_share_sub), trailing = settingsChevron()) { shareApp() })
         extras.addView(settingsDivider())
-        // قيّم التطبيق: غير فعال حالياً لحين رفع التطبيق على منصة قوية.
-        extras.addView(settingsRow(R.drawable.ic_set_star, getString(R.string.settings_rate), getString(R.string.settings_rate_sub), trailing = null).apply { alpha = 0.45f })
+        // قيّم التطبيق: لوحة تنفتح تحت الصف (مثل قائمة اللغة) بخمس نجوم والمتوسط؛ التقييم محفوظ في Firebase بمعرّف الجهاز العشوائي.
+        val ratePanel = buildRatePanel()
+        extras.addView(settingsRow(R.drawable.ic_set_star, getString(R.string.settings_rate), getString(R.string.settings_rate_sub), trailing = settingsChevron()) {
+            TransitionManager.beginDelayedTransition(content, AutoTransition().setDuration(200))
+            rateExpanded = !rateExpanded
+            ratePanel.visibility = if (rateExpanded) View.VISIBLE else View.GONE
+            if (rateExpanded) { rateMessage = null; updateRatePanel(); VisitorStats.loadRating(this) { runOnUiThread { updateRatePanel() } } }
+        })
+        extras.addView(ratePanel)
+        if (rateExpanded) VisitorStats.loadRating(this) { runOnUiThread { updateRatePanel() } }
         content.addView(extras)
 
         scroll.addView(content)
         return scroll
+    }
+
+    private var rateExpanded = false
+    private var rateMessage: String? = null
+    private var rateAvgText: TextView? = null
+    private var rateStarsRow: LinearLayout? = null
+    private var rateCountText: TextView? = null
+    private var rateMsgText: TextView? = null
+
+    private fun buildRatePanel(): LinearLayout {
+        val panel = vertical().apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(14), dp(2), dp(14), dp(14))
+            visibility = if (rateExpanded) View.VISIBLE else View.GONE
+        }
+        rateAvgText = text("—", 34, textPrimary(), true).apply { gravity = Gravity.CENTER; textDirection = View.TEXT_DIRECTION_LTR }
+        rateStarsRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+        }
+        rateCountText = text("", 12, textSecondary(), false).apply { gravity = Gravity.CENTER }
+        rateMsgText = text("", 13, textPrimary(), false).apply { gravity = Gravity.CENTER; setPadding(0, dp(6), 0, 0) }
+        panel.addView(rateAvgText)
+        panel.addView(rateStarsRow)
+        panel.addView(rateCountText)
+        panel.addView(rateMsgText)
+        updateRatePanel()
+        return panel
+    }
+
+    private fun updateRatePanel() {
+        val count = VisitorStats.ratingCount
+        rateAvgText?.text = if (count > 0) String.format(java.util.Locale.US, "%.1f", VisitorStats.ratingSum.toDouble() / count) else "—"
+        val mine = VisitorStats.myRating(this)
+        rateStarsRow?.let { row ->
+            row.removeAllViews()
+            for (n in 1..5) {
+                row.addView(TextView(this).apply {
+                    text = if (mine == 0 || n <= mine) "★" else "☆"
+                    textSize = 34f
+                    setTextColor(0xFFF5B301.toInt())
+                    setPadding(dp(4), 0, dp(4), 0)
+                    isClickable = true
+                    contentDescription = n.toString()
+                    setOnClickListener { submitRate(n) }
+                })
+            }
+        }
+        rateCountText?.text = if (count > 0) getString(R.string.rate_count, String.format(java.util.Locale.US, "%,d", count)) else getString(R.string.rate_none)
+        rateMsgText?.text = rateMessage ?: getString(R.string.rate_hint)
+    }
+
+    private fun submitRate(stars: Int) {
+        VisitorStats.submitRating(this, stars) { ok ->
+            runOnUiThread {
+                rateMessage = getString(if (ok) R.string.rate_thanks else R.string.rate_error)
+                updateRatePanel()
+            }
+        }
     }
 
     private fun settingsSectionTitle(label: String): View = text(label, 15, textPrimary(), true).apply {

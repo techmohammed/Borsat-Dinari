@@ -153,6 +153,7 @@ class InfoPageActivity : ScaledActivity() {
         section(content, R.string.guide_widget_title, R.string.guide_widget_text)
         section(content, R.string.guide_colors_title, R.string.guide_colors_text)
         section(content, R.string.guide_update_title, R.string.guide_update_text)
+        section(content, R.string.guide_more_title, R.string.guide_more_text)
     }
 
     private fun buildTerms(content: LinearLayout) {
@@ -310,6 +311,7 @@ class InfoPageActivity : ScaledActivity() {
         fun add(v: View, top: Int = 6) = content.addView(v, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(top) })
 
         add(rowOf(
+            s("WebApp", R.drawable.soc_webapp, "https://borsatdinari.github.io/"),
             s("WHATSAPP", R.drawable.soc_whatsapp, "https://whatsapp.com/channel/0029VbDz68h7YSd54EV6rw0R"),
             s("INSTAGRAM", R.drawable.soc_instagram, "https://www.instagram.com/borsatdinari")
         ), 0)

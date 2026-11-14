@@ -19,8 +19,60 @@ object VisitorStats {
 
     @Volatile var online: Int? = null
     @Volatile var total: Long? = null
+    @Volatile var ratingSum: Long = 0
+    @Volatile var ratingCount: Long = 0
+    private const val KEY_RATING = "my_rating"
 
-    private fun deviceId(context: Context): String {
+    fun myRating(context: Context): Int =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_RATING, 0)
+
+    /** جلب متوسط التقييم العام وتقييم هذا الجهاز (إن وجد). */
+    fun loadRating(context: Context, onDone: () -> Unit) {
+        val app = context.applicationContext
+        executor.execute {
+            val raw = request("stats/rating", "GET")
+            if (raw != null && raw != "null") runCatching {
+                val o = JSONObject(raw)
+                ratingSum = o.optLong("sum", 0)
+                ratingCount = o.optLong("count", 0)
+            }
+            val mine = request("ratings/${deviceId(app)}", "GET")?.trim()?.toDoubleOrNull()?.toInt()
+            if (mine != null && mine in 1..5) {
+                app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_RATING, mine).apply()
+            }
+            onDone()
+        }
+    }
+
+    /** إرسال التقييم: تقييم واحد لكل جهاز؛ إعادة التقييم تعدّل المجموع فقط ولا تزيد العدد. */
+    fun submitRating(context: Context, stars: Int, onDone: (Boolean) -> Unit) {
+        val app = context.applicationContext
+        executor.execute {
+            val id = deviceId(app)
+            val oldRaw = request("ratings/$id", "GET")
+            if (oldRaw == null) { onDone(false); return@execute }
+            val old = oldRaw.trim().toDoubleOrNull()?.toInt() ?: 0
+            val body = JSONObject().apply {
+                put("ratings/$id", stars)
+                if (stars != old) put("stats/rating/sum", JSONObject().put(".sv", JSONObject().put("increment", stars - old)))
+                if (old == 0) put("stats/rating/count", JSONObject().put(".sv", JSONObject().put("increment", 1)))
+            }
+            val ok = request("", "PATCH", body.toString()) != null
+            if (ok) app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_RATING, stars).apply()
+            if (ok) {
+                request("stats/rating", "GET")?.let { raw ->
+                    runCatching {
+                        val o = JSONObject(raw)
+                        ratingSum = o.optLong("sum", 0)
+                        ratingCount = o.optLong("count", 0)
+                    }
+                }
+            }
+            onDone(ok)
+        }
+    }
+
+    fun deviceId(context: Context): String {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val saved = p.getString(KEY_ID, null)
         if (saved != null && saved.length in 8..24) return saved

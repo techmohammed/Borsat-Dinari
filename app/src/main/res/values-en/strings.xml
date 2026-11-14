@@ -183,13 +183,13 @@
     <string name="settings_share">Share the app</string>
     <string name="settings_share_sub">Send the app to your friends</string>
     <string name="settings_rate">Rate the app</string>
-    <string name="settings_rate_sub">Coming soon</string>
+    <string name="settings_rate_sub">Share your opinion</string>
     <string name="share_text">Get Borsat Dinari to follow dollar and currency prices in Iraq\nhttps://t.me/BorsatDinari</string>
     <string name="language_changed_hint">Choose a language</string>
     <string name="about_updates_title">Latest updates</string>
     <string name="about_updates_text">•  Added 7 new world currencies\n•  Added 10 cryptocurrencies\n•  Added 10 metals\n•  New pages: news, guide, terms of use, help &amp; support, contact channels\n•  Completely redesigned app interface\n•  You can now share the app with your friends\n•  Added Halabja governorate</string>
     <string name="guide_home_title">Home page and favorites</string>
-    <string name="guide_home_text">•  Home shows 5 favorite markets of your choice; the default is (Baghdad, Erbil official dollar, Basra, Euro).\n•  Drag the three-line handle next to any row to change the order.\n•  The order is saved and stays until you change it.\n•  From the Global or Local market, tap the star next to any item to bring it to Home.\n•  Tap any row to open its price history and choose the period: a day, a week, a month, two months or a custom range from the calendar.\n•  You can export the price history and share it with anyone.\n•  Pull down on any page to refresh the prices, and swipe right or left to move between pages.</string>
+    <string name="guide_home_text">•  Home shows up to 10 favorite markets of your choice; the default is 8 varied markets.\n•  Drag the three-line handle next to any row to change the order.\n•  The order is saved and stays until you change it.\n•  From the Global or Local market, tap the star next to any item to bring it to Home.\n•  Tap any row to open its price history and choose the period: a day, a week, a month, two months or a custom range from the calendar.\n•  You can export the price history and share it with anyone.\n•  Pull down on any page to refresh the prices, and swipe right or left to move between pages.</string>
     <string name="guide_widget_title">Widgets and their types</string>
     <string name="guide_widget_text">•  Prices widget: shows your first 3 favorites (default: Baghdad, Erbil, Official dollar) with an instant refresh button.\n•  Mini price widget: a small strip showing your first favorite.\n•  Calculator widget: a quick conversion calculator on your home screen.\n•  To add one: long-press an empty spot on your phone\'s home screen, choose “Widgets”, find “Borsat Dinari” and drag the one you want.\n•  Widget order follows the favorites order on Home.</string>
     <string name="guide_colors_title">Price trend explained</string>
@@ -259,4 +259,11 @@
     <string name="metals_empty">No metals data yet</string>
     <string name="settings_font_size">Font size</string>
     <string name="settings_font_size_sub">Change the text size inside the app</string>
+    <string name="rate_hint">Your opinion matters! Tap a star to rate the app</string>
+    <string name="rate_thanks">Thanks for your rating, your support means a lot</string>
+    <string name="rate_count">%1$s ratings</string>
+    <string name="rate_error">Could not send your rating, try again later</string>
+    <string name="rate_none">Be the first to rate the app</string>
+    <string name="guide_more_title">More features</string>
+    <string name="guide_more_text">•  Font size: choose small, medium or large in Settings; it applies to every page.\n•  Favorites hold up to 10 markets (5 when news is enabled on Home).\n•  The “Total visitors” and “Online now” bars stay fixed above the bottom bar: the first is the number of devices that opened the app, the second is how many are using it right now.\n•  Rate the app from Settings: tap a star and the average rating of everyone is shown. Each device has one rating and you can change it later.\n•  Web version WebApp: https://borsatdinari.github.io/ runs in the browser and can be added to the home screen; it is also in the social channels.\n•  The visitor counter and rating use a random device ID that is not linked to your name or your data.</string>
 </resources>

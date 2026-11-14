@@ -6,6 +6,22 @@
       "total": {
         ".read": true,
         ".write": "newData.isNumber() && ((!data.exists() && newData.val() == 1) || newData.val() == data.val() + 1)"
+      },
+      "rating": {
+        ".read": true,
+        "sum": {
+          ".write": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) - 4 && newData.val() <= (data.exists() ? data.val() : 0) + 5 && newData.val() >= 0"
+        },
+        "count": {
+          ".write": "newData.isNumber() && ((!data.exists() && newData.val() == 1) || newData.val() == data.val() || newData.val() == data.val() + 1)"
+        }
+      }
+    },
+    "ratings": {
+      "$id": {
+        ".read": "$id.length >= 8 && $id.length <= 24",
+        ".write": "$id.length >= 8 && $id.length <= 24",
+        ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5 && newData.val() % 1 == 0"
       }
     },
     "online": {
