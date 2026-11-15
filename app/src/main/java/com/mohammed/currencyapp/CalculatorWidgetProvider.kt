@@ -108,8 +108,21 @@ class CalculatorWidgetProvider : AppWidgetProvider() {
                 }
                 prefs.edit().putString(VALUE_PREFIX + widgetId, value).apply()
                 // الإدخال يظهر فوراً؛ لا ننتظر شبكة أو تحميل القائمة لكل ضغطة.
-                renderWithItems(context, AppWidgetManager.getInstance(context), widgetId,
-                    cachedItems ?: cachedItemsFromDisk(context))
+                // ضغطة رقم = تحديث جزئي لنصّين فقط (المبلغ والناتج) بدل إعادة بناء الودجت كله
+                // (صور + 20 PendingIntent) عند كل ضغطة، حتى ما يتثقل الـ Launcher.
+                val manager = AppWidgetManager.getInstance(context)
+                val items = cachedItems ?: cachedItemsFromDisk(context)
+                try {
+                    manager.partiallyUpdateAppWidget(
+                        widgetId,
+                        RemoteViews(context.packageName, R.layout.widget_calculator).apply {
+                            setTextViewText(R.id.calculatorWidgetAmount, format(value))
+                            setTextViewText(R.id.calculatorWidgetResult, resultTextForWidget(context, widgetId, items))
+                        }
+                    )
+                } catch (_: Exception) {
+                    renderWithItems(context, manager, widgetId, items)
+                }
                 finishAsync()
             }
             ACTION_SELECT -> {

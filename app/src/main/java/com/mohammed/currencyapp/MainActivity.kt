@@ -142,10 +142,14 @@ class MainActivity : ScaledActivity() {
         mainHandler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS)
         mainHandler.removeCallbacks(visitorRunnable)
         mainHandler.postDelayed(visitorRunnable, 2500L)
+        appVisible = true
+        updatePulses()
     }
 
     override fun onStop() {
         super.onStop()
+        appVisible = false
+        updatePulses()
         mainHandler.removeCallbacks(refreshRunnable)
         mainHandler.removeCallbacks(visitorRunnable)
         VisitorStats.leave(this)
@@ -245,6 +249,7 @@ class MainActivity : ScaledActivity() {
         if (tabChanged) setupBottomNavigation()
         scrollTarget = null
         binding.visitorDock.visibility = if (tab == TAB_HOME) View.VISIBLE else View.GONE
+        updatePulses()
         val newTitle = titleFor(tab)
         if (binding.tvAppTitle.text.toString() != newTitle) binding.tvAppTitle.text = newTitle
         val page = when (tab) {
@@ -457,6 +462,14 @@ class MainActivity : ScaledActivity() {
 
     private var visitorOnlineText: TextView? = null
     private var visitorTotalText: TextView? = null
+    // نبضة النقطتين تشتغل فقط والرئيسية ظاهرة والتطبيق بالواجهة (توفير بطارية ورسم).
+    private val visitorPulses = mutableListOf<android.animation.ObjectAnimator>()
+    private var appVisible = false
+    private fun updatePulses() {
+        val run = appVisible && binding.visitorDock.visibility == View.VISIBLE
+        visitorPulses.forEach { if (run) { if (!it.isStarted) it.start() } else it.cancel() }
+    }
+
     private val visitorRunnable = object : Runnable {
         override fun run() {
             VisitorStats.sync(this@MainActivity) { runOnUiThread { updateVisitorViews() } }
@@ -491,8 +504,9 @@ class MainActivity : ScaledActivity() {
                 duration = 1600L
                 repeatCount = android.animation.ValueAnimator.INFINITE
             }
+            visitorPulses.add(pulse)
             addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
-                override fun onViewAttachedToWindow(v: View) { pulse.start() }
+                override fun onViewAttachedToWindow(v: View) { updatePulses() }
                 override fun onViewDetachedFromWindow(v: View) { pulse.cancel() }
             })
         }

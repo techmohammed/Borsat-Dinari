@@ -409,7 +409,7 @@ function rateSend(n){
   return fbp('','PATCH',p)}).then(function(r){
   if(!r.ok)throw 0;RT.mine=n;RT.pend=n;RT.show=true;lsSet('myrate',n);RT.msg=t('rate_thanks');ratePull();rateRedraw()}).catch(function(){RT.msg=t('rate_error');rateRedraw()})}
 function visStart(){
- var go2=function(){visBeat();if(route==='home')visPull()};
+ var go2=function(){if(document.hidden)return;visBeat();if(route==='home')visPull()};
  var first=function(){if(lsGet('counted','')!=='1')return fbp('stats/total','PUT',{'.sv':{increment:1}}).then(function(r){if(r.ok)lsSet('counted','1')}).catch(function(){});return Promise.resolve()};
  setTimeout(function(){first().then(function(){visBeat();visPull()})},2500);
  setInterval(go2,30000);
