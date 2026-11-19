@@ -23,7 +23,7 @@ Borsat Dinari shows the price of the US dollar and other currencies against the 
 - No sensitive permissions, no intrusive notifications, no personal data collection (the visitor counter and rating use only a random anonymous device ID — see [Visitor counter & ratings](#visitor-counter--ratings))
 - Very light and fast
 - Local markets (by city), world currencies, cryptocurrencies and metals, each in its own tab
-- Market news ("تنويه" notices) with a 60-day archive
+- Market news with a 60-day archive, read from `data/news.json` in the public repo (<https://borsatdinari.github.io/data/news.json>), shown in the app language (AR / EN / TR / KU); also on the web app with the same enable/disable switch
 - Price history for the last 60 days, with charts and PDF export
 - Built-in currency calculator and home-screen widgets (calculator and up to 3 favorites)
 - Haptic feedback across the app
@@ -38,6 +38,7 @@ Borsat Dinari shows the price of the US dollar and other currencies against the 
 ## What's new (latest)
 
 - **Font size** setting in Settings: small, medium or large, applied to every page.
+- **News now come from `news.json`** (public repo) instead of the Telegram channel, translated per app language; the web app also has the news card on Home, a news page, and the *Enable news* switch in Settings.
 - **Favorites up to 10** on the home page (5 while the news card is enabled).
 - **Visitor bars** — *Total visitors* and *Online now* — pinned just above the bottom navigation bar on every tab, in the app and on the web.
 - **Rate the app**: tap the row in Settings and a small panel opens under it with five yellow stars and the average rating; one rating per device, and you can change it later.

@@ -311,8 +311,8 @@ class MainActivity : ScaledActivity() {
             FavoriteWidgetProvider.renderFromCache(this)
             WidgetRefreshScheduler.markRefreshed(this)
             renderCurrentTab()
-            TelegramScraperRepository.fetchLatestNotices { latest ->
-                if (isFinishing) return@fetchLatestNotices
+            NewsRepository.fetch { latest ->
+                if (isFinishing) return@fetch
                 NewsArchiveStore.merge(this, latest)
                 notices = NewsArchiveStore.load(this)
                 if (currentTab == TAB_HOME || currentTab == TAB_NEWS) renderCurrentTab()
@@ -585,7 +585,7 @@ class MainActivity : ScaledActivity() {
             val openLink = text(getString(R.string.news_open_channel), 12, 0xFF3684F5.toInt(), true).apply {
                 gravity = Gravity.RIGHT
                 setPadding(0, dp(4), 0, dp(2))
-                visibility = if (notice.id in expandedNews) View.VISIBLE else View.GONE
+                visibility = if (notice.postUrl.isNotBlank() && notice.id in expandedNews) View.VISIBLE else View.GONE
                 setOnClickListener {
                     runCatching { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(notice.postUrl))) }
                 }
@@ -598,7 +598,7 @@ class MainActivity : ScaledActivity() {
                 val expanded = notice.id in expandedNews
                 body.maxLines = if (expanded) Int.MAX_VALUE else 2
                 body.ellipsize = if (expanded) null else android.text.TextUtils.TruncateAt.END
-                openLink.visibility = if (expanded) View.VISIBLE else View.GONE
+                openLink.visibility = if (expanded && notice.postUrl.isNotBlank()) View.VISIBLE else View.GONE
             }
             if (notice.id in expandedNews) { body.maxLines = Int.MAX_VALUE; body.ellipsize = null }
             content.addView(card)

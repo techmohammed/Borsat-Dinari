@@ -453,7 +453,9 @@ object TelegramScraperRepository {
         val text: String,
         val publishedAtMillis: Long,
         val imageUrl: String?,
-        val postUrl: String
+        val postUrl: String,
+        /** ترجمات الخبر بمفتاح اللغة (AR/EN/TR/KU) من news.json. */
+        val translations: Map<String, String> = emptyMap()
     )
 
     /** Fetches notices from the already-shared public channel page on a worker thread. */

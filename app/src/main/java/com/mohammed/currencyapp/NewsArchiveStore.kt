@@ -7,7 +7,7 @@ import org.json.JSONObject
 /** Locally keeps each notice observed from the public Borsat Dinari Telegram channel. */
 object NewsArchiveStore {
     private const val PREFS = "channel_news_archive"
-    private const val KEY_ITEMS = "items_json"
+    private const val KEY_ITEMS = "items_json_v2" // أرشيف جديد: أخبار news.json بكل الترجمات (القديم من تليغرام يُهمل)
     private const val RETENTION_MS = 60L * 24 * 60 * 60 * 1000 // 60 يوم
 
     private fun withinRetention(publishedAt: Long): Boolean =
@@ -24,13 +24,18 @@ object NewsArchiveStore {
                     val id = item.optLong("id", -1L)
                     val text = item.optString("text").trim()
                     val timestamp = item.optLong("publishedAt", 0L)
-                    if (id >= 0L && text.isNotEmpty()) {
+                    val tr = item.optJSONObject("tr")
+                    val map = HashMap<String, String>()
+                    tr?.keys()?.forEach { k -> tr.optString(k).trim().takeIf { it.isNotEmpty() }?.let { map[k] = it } }
+                    val shown = if (map.isNotEmpty()) NewsRepository.pick(map) else text
+                    if (id >= 0L && shown.isNotEmpty()) {
                         add(TelegramScraperRepository.ChannelNotice(
                             id = id,
-                            text = text,
+                            text = shown,
                             publishedAtMillis = timestamp,
                             imageUrl = item.optString("imageUrl").takeIf { it.isNotBlank() },
-                            postUrl = item.optString("postUrl")
+                            postUrl = item.optString("postUrl"),
+                            translations = map
                         ))
                     }
                 }
@@ -40,7 +45,7 @@ object NewsArchiveStore {
 
     fun merge(context: Context, incoming: List<TelegramScraperRepository.ChannelNotice>) {
         if (incoming.isEmpty()) return
-        val merged = (load(context) + incoming)
+        val merged = (incoming + load(context))
             .distinctBy { it.id }
             .filter { withinRetention(it.publishedAtMillis) }
             .sortedByDescending { it.publishedAtMillis }
@@ -52,6 +57,7 @@ object NewsArchiveStore {
                 put("publishedAt", notice.publishedAtMillis)
                 put("imageUrl", notice.imageUrl ?: "")
                 put("postUrl", notice.postUrl)
+                put("tr", JSONObject().apply { notice.translations.forEach { (k, v) -> put(k, v) } })
             })
         }
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
