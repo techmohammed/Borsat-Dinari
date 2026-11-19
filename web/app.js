@@ -155,8 +155,8 @@ function newsCard(){
  var it=NEWS.slice(0,2);
  return '<div class="nw"><div class="nwh"><span class="nwt">'+icon('set_news',22)+'<b>'+esc(t('latest_news'))+'</b></span><button data-act="news">'+esc(t('view_all'))+' ›</button></div><div class="nsp"></div>'+(it.length?it.map(function(n,i){return (i?'<div class="nsp"></div>':'')+newsRow(n,false)}).join(''):'<div class="ne">'+esc(t('news_empty'))+'</div>')+'</div>'}
 function newsPage(){
- var h='<div class="pad" style="padding-top:10px">';
- if(!NEWS.length)return h+'<div class="empty"><b>'+esc(t('news_empty'))+'</b></div></div>';
+ var h='<div style="padding-top:4px">';
+ if(!NEWS.length)return h+'<div class="empty" style="margin:8px 14px"><b>'+esc(t('news_empty'))+'</b></div></div>';
  return h+NEWS.map(function(n){return '<div class="nw nfull" data-nx="'+n.id+'">'+newsRow(n,true)+'</div>'}).join('')+'</div>'}
 var langOpen=false,rateOpen=false,RT={sum:0,count:0,mine:parseInt(lsGet('myrate','0'),10)||0,msg:'',pend:0,show:false};
 var LF={ar:'iq',en:'us',tr:'tr',ku:'kurdistan'};
