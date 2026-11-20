@@ -92,10 +92,10 @@ object CurrenciesRepository {
             cacheKey = "IRR_TELEGRAM",
             name = context.getString(R.string.cur_irr),
             flag = "ir",
-            value = telegramToman,
+            value = PricesJson.world("toman")?.price?.toLong() ?: telegramToman,
             unit = "100$",
             suffix = "",
-            publishedAtMillis = TelegramScraperRepository.latestTomanTimestamp(borsatDinariMessages)
+            publishedAtMillis = PricesJson.world("toman")?.timeMillis ?: TelegramScraperRepository.latestTomanTimestamp(borsatDinariMessages)
         )
         items.add(tomanItem ?: sample(context)[4])
         return items
@@ -122,7 +122,7 @@ object CurrenciesRepository {
                 }
                 key == "IRR_TELEGRAM" -> {
                     val rates = TelegramScraperRepository.fetchCurrencyRatesBlocking()
-                    buildTelegramCurrencyItem(context, "IRR_TELEGRAM", context.getString(R.string.cur_irr), "ir", rates.irrPer100Usd, "100$", "")
+                    buildTelegramCurrencyItem(context, "IRR_TELEGRAM", context.getString(R.string.cur_irr), "ir", PricesJson.world("toman")?.price?.toLong() ?: rates.irrPer100Usd, "100$", "", PricesJson.world("toman")?.timeMillis)
                 }
                 else -> null
             }
@@ -144,7 +144,8 @@ object CurrenciesRepository {
         "TRY_INVESTING" -> fetchTryFromBorsatDinari(context, messages)
         "IRR_TELEGRAM" -> buildTelegramCurrencyItem(
             context, "IRR_TELEGRAM", context.getString(R.string.cur_irr), "ir",
-            TelegramScraperRepository.extractTomanFromMessages(messages), "100$", ""
+            PricesJson.world("toman")?.price?.toLong() ?: TelegramScraperRepository.extractTomanFromMessages(messages), "100$", "",
+            PricesJson.world("toman")?.timeMillis
         )
         else -> null
     }
@@ -217,7 +218,9 @@ object CurrenciesRepository {
             bestTimestamp = ts
             current = value
         }
-        val publishedAtMillis = bestTimestamp?.let { TelegramScraperRepository.telegramTimestampToMillis(it) }
+        val js = PricesJson.world("usd_official")
+        if (js != null) current = js.price.toLong()
+        val publishedAtMillis = if (js != null) js.timeMillis else bestTimestamp?.let { TelegramScraperRepository.telegramTimestampToMillis(it) }
 
         val previous = cache.load(cacheKey)
         val effective = current ?: previous ?: return null
@@ -259,7 +262,9 @@ object CurrenciesRepository {
             bestTimestamp = ts
             current = value
         }
-        val publishedAtMillis = bestTimestamp?.let { TelegramScraperRepository.telegramTimestampToMillis(it) }
+        val js = PricesJson.world("try")
+        if (js != null) current = js.price.toLong()
+        val publishedAtMillis = if (js != null) js.timeMillis else bestTimestamp?.let { TelegramScraperRepository.telegramTimestampToMillis(it) }
 
         val previous = cache.load(cacheKey)
         val effective = current ?: previous ?: return null
@@ -313,7 +318,9 @@ object CurrenciesRepository {
                 bestTimestamp = ts
                 current = value
             }
-            val publishedAtMillis = bestTimestamp?.let { TelegramScraperRepository.telegramTimestampToMillis(it) }
+            val js = PricesJson.world(def.code.lowercase())
+            if (js != null) current = js.price
+            val publishedAtMillis = if (js != null) js.timeMillis else bestTimestamp?.let { TelegramScraperRepository.telegramTimestampToMillis(it) }
 
             val previous = cache.load(def.code)
             // لو ما لكينا سعر بآخر منشور، نرجع لآخر قيمة محفوظة بدل ما نسقط

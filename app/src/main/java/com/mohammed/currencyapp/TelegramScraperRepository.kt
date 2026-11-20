@@ -265,7 +265,14 @@ object TelegramScraperRepository {
     private val stateLock = Any()
     private val fetchLock = Any()
 
+    /** للأسعار: JSON أسرع بكثير؛ إذا نجح ما نحتاج صفحة القناة (الأسعار تُقرأ من PricesJson). */
     fun fetchTrustedMessagesShared(): List<Pair<String, String>> {
+        if (PricesJson.ensureFresh()) return emptyList()
+        return fetchTelegramMessagesShared()
+    }
+
+    /** صفحة القناة الفعلية (التنويه وفحص التحديث ما لهم بديل JSON). */
+    fun fetchTelegramMessagesShared(): List<Pair<String, String>> {
         readFreshShared()?.let { return it }
         synchronized(fetchLock) {
             // خيط ثاني ممكن يكون جلبها أثناء انتظارنا للقفل.
@@ -291,6 +298,7 @@ object TelegramScraperRepository {
      * جلبها قبل دقيقة تحديث تلقائي. */
     fun invalidateSharedMessages() {
         synchronized(stateLock) { sharedMessagesAt = 0L }
+        PricesJson.invalidate()
     }
 
     /** يبني PriceItem من الكاش المحلي فقط، بدون أي اتصال شبكة — يُستخدم لعرض
@@ -334,9 +342,10 @@ object TelegramScraperRepository {
             bestTimestamp = ts
             bestValue = value
         }
-        val publishedAtMillis = bestTimestamp?.let { telegramTimestampToMillis(it) }
+        val js = PricesJson.local(cp.key)
+        val publishedAtMillis = if (js != null) js.timeMillis else bestTimestamp?.let { telegramTimestampToMillis(it) }
 
-        val extracted = bestValue
+        val extracted = if (js != null) js.price.toLong().toString() else bestValue
         val previous = cache.load(cp.key)
         val digitsOnly = extracted ?: previous
 
@@ -462,7 +471,7 @@ object TelegramScraperRepository {
     fun fetchLatestNotices(onResult: (List<ChannelNotice>) -> Unit) {
         executor.execute {
             val notices = try {
-                parseLatestNotices(fetchTrustedMessagesShared())
+                parseLatestNotices(fetchTelegramMessagesShared())
             } catch (_: Exception) {
                 emptyList()
             }
@@ -531,7 +540,7 @@ object TelegramScraperRepository {
         }
         executor.execute {
             val announcement = try {
-                parseLatestAnnouncement(fetchTrustedMessagesShared())
+                parseLatestAnnouncement(fetchTelegramMessagesShared())
             } catch (_: Exception) {
                 null
             }

@@ -328,25 +328,23 @@ class MainActivity : ScaledActivity() {
     }
 
     private fun buildHomePage(): View {
-        val scroll = ScrollView(this).apply {
-            clipToPadding = false; clipChildren = false; isFillViewport = false
-            isVerticalScrollBarEnabled = false; overScrollMode = View.OVER_SCROLL_NEVER
-        }
-        scrollTarget = scroll
-        val content = vertical().apply { clipChildren = false; clipToPadding = false; setPadding(dp(14), dp(0), dp(14), dp(14)) }
-        // المفضلة حتى 10 دائماً (الأخبار والمربعات الأربعة والزوار ثابتة تحت القائمة وتتحرك البورصات فقط).
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(buildUpdateStrip(getString(R.string.favorites_title), dp(14)))
+        // المفضلة حتى 10 دائماً. القائمة نفسها هي اللي تسكرول (RecyclerView بوزن 1 مثل الأسواق)؛
+        // وضعها داخل ScrollView كان يعرض بس عدد الصفوف اللي تكفي الشاشة (5 مع الأخبار و8 بدونها).
         val favoriteKeys = FavoriteCityStore.getAll(this)
         val allItems = latestCurrencies + latestExchanges + latestCrypto + latestMetals
         val favoriteItems = favoriteKeys.mapNotNull { key -> allItems.find { (it.cityKey ?: it.name) == key } }
         if (favoriteItems.isEmpty()) {
-            content.addView(emptyCard(getString(R.string.favorites_empty), getString(R.string.favorites_hint)))
+            scrollTarget = null
+            root.addView(emptyCard(getString(R.string.favorites_empty), getString(R.string.favorites_hint)).apply {
+                layoutParams = LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply { setMargins(dp(14), dp(8), dp(14), 0) }
+            })
         } else {
-            content.addView(buildFavoritesList(favoriteItems, favoriteKeys))
+            val list = buildFavoritesList(favoriteItems, favoriteKeys)
+            scrollTarget = list
+            root.addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
         }
-        scroll.addView(content)
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        root.addView(buildUpdateStrip(getString(R.string.favorites_title), dp(14)))
-        root.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         return root
     }
 
@@ -751,14 +749,12 @@ class MainActivity : ScaledActivity() {
     private fun buildFavoritesList(items: List<PriceItem>, favoriteKeys: List<String>): View {
         val list = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
-            isNestedScrollingEnabled = false
             overScrollMode = View.OVER_SCROLL_NEVER
             clipToPadding = false
             clipChildren = false
             isVerticalScrollBarEnabled = false
             // مساحة جانبية للظل حتى ما تنقص حواف الصفوف؛ الهامش السالب يبقي العرض مثل العالمي/المحلي.
-            setPadding(dp(4), 0, dp(4), 0)
-            layoutParams = LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply { setMargins(-dp(4), 0, -dp(4), 0) }
+            setPadding(dp(14), 0, dp(14), dp(14))
         }
         lateinit var touchHelper: ItemTouchHelper
         val adapter = PriceListAdapter(

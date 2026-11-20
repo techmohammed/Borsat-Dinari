@@ -47,6 +47,12 @@ object CryptoRepository {
     }
 
     fun resolveAll(context: Context, messages: List<Pair<String, String>>): List<PriceItem> {
+        if (PricesJson.active() && coins.any { PricesJson.crypto(it.code) != null }) {
+            return coins.mapNotNull { c ->
+                val e = PricesJson.crypto(c.code)
+                buildItem(context, c, e?.let { Parsed(it.price, PricesJson.raw(it.price), null) }, e?.timeMillis)
+            }
+        }
         var bestTs: String? = null
         var parsed: Map<String, Parsed> = emptyMap()
         val searched = if (!hasCrypto(messages) && searchAllowed(context)) {

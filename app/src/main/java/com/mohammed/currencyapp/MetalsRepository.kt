@@ -51,6 +51,12 @@ object MetalsRepository {
     }
 
     fun resolveAll(context: Context, messages: List<Pair<String, String>>): List<PriceItem> {
+        if (PricesJson.active() && metals.any { PricesJson.metal(it.id) != null }) {
+            return metals.mapNotNull { m ->
+                val e = PricesJson.metal(m.id)
+                buildItem(context, m, e?.let { Parsed(it.price, PricesJson.raw(it.price), null) }, e?.timeMillis)
+            }
+        }
         var bestTs: String? = null
         var parsed: Map<String, Parsed> = emptyMap()
         val searched = if (!hasMetals(messages) && searchAllowed(context)) {

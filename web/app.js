@@ -149,7 +149,7 @@ function loadNews(){return dfetch('news.json').then(function(r){return r.json()}
  all.sort(function(a,b){return b.t-a.t});NEWS=all;lsSet('d_news',JSON.stringify(NEWS));
  if(route==='home'||route==='news')render(true)}).catch(function(){})}
 function newsRow(n,full){var tx=newsText(n),al=RTL[S.lang]?'right':'left';
- return '<div class="nr"><img src="'+newsImg(tx)+'" alt=""><span class="nl2"></span><div class="nb" style="text-align:'+al+'"><p class="'+(full&&NX[n.id]?'':'cl')+'">'+esc(tx)+'</p><small class="num">'+esc(newsDate(n.t))+'</small></div></div>'}
+ return '<div class="nr"><img src="'+newsImg(tx)+'" alt=""><span class="nl2"></span><div class="nb" style="text-align:'+al+'"><p dir="auto" class="'+(full&&NX[n.id]?'':'cl')+'">'+esc(tx)+'</p><small dir="auto" class="num">'+esc(newsDate(n.t))+'</small></div></div>'}
 function newsCard(){
  var it=NEWS.slice(0,2);
  return '<div class="nw"><div class="nwh"><span class="nwt">'+icon('set_news',22)+'<b>'+esc(t('latest_news'))+'</b></span><button data-act="news">'+esc(t('view_all'))+' ›</button></div><div class="nsp"></div>'+(it.length?it.map(function(n,i){return (i?'<div class="nsp"></div>':'')+newsRow(n,false)}).join(''):'<div class="ne">'+esc(t('news_empty'))+'</div>')+'</div>'}

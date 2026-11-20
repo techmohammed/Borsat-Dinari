@@ -188,3 +188,7 @@ No copyright and no distribution restrictions — use the app in any way you lik
 
 > "In a world full of noise, make your mark in silence —
 > the rain that makes crops grow makes no thunder."
+
+
+### مصدر الأسعار بالتطبيق
+التطبيق يقرأ الأسعار أولاً من ملفات JSON العامة (`currencies.json` و`crypto.json` و`metals.json`، نفس مصدر الويب)، وإذا فشل الجلب يرجع تلقائياً لقراءة قناة تليغرام. التنويه وفحص التحديث ما زالا من القناة.
