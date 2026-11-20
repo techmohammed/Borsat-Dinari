@@ -95,8 +95,6 @@ class MainActivity : ScaledActivity() {
         setContentView(binding.root)
         KurdishFont.apply(binding.root, this)
         applySystemBarsInsets(binding.toolbar, binding.bottomNavigation)
-        // مستطيلا الزوار ثابتان فوق الشريط السفلي في كل التبويبات.
-        binding.visitorDock.addView(buildVisitorBars())
         // تقليل ارتفاع الشريط السفلي 2 ملم من الأعلى بدون تحريك الأيقونات: نقص الخلفية فقط من فوق.
         val trim = (11.3f * resources.displayMetrics.density).toInt()
         binding.bottomNavigation.background = android.graphics.drawable.InsetDrawable(
@@ -249,6 +247,7 @@ class MainActivity : ScaledActivity() {
         if (tabChanged) setupBottomNavigation()
         scrollTarget = null
         binding.visitorDock.visibility = if (tab == TAB_HOME) View.VISIBLE else View.GONE
+        if (tab == TAB_HOME) rebuildHomeDock()
         updatePulses()
         val newTitle = titleFor(tab)
         if (binding.tvAppTitle.text.toString() != newTitle) binding.tvAppTitle.text = newTitle
@@ -292,7 +291,7 @@ class MainActivity : ScaledActivity() {
         binding.tvAppTitle.startWave()
         TelegramScraperRepository.fetchMainPage(this) { exchanges, currencies ->
             if (generation != refreshGeneration || isFinishing) return@fetchMainPage
-            latestExchanges = FavoriteCityStore.sortWithFavoriteFirst(this, exchanges)
+            latestExchanges = exchanges
             latestCurrencies = currencies
             CryptoRepository.fetch(this) { crypto ->
                 if (isFinishing) return@fetch
@@ -335,8 +334,7 @@ class MainActivity : ScaledActivity() {
         }
         scrollTarget = scroll
         val content = vertical().apply { clipChildren = false; clipToPadding = false; setPadding(dp(14), dp(0), dp(14), dp(14)) }
-        content.addView(buildUpdateStrip(getString(R.string.favorites_title)))
-        // المفضلة حتى 5 مع الأخبار و8 بدونها (الافتراضي: بغداد، أربيل، الرسمي، البصرة، اليورو).
+        // المفضلة حتى 10 دائماً (الأخبار والمربعات الأربعة والزوار ثابتة تحت القائمة وتتحرك البورصات فقط).
         val favoriteKeys = FavoriteCityStore.getAll(this)
         val allItems = latestCurrencies + latestExchanges + latestCrypto + latestMetals
         val favoriteItems = favoriteKeys.mapNotNull { key -> allItems.find { (it.cityKey ?: it.name) == key } }
@@ -345,10 +343,11 @@ class MainActivity : ScaledActivity() {
         } else {
             content.addView(buildFavoritesList(favoriteItems, favoriteKeys))
         }
-        content.addView(buildActionCards())
-        if (NewsPreferences.isEnabled(this)) content.addView(buildNewsPreview())
         scroll.addView(content)
-        return scroll
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(buildUpdateStrip(getString(R.string.favorites_title), dp(14)))
+        root.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        return root
     }
 
     /** مربع حقيقي: الارتفاع = العرض. */
@@ -482,12 +481,28 @@ class MainActivity : ScaledActivity() {
         visitorTotalText?.text = VisitorStats.total?.let { String.format(java.util.Locale.US, "%,d", it) } ?: "—"
     }
 
+    /** المنطقة الثابتة أسفل الرئيسية: مربع الأخبار، المربعات الأربعة، مستطيلا الزوار (فوق الشريط السفلي). */
+    private fun rebuildHomeDock() {
+        visitorPulses.forEach { it.cancel() }
+        visitorPulses.clear()
+        val dock = binding.visitorDock
+        dock.removeAllViews()
+        val box = vertical().apply { setPadding(dp(14), 0, dp(14), 0) }
+        if (NewsPreferences.isEnabled(this)) box.addView(buildNewsPreview())
+        box.addView(buildActionCards())
+        box.addView(buildVisitorBars())
+        KurdishFont.apply(box, this)
+        dock.addView(box)
+        updateVisitorViews()
+        updatePulses()
+    }
+
     /** مستطيلان بارتفاع شريط التحديث: يسار = المتواجدون الآن، يمين = إجمالي الزوار. */
     private fun buildVisitorBars(): View {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_LTR
-            setPadding(dp(14), dp(6), dp(14), dp(6))
+            setPadding(0, dp(6), 0, dp(6))
         }
         fun box(): LinearLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -583,7 +598,7 @@ class MainActivity : ScaledActivity() {
             val (row, body) = buildNewsRow(notice, compact = false, onDark = true)
             card.addView(row)
             val openLink = text(getString(R.string.news_open_channel), 12, 0xFF3684F5.toInt(), true).apply {
-                gravity = Gravity.RIGHT
+                gravity = if (AppLanguage.currentTag() in listOf("ar", "ku", "ckb")) Gravity.RIGHT else Gravity.LEFT
                 setPadding(0, dp(4), 0, dp(2))
                 visibility = if (notice.postUrl.isNotBlank() && notice.id in expandedNews) View.VISIBLE else View.GONE
                 setOnClickListener {
@@ -625,15 +640,22 @@ class MainActivity : ScaledActivity() {
                 intArrayOf(0x00FFFFFF, 0xFFFFFFFF.toInt(), 0x00FFFFFF)
             )
         }, LinearLayout.LayoutParams(dp(2), dp(if (compact) 62 else 78)).apply { marginStart = dp(9); marginEnd = dp(9) })
-        val texts = vertical().apply { layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f) }
+        val texts = vertical().apply {
+            // الصغير ارتفاعه ثابت؛ الكامل حد أدنى بقد الصورة ويتوسع مع الخبر والتاريخ ينزل تحته.
+            if (compact) layoutParams = LinearLayout.LayoutParams(0, dp(62), 1f)
+            else { minimumHeight = dp(78); layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f) }
+        }
+        // عربي وكوردي: محاذاة لليمين، إنكليزي وتركي: لليسار.
+        val textSide = if (AppLanguage.currentTag() in listOf("ar", "ku", "ckb")) Gravity.RIGHT else Gravity.LEFT
         val body = text(notice.text, if (compact) 12 else 14, if (onDark) Color.WHITE else textPrimary(), true).apply {
-            gravity = Gravity.RIGHT
+            gravity = textSide
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
         }
         texts.addView(body)
+        texts.addView(View(this), LinearLayout.LayoutParams(1, 0, 1f))
         texts.addView(text(formatNoticeDate(notice.publishedAtMillis), 10, if (onDark) 0xFFB9CBE4.toInt() else textSecondary(), false).apply {
-            gravity = Gravity.RIGHT; setPadding(0, dp(3), 0, 0)
+            gravity = textSide; setPadding(0, dp(2), 0, 0)
         })
         row.addView(texts)
         return row to body

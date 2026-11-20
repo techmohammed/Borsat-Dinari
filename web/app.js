@@ -122,7 +122,7 @@ function listFor(r){var ids=r==='local'?LOCAL:r==='global'?WORLD:r==='crypto'?CR
 function emptyBox(r){var k=r==='crypto'?'crypto_empty':r==='metals'?'metals_empty':'no_data';return '<div class="empty"><b>'+esc(t(k))+'</b></div>'}
 function actCard(c,ic,lab,sub,id){return '<button class="act" data-act="'+id+'"><span class="c" style="background:'+c+'">'+icon(ic,19)+'</span><span class="t">'+esc(lab)+'</span><span class="s">'+(sub?lrm(esc(sub)):'&nbsp;')+'</span></button>'}
 function dockHTML(){
- return '<div class="acts">'
+ return (NEWSON?newsCard():'')+'<div class="acts">'
   +actCard('#2878F0','refresh_history',t('quick_refresh'),stampOf(),'refresh')
   +actCard('#0BA77D','calculator',t('quick_calculator'),t('quick_convert'),'calc')
   +actCard('#E89A20','menu_burger',t('quick_about'),t('app_name'),'about')
@@ -131,7 +131,6 @@ function dock(){var d=$('#dock');if(!d)return;if(route==='home'){d.style.display
 function homePage(){
  var favs=S.favs.filter(function(i){return IT[i]}).slice(0,favLimit());
  var h=stripHTML()+'<div class="list" id="favlist">'+(favs.length?favs.map(function(i){return rowHTML(IT[i],'fav')}).join(''):'<div class="empty"><b>'+esc(t('favorites_empty'))+'</b><small>'+esc(t('favorites_hint'))+'</small></div>')+'</div>';
- if(NEWSON)h+=newsCard();
  return h}
 /* ---------- pages ---------- */
 function mkRow(label,sub,ic,opts){opts=opts||{};
@@ -139,7 +138,7 @@ function mkRow(label,sub,ic,opts){opts=opts||{};
 function chev(){return '<span class="tl">'+icon('set_chevron',22,'chev')+'</span>'}
 var NEWSON=lsGet('news','1')!=='0',NEWS=[],NX={};
 try{NEWS=JSON.parse(lsGet('d_news','[]'))||[]}catch(e){NEWS=[]}
-function favLimit(){return NEWSON?5:10}
+function favLimit(){return 10}
 function newsText(n){var tr=n.tr||{};var k=S.lang.toUpperCase();if(tr[k])return tr[k];if(tr.AR)return tr.AR;for(var x in tr)return tr[x];return ''}
 function newsDate(ms){if(!ms)return '—';var d=new Date(ms);return pad2(d.getHours())+':'+pad2(d.getMinutes())+'  '+d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear()}
 function newsImg(txt){var m=/\.+\s*$/.exec(txt.trim());var c=m?Math.min(m[0].trim().length,5):0;return c?'img/news_cat_'+c+'.webp':'icons/icon-192.png'}

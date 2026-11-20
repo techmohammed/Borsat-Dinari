@@ -3,7 +3,7 @@ package com.mohammed.currencyapp
 import android.content.Context
 
 /**
- * المفضلة: حتى 5 (10 عند إخفاء الأخبار)، مرتبة (الأولى = الأعلى بالرئيسية). الافتراضي لو ما اختار المستخدم شي:
+ * المفضلة: حتى 10، مرتبة (الأولى = الأعلى بالرئيسية). الافتراضي لو ما اختار المستخدم شي:
  * بغداد، أربيل، الدولار الرسمي، البصرة، اليورو. الضغط على نجمة مفضلة يشيلها،
  * ولو انشالت كلها ترجع الافتراضيات.
  * الودجتات واختصارات التطبيق تستخدم أول 3 فقط (بغداد، أربيل، الرسمي افتراضياً).
@@ -13,8 +13,9 @@ object FavoriteCityStore {
     const val MAX_FAVORITES = 10
     const val MAX_WITH_NEWS = 5
 
-    fun visibleLimit(context: Context): Int =
-        if (NewsPreferences.isEnabled(context)) MAX_WITH_NEWS else MAX_FAVORITES
+    /** المفضلة 10 دائماً سواء الأخبار مفعلة أو لا. */
+    @Suppress("UNUSED_PARAMETER")
+    fun visibleLimit(context: Context): Int = MAX_FAVORITES
 
     val DEFAULTS = listOf("baghdad", "erbil", "USD_OFFICIAL", "basra", "FX_EUR")
 

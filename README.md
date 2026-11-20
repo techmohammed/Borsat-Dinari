@@ -39,7 +39,8 @@ Borsat Dinari shows the price of the US dollar and other currencies against the 
 
 - **Font size** setting in Settings: small, medium or large, applied to every page.
 - **News now come from `news.json`** (public repo) instead of the Telegram channel, translated per app language; the web app also has the news card on Home, a news page, and the *Enable news* switch in Settings.
-- **Favorites up to 10** on the home page (5 while the news card is enabled).
+- **Favorites up to 10** on the home page, whether news is enabled or not.
+- **Home layout**: the news card, the four quick cards and the visitor bars are fixed above the bottom bar (app and web); only the markets list scrolls.
 - **Visitor bars** — *Total visitors* and *Online now* — pinned just above the bottom navigation bar on every tab, in the app and on the web.
 - **Rate the app**: tap the row in Settings and a small panel opens under it with five yellow stars and the average rating; one rating per device, and you can change it later.
 - **WebApp** icon added to *Social Channels* (left of WhatsApp), linking to <https://borsatdinari.github.io/>.
