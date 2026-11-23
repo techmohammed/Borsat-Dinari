@@ -136,7 +136,7 @@ function homePage(){
 function mkRow(label,sub,ic,opts){opts=opts||{};
  var tg=opts.nb?'div':'button';return '<'+tg+' class="sr'+(opts.dis?' dis':'')+'" '+(opts.a?'data-a="'+opts.a+'"':'')+'><span class="ci">'+icon(ic,20)+'</span><span class="tx"><b>'+esc(label)+'</b>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</span>'+(opts.tail||'')+'</'+tg+'>'}
 function chev(){return '<span class="tl">'+icon('set_chevron',22,'chev')+'</span>'}
-var NEWSON=lsGet('news','1')!=='0',NEWS=[],NX={};
+var NEWSON=lsGet('news','0')==='1',NEWS=[],NX={};
 try{NEWS=JSON.parse(lsGet('d_news','[]'))||[]}catch(e){NEWS=[]}
 function favLimit(){return 10}
 function newsText(n){var tr=n.tr||{};var k=S.lang.toUpperCase();if(tr[k])return tr[k];if(tr.AR)return tr.AR;for(var x in tr)return tr[x];return ''}
@@ -543,7 +543,7 @@ document.addEventListener('click',function(e){
  var P=$('#page'),sx,sy,st,pull=0,tracking=false,cs={};
  P.addEventListener('touchstart',function(e){if(e.touches.length!==1||S.drag){tracking=false;return}var t0=e.touches[0];sx=t0.clientX;sy=t0.clientY;st=Date.now();tracking=true;pull=0},{passive:true});
  P.addEventListener('touchmove',function(e){if(!tracking)return;var t0=e.touches[0],dy=t0.clientY-sy,dx=t0.clientX-sx;
-  if(P.scrollTop<=0&&dy>10&&Math.abs(dy)>Math.abs(dx)&&TABS.concat(['settings']).indexOf(route)>-1){pull=Math.min(dy,110);cs.opacity=Math.min(1,pull/70);cs.transform='translateY('+(pull*.55)+'px) rotate('+(pull*3)+'deg)'}},{passive:true});
+  if(P.scrollTop<=0&&dy>10&&Math.abs(dy)>Math.abs(dx)&&TABS.concat(['settings','news']).indexOf(route)>-1){pull=Math.min(dy,110);cs.opacity=Math.min(1,pull/70);cs.transform='translateY('+(pull*.55)+'px) rotate('+(pull*3)+'deg)'}},{passive:true});
  P.addEventListener('touchend',function(e){if(!tracking)return;tracking=false;var t0=e.changedTouches[0],dx=t0.clientX-sx,dy=t0.clientY-sy,dtm=Date.now()-st;
   var wasPull=pull;cs.opacity=0;cs.transform='';
   if(wasPull>=70){pull=0;if(navigator.vibrate)try{navigator.vibrate(10)}catch(e){}load(true);return}pull=0;
